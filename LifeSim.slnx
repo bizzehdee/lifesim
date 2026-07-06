@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LifeSim.App.Browser/LifeSim.App.Browser.csproj" />
+    <Project Path="src/LifeSim.App.Desktop/LifeSim.App.Desktop.csproj" />
+    <Project Path="src/LifeSim.App/LifeSim.App.csproj" />
+    <Project Path="src/LifeSim.Console/LifeSim.Console.csproj" />
+    <Project Path="src/LifeSim.Core/LifeSim.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LifeSim.Core.Tests/LifeSim.Core.Tests.csproj" />
+    <Project Path="tests/LifeSim.Determinism.Tests/LifeSim.Determinism.Tests.csproj" />
+  </Folder>
+</Solution>

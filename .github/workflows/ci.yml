@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore LifeSim.slnx
+
+      - name: Format check
+        run: dotnet format LifeSim.slnx --verify-no-changes --no-restore
+
+      # Note: no -warnaserror at the solution level — the Avalonia WASM toolchain emits a
+      # benign NativeFileReference notice on non-AOT builds. Analyzers still run; the format
+      # check above is the style gate.
+      - name: Build (all projects)
+        run: dotnet build LifeSim.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test LifeSim.slnx -c Release --no-build
+
+      # Proves the single Avalonia app also builds for the browser/WASM target.
+      # .NET 10's SDK ships the wasm build capability; if a runner lacks it,
+      # add `- run: dotnet workload restore src/LifeSim.App.Browser` before this step.
+      - name: Publish browser (WASM) demo
+        run: dotnet publish src/LifeSim.App.Browser -c Release -o artifacts/wasm
+
+      - name: Upload WASM demo artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lifesim-wasm-demo
+          path: artifacts/wasm/wwwroot
+          if-no-files-found: warn

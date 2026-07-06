@@ -1,0 +1,10 @@
+# Normalize line endings to LF (matches .editorconfig; keeps `dotnet format` stable cross-platform)
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary

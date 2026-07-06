@@ -1,9 +1,11 @@
+using LifeSim.Core.Neat;
+
 namespace LifeSim.Core.Organisms;
 
 /// <summary>
-/// An organism instance: a dynamic state machine over an immutable <see cref="Genome"/>,
-/// occupying a single grid tile (lifesim.md §3, §10, §11). Removed from the simulation once its
-/// energy hits zero.
+/// An organism instance: a dynamic state machine over an immutable <see cref="Genome"/> and an
+/// evolvable <see cref="Brain"/>, occupying a single grid tile (lifesim.md §3, §4, §10, §11).
+/// Removed from the simulation once its energy hits zero.
 /// </summary>
 public sealed class Organism
 {
@@ -15,6 +17,8 @@ public sealed class Organism
     public string Name { get; }
 
     public Genome Genome { get; }
+
+    public NeatGenome Brain { get; private set; }
 
     public double Energy { get; private set; }
 
@@ -30,11 +34,12 @@ public sealed class Organism
     public bool IsAlive => Energy > 0.0;
 
     public Organism(
-        long id, Genome genome, string name, double energy, int x, int y,
+        long id, Genome genome, string name, double energy, int x, int y, NeatGenome brain,
         long age = 0, OrganismAction? lastAction = null)
     {
         ArgumentNullException.ThrowIfNull(genome);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(brain);
 
         Id = id;
         Genome = genome;
@@ -42,6 +47,7 @@ public sealed class Organism
         Energy = Math.Clamp(energy, 0.0, EnergyCeiling);
         X = x;
         Y = y;
+        Brain = brain;
         Age = age;
         LastAction = lastAction;
     }
@@ -70,4 +76,10 @@ public sealed class Organism
     }
 
     public void RecordAction(OrganismAction action) => LastAction = action;
+
+    public void UpdateBrain(NeatGenome brain)
+    {
+        ArgumentNullException.ThrowIfNull(brain);
+        Brain = brain;
+    }
 }

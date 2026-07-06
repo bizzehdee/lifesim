@@ -94,13 +94,17 @@ This document turns the architectural blueprint in [`lifesim.md`](./lifesim.md) 
 **Goal:** Replace the stubbed brain with the evolvable recurrent NEAT network (Plan §4).
 **Depends on:** Phase 4.
 
-- [ ] Implement the NEAT genome: node genes (`id`, `type`, `activation` default `tanh`, `state`) and connection genes (`innovation_id`, `from`, `to`, `weight`, `enabled`) with `network_type: "recurrent"` (Plan §4, §12).
-- [ ] Implement the global innovation counter (`next_innovation_id`), advanced only in the Birth Commit phase in sorted id order, serialized in snapshots (Plan §4, §9).
-- [ ] Implement **recurrent evaluation via a single synchronous update per tick** (nodes read inputs' previous-tick values, commit together); persist per-node `state` across ticks and zero it at birth (Plan §4, §7).
-- [ ] Implement the 11 action outputs → softmax → weighted PRNG selection: Move N/S/E/W, Harvest-Self, Harvest-N/S/E/W, Idle, Reproduce (Plan §4, §17).
-- [ ] Verify node `state` round-trips through serialization (extend save/reload test to include a recurrent brain).
+- [x] Implement the NEAT genome: node genes (`id`, `type`, `activation` default `tanh`, `state`) and connection genes (`innovation_id`, `from`, `to`, `weight`, `enabled`) with `network_type: "recurrent"` (Plan §4, §12). *(`Neat/NodeGene.cs`, `Neat/ConnectionGene.cs`, `Neat/NeatGenome.cs`, `Neat/NodeType.cs`.)*
+- [x] Implement the global innovation counter (`next_innovation_id`), advanced only in the Birth Commit phase in sorted id order, serialized in snapshots (Plan §4, §9). *(`Neat/NeatTopology.cs` — input/output node ids and the full genesis input→output connectivity are canonical, deterministic constants (id = f(index)), not draws from a mutable allocator, since they're shared baseline structure identical across every genesis organism, not novel mutations. `NextInnovationId` is seeded to `NeatTopology.ReservedInnovationIdCount` so Phase 8's actual structural mutations — the first thing to ever advance this counter — never collide with the reserved range.)*
+- [x] Implement **recurrent evaluation via a single synchronous update per tick** (nodes read inputs' previous-tick values, commit together); persist per-node `state` across ticks and zero it at birth (Plan §4, §7). *(`Neat/NeatBrain.cs` — reads a `previousState` snapshot for every computation and only commits the new `NeatGenome` at the end, so node-processing order can't affect the result even with recurrent cycles. Input nodes carry the current tick's sensory reading directly; hidden/output nodes sum incoming connections in ascending-innovation-id order for a fixed floating-point reduction order (Plan §9). `CreateMinimalFullyConnected` initializes every node's `state` to 0.)*
+- [x] Implement the 11 action outputs → softmax → weighted PRNG selection: Move N/S/E/W, Harvest-Self, Harvest-N/S/E/W, Idle, Reproduce (Plan §4, §17). *(`NeatBrain.Evaluate` — numerically-stable softmax over the tanh-squashed output activations, then a cumulative-probability roll against the behavior PRNG stream.)*
+- [x] Verify node `state` round-trips through serialization (extend save/reload test to include a recurrent brain). *(`FlagshipDeterminismTests.RecurrentNodeState_isNonZeroAfterTicking_andRoundTripsExactly`; the existing Seed Replay/Save-Reload flagship tests also now exercise real (non-zero) brain state throughout.)*
 
-**Exit criteria:** Organisms act via their networks; determinism tests still pass with recurrent state included in the snapshot.
+**Exit criteria:** Organisms act via their networks ✅ — `SimulationWorld`'s Decision Phase now calls `NeatBrain.Evaluate` instead of the retired `StubBrain`. Determinism tests still pass with recurrent state included in the snapshot ✅ (both flagship tests, `NeatBrainTests`, `NeatGenomeFactoryTests`). All 92 tests pass (`dotnet test`); `dotnet format --verify-no-changes` is clean.
+
+**Judgment calls worth flagging:**
+- **Input width is a placeholder.** Phase 5's task list doesn't own the sensory vector (that's explicitly Phase 6's job), so genesis brains use 4 placeholder inputs (`energy`, `age`, `tile temperature`, `biome friction` — see `SimulationWorld.BuildPlaceholderInputs`) rather than guessing at §13's full vector width. `NeatTopology.InputCount` and the genesis wiring change together when Phase 6 lands; there's no persisted production data yet, so this is a cheap swap, not a migration.
+- **Genesis connection weights** are drawn from the **genesis** PRNG stream (not explicitly named in §9 for this purpose, but consistent with genesis already owning organism-creation randomness).
 
 ---
 

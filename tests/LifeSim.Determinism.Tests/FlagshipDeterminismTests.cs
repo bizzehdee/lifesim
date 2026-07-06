@@ -44,6 +44,28 @@ public class FlagshipDeterminismTests
         Assert.Equal(SnapshotSerializer.Save(straightThrough), SnapshotSerializer.Save(resumedResult));
     }
 
+    /// <summary>
+    /// Node <c>state</c> is dynamic organism state, not just weights (lifesim.md §4, §12) — the
+    /// save/reload test above already round-trips it implicitly, but this asserts it directly:
+    /// after a few ticks, at least one brain has non-zero recurrent state, and it survives
+    /// serialization exactly.
+    /// </summary>
+    [Fact]
+    public void RecurrentNodeState_isNonZeroAfterTicking_andRoundTripsExactly()
+    {
+        SimulationWorld world = SimulationWorld.CreateGenesis(NewWorldState(), NewConfig());
+        for (int i = 0; i < 5 && !world.Extinct; i++)
+        {
+            world.Advance();
+        }
+
+        WorldSnapshot snapshot = world.ToSnapshot();
+        Assert.Contains(snapshot.Organisms, o => o.Brain.Nodes.Any(n => n.State != 0.0));
+
+        WorldSnapshot reloaded = SnapshotSerializer.Load(SnapshotSerializer.Save(snapshot));
+        Assert.Equal(snapshot.Organisms, reloaded.Organisms);
+    }
+
     private static WorldSnapshot RunTicks(SimulationWorld world, int ticks)
     {
         for (int i = 0; i < ticks && !world.Extinct; i++)

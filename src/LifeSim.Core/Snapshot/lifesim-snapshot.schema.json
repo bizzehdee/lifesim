@@ -83,7 +83,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["organism_id", "name", "x", "y", "energy", "age", "genome"],
+        "required": ["organism_id", "name", "x", "y", "energy", "age", "genome", "brain"],
         "properties": {
           "organism_id": { "type": "integer", "minimum": 0 },
           "name": { "type": "string", "minLength": 1 },
@@ -102,6 +102,40 @@
               "env_radius": { "type": "number" },
               "org_radius": { "type": "number" },
               "sensory_acuity": { "type": "number" }
+            }
+          },
+          "brain": {
+            "type": "object",
+            "required": ["nodes", "connections", "network_type"],
+            "properties": {
+              "network_type": { "type": "string" },
+              "nodes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["id", "type", "activation", "state"],
+                  "properties": {
+                    "id": { "type": "integer", "minimum": 0 },
+                    "type": { "type": "string" },
+                    "activation": { "type": "string" },
+                    "state": { "type": "number" }
+                  }
+                }
+              },
+              "connections": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["innovation_id", "from", "to", "weight", "enabled"],
+                  "properties": {
+                    "innovation_id": { "type": "integer", "minimum": 0 },
+                    "from": { "type": "integer", "minimum": 0 },
+                    "to": { "type": "integer", "minimum": 0 },
+                    "weight": { "type": "number" },
+                    "enabled": { "type": "boolean" }
+                  }
+                }
+              }
             }
           },
           "last_action": { "type": ["string", "null"] }

@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using LifeSim.Core.Configuration;
 using LifeSim.Core.Determinism;
+using LifeSim.Core.Neat;
 using LifeSim.Core.Organisms;
 using LifeSim.Core.Snapshot;
 using LifeSim.Core.World;
@@ -9,16 +10,22 @@ namespace LifeSim.Core.Tests;
 
 public class SnapshotSerializerTests
 {
-    private static WorldSnapshot SampleSnapshot() => new()
+    private static WorldSnapshot SampleSnapshot()
     {
-        Tick = 123,
-        World = new WorldState { Seed = 42, Width = 256, Height = 256 },
-        Configuration = SimulationConfig.Default,
-        PrngStreams = PrngStreams.FromSeed(42).CaptureState(),
-        EvolutionBookkeeping = new EvolutionBookkeeping { NextInnovationId = 5, NextOrganismId = 10 },
-        Organisms = [OrganismSnapshot.From(new Organism(1, Genome.MidRange(new TraitBounds()), "Silent-Amber-Vole", 50.0, 3, 4))],
-        Metrics = new SimulationMetrics { Population = 1, Extinct = false },
-    };
+        var brain = NeatGenomeFactory.CreateMinimalFullyConnected(new Prng(7));
+        var organism = new Organism(1, Genome.MidRange(new TraitBounds()), "Silent-Amber-Vole", 50.0, 3, 4, brain);
+
+        return new WorldSnapshot
+        {
+            Tick = 123,
+            World = new WorldState { Seed = 42, Width = 256, Height = 256 },
+            Configuration = SimulationConfig.Default,
+            PrngStreams = PrngStreams.FromSeed(42).CaptureState(),
+            EvolutionBookkeeping = new EvolutionBookkeeping { NextInnovationId = 5, NextOrganismId = 10 },
+            Organisms = [OrganismSnapshot.From(organism)],
+            Metrics = new SimulationMetrics { Population = 1, Extinct = false },
+        };
+    }
 
     [Fact]
     public void SaveThenLoad_roundTripsLosslessly()

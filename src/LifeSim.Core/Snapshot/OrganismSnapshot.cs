@@ -1,8 +1,9 @@
+using LifeSim.Core.Neat;
 using LifeSim.Core.Organisms;
 
 namespace LifeSim.Core.Snapshot;
 
-/// <summary>An organism's dynamic state and inherited genome, as stored in a snapshot (lifesim.md §12).</summary>
+/// <summary>An organism's dynamic state, inherited genome, and brain, as stored in a snapshot (lifesim.md §12).</summary>
 public sealed record OrganismSnapshot
 {
     public long OrganismId { get; init; }
@@ -12,6 +13,9 @@ public sealed record OrganismSnapshot
     public double Energy { get; init; }
     public long Age { get; init; }
     public GenomeSnapshot Genome { get; init; } = new();
+
+    /// <summary>The NEAT genome (lifesim.md §4, §12); node <c>state</c> must round-trip for the save/reload test.</summary>
+    public NeatGenome Brain { get; init; } = new();
 
     /// <summary>The action selected last tick (lifesim.md §12, §18); null before an organism's first decision.</summary>
     public OrganismAction? LastAction { get; init; }
@@ -25,11 +29,12 @@ public sealed record OrganismSnapshot
         Energy = organism.Energy,
         Age = organism.Age,
         Genome = GenomeSnapshot.From(organism.Genome),
+        Brain = organism.Brain,
         LastAction = organism.LastAction,
     };
 
     public Organism ToOrganism() =>
-        new(OrganismId, Genome.ToGenome(), Name, Energy, X, Y, Age, LastAction);
+        new(OrganismId, Genome.ToGenome(), Name, Energy, X, Y, Brain, Age, LastAction);
 }
 
 /// <summary>The inheritable trait values (lifesim.md §3, §8), as stored in a snapshot.</summary>

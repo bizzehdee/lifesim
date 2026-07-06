@@ -18,6 +18,7 @@ namespace LifeSim.Core.Snapshot;
     Converters = [
         typeof(JsonStringEnumConverter<Biome>),
         typeof(JsonStringEnumConverter<OrganismAction>),
+        typeof(JsonStringEnumConverter<ActionResult>),
         typeof(JsonStringEnumConverter<NodeType>)])]
 [JsonSerializable(typeof(WorldSnapshot))]
 [JsonSerializable(typeof(GroundEnergyEntry))]

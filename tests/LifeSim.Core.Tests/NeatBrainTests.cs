@@ -6,7 +6,7 @@ namespace LifeSim.Core.Tests;
 
 public class NeatBrainTests
 {
-    private static readonly double[] Inputs = [1.0, 1.0, 1.0, 1.0];
+    private static readonly double[] Inputs = Enumerable.Repeat(1.0, NeatTopology.InputCount).ToArray();
 
     [Fact]
     public void Evaluate_firstTick_outputsIgnoreCurrentInputs_sinceAllStateStartsAtZero()

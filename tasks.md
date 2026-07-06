@@ -112,12 +112,19 @@ This document turns the architectural blueprint in [`lifesim.md`](./lifesim.md) 
 **Goal:** The fixed-size, normalized sensory vector feeding the brain (Plan §13, §4).
 **Depends on:** Phase 5.
 
-- [ ] Implement the Sensing phase snapshot: inputs cached from start-of-tick world state, unaffected by same-tick decisions (Plan §7).
-- [ ] Build the full authoritative fixed input vector from Plan §13 (energy, age, tile temp, biome/friction, richest-tile vector, closest-organism vector + size delta, smaller/larger neighbor counts, local density, last action result, reproductive readiness, global stress).
-- [ ] Normalize all inputs into stable ranges before the network (Plan §13).
-- [ ] Inject Gaussian noise scaled by `sensory_acuity` after normalization, using the sensory-noise PRNG stream (Plan §4, §13).
+- [x] Implement the Sensing phase snapshot: inputs cached from start-of-tick world state, unaffected by same-tick decisions (Plan §7). *(`SimulationWorld.Advance()` now has an explicit Sensing Phase step that builds every organism's vector — via `SensoryInputBuilder.Build` — fully before the Decision Phase loop runs, so no organism's movement this tick can leak into another's inputs.)*
+- [x] Build the full authoritative fixed input vector from Plan §13 (energy, age, tile temp, biome/friction, richest-tile vector, closest-organism vector + size delta, smaller/larger neighbor counts, local density, last action result, reproductive readiness, global stress). *(`Sensing/SensoryInputBuilder.cs`, indexed by the named `Sensing/SensoryField.cs` enum (17 fields) — this finalizes and replaces Phase 5's 4-input placeholder; `NeatTopology.InputCount` is now 17.)*
+- [x] Normalize all inputs into stable ranges before the network (Plan §13). *(Each field has its own normalization — see judgment calls below — landing everything in roughly [-1, 1] before noise.)*
+- [x] Inject Gaussian noise scaled by `sensory_acuity` after normalization, using the sensory-noise PRNG stream (Plan §4, §13). *(`SensoryInputBuilder.InjectNoise` — stdDev = `(1 - sensory_acuity) * 0.3`, applied uniformly across all 17 fields, clamped to [-2, 2]; consumes `PrngStream.SensoryNoise`.)*
 
-**Exit criteria:** Brains receive a fixed-width normalized vector; low-acuity organisms measurably receive noisier inputs; determinism holds.
+**Exit criteria:** Brains receive a fixed-width normalized vector ✅ (17 inputs, `SensoryInputBuilderTests.Build_returnsExactlyOneValuePerSensoryField`); low-acuity organisms measurably receive noisier inputs ✅ (`Build_lowAcuity_measurablyVariesAcrossNoiseDraws` vs `Build_maxAcuity_injectsNoNoise_regardlessOfNoiseStreamState`); determinism holds ✅ (both flagship tests still pass, now exercising the real sensing pipeline throughout). 99 Core tests + 10 determinism tests pass (`dotnet test`); `dotnet format --verify-no-changes` is clean.
+
+**Judgment calls worth flagging (§13 prescribes *what*, not the exact encoding):**
+- **Direction vectors** are unit (dx, dy) components (2 values each) rather than a single angle, for smoothness/no wraparound — richest-tile and closest-organism each cost 2 input slots for this.
+- **Distance normalization** divides by the organism's own `env_radius`/`org_radius` (not a fixed world constant), so the signal stays meaningful as `trait_bounds` are retuned; "nothing found / target is self" resolves to distance 0, direction (0, 0) rather than a sentinel far value.
+- **`last_action_result` is a new organism field** (`Organisms/ActionResult.cs`: `None`/`Success`/`Blocked`/`NoOp`) since the concept didn't exist before Phase 6. Move now has a real result (`Success` if it travelled, `Blocked` if immediately blocked); Idle is always `Success`; Harvest-\*/Reproduce are `NoOp` until Phase 7/8 give them real outcomes.
+- **Reproductive readiness** is just the energy-vs-cost check (`energy >= reproduction_base_cost * size`) — cooldown gating (`last_birth_tick`) doesn't exist yet since nothing has ever reproduced (Phase 7/8). **Global stress level** is a fixed 0.0 until Phase 9 ships events.
+- **Noise applies to all 17 fields uniformly**, including internal telemetry (energy, age) — §13 doesn't carve out an exception, so this is the simplest literal reading rather than a special-cased "external senses only" scheme.
 
 ---
 

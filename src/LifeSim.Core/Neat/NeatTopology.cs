@@ -6,15 +6,11 @@ namespace LifeSim.Core.Neat;
 /// innovation ids are simple deterministic constants rather than draws from the mutable
 /// <c>next_innovation_id</c> counter; that counter starts at <see cref="ReservedInnovationIdCount"/>
 /// so Phase 8's structural mutations never collide with this baseline.
-///
-/// <para><b>Input count is a Phase 5 placeholder.</b> The real fixed sensory vector (lifesim.md
-/// §13) is built in Phase 6 and may need a different width; when it does, this constant and the
-/// genesis wiring below change together (there is no persisted production data yet to migrate).</para>
 /// </summary>
 public static class NeatTopology
 {
-    /// <summary>Placeholder input width (energy, age, tile temperature, biome friction) until Phase 6.</summary>
-    public const int InputCount = 4;
+    /// <summary>The fixed sensory vector width (lifesim.md §13) — see <see cref="LifeSim.Core.Sensing.SensoryField"/>.</summary>
+    public const int InputCount = 17;
 
     /// <summary>The 11 action outputs (lifesim.md §4) — matches <see cref="Organisms.OrganismAction"/>.</summary>
     public const int OutputCount = 11;

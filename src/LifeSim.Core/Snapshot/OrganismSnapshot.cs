@@ -20,6 +20,9 @@ public sealed record OrganismSnapshot
     /// <summary>The action selected last tick (lifesim.md §12, §18); null before an organism's first decision.</summary>
     public OrganismAction? LastAction { get; init; }
 
+    /// <summary>The outcome of <see cref="LastAction"/> (lifesim.md §12, §13), fed back in as a sensory input.</summary>
+    public ActionResult LastActionResult { get; init; }
+
     public static OrganismSnapshot From(Organism organism) => new()
     {
         OrganismId = organism.Id,
@@ -31,10 +34,11 @@ public sealed record OrganismSnapshot
         Genome = GenomeSnapshot.From(organism.Genome),
         Brain = organism.Brain,
         LastAction = organism.LastAction,
+        LastActionResult = organism.LastActionResult,
     };
 
     public Organism ToOrganism() =>
-        new(OrganismId, Genome.ToGenome(), Name, Energy, X, Y, Brain, Age, LastAction);
+        new(OrganismId, Genome.ToGenome(), Name, Energy, X, Y, Brain, Age, LastAction, LastActionResult);
 }
 
 /// <summary>The inheritable trait values (lifesim.md §3, §8), as stored in a snapshot.</summary>

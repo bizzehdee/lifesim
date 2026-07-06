@@ -2,6 +2,7 @@ using LifeSim.Core.Configuration;
 using LifeSim.Core.Determinism;
 using LifeSim.Core.Neat;
 using LifeSim.Core.Organisms;
+using LifeSim.Core.Sensing;
 using LifeSim.Core.Snapshot;
 using LifeSim.Core.World;
 
@@ -11,7 +12,7 @@ namespace LifeSim.Core.Simulation;
 /// The tick-loop aggregate root: terrain, ground energy, PRNG streams, and the live organism
 /// index, advanced one phased tick at a time in the authoritative order (lifesim.md §7). Harvest,
 /// Reproduce, mutation, and events are stubbed no-ops until the phases that implement them
-/// (7-9) land; the fixed sensory vector is a Phase 5 placeholder until Phase 6.
+/// (7-9) land.
 /// </summary>
 public sealed class SimulationWorld
 {
@@ -19,6 +20,7 @@ public sealed class SimulationWorld
     private readonly GroundEnergyGrid _groundEnergy;
     private readonly PrngStreams _prngStreams;
     private readonly OrganismIdAllocator _idAllocator;
+    private readonly SensoryInputBuilder _sensoryInputBuilder;
     private readonly SortedDictionary<long, Organism> _organisms = new();
     private readonly Dictionary<(int X, int Y), long> _occupancy = new();
 
@@ -44,6 +46,7 @@ public sealed class SimulationWorld
         _groundEnergy = groundEnergy;
         _prngStreams = prngStreams;
         _idAllocator = idAllocator;
+        _sensoryInputBuilder = new SensoryInputBuilder(terrain, groundEnergy, config, world);
     }
 
     /// <summary>
@@ -120,8 +123,17 @@ public sealed class SimulationWorld
         }
 
         // 1. Environment Phase — stochastic events arrive in Phase 9; nothing to age/expire yet.
-        // 2. Sensing Phase — the real fixed input vector arrives in Phase 6; BuildPlaceholderInputs
-        //    below is a stand-in fed straight into the Decision Phase.
+
+        // 2. Sensing Phase: every organism's input vector is built from world state as it stands
+        //    at the start of the tick — positions/energy are still whatever the previous tick's
+        //    Intent Resolution left them, since this phase runs in full before any organism's
+        //    decision is even made, let alone resolved (lifesim.md §7).
+        Prng sensoryNoise = _prngStreams[PrngStream.SensoryNoise];
+        var sensoryInputs = new Dictionary<long, double[]>(_organisms.Count);
+        foreach (long id in _organisms.Keys)
+        {
+            sensoryInputs[id] = _sensoryInputBuilder.Build(_organisms[id], _organisms, sensoryNoise);
+        }
 
         // 3. Decision Phase. Per-organism NEAT evaluation is independent of every other organism
         //    (each reads only its own cached inputs and its own prior brain state), so this loop
@@ -133,8 +145,7 @@ public sealed class SimulationWorld
         foreach (long id in _organisms.Keys)
         {
             Organism organism = _organisms[id];
-            double[] inputs = BuildPlaceholderInputs(organism);
-            NeatEvaluationResult result = NeatBrain.Evaluate(organism.Brain, inputs, behavior);
+            NeatEvaluationResult result = NeatBrain.Evaluate(organism.Brain, sensoryInputs[id], behavior);
             organism.UpdateBrain(result.Genome);
             organism.RecordAction(result.Action);
             actions[id] = result.Action;
@@ -145,7 +156,10 @@ public sealed class SimulationWorld
         var distanceTraveled = new Dictionary<long, double>(_organisms.Count);
         foreach (long id in _organisms.Keys)
         {
-            distanceTraveled[id] = ResolveIntent(_organisms[id], actions[id]);
+            Organism organism = _organisms[id];
+            (double distance, ActionResult result) = ResolveIntent(organism, actions[id]);
+            distanceTraveled[id] = distance;
+            organism.RecordActionResult(result);
         }
 
         // 5. Metabolism Phase.
@@ -181,22 +195,7 @@ public sealed class SimulationWorld
         RefreshExtinction();
     }
 
-    /// <summary>
-    /// Placeholder sensory vector (Phase 5) — energy, age, tile temperature, biome friction, each
-    /// roughly scaled into a small numeric range. Replaced wholesale by the full normalized §13
-    /// fixed input vector (with acuity-scaled Gaussian noise) in Phase 6.
-    /// </summary>
-    private double[] BuildPlaceholderInputs(Organism organism)
-    {
-        double energy = organism.Energy / Organism.EnergyCeiling;
-        double age = Math.Tanh(organism.Age / 100.0);
-        double tileTemperature = _terrain.TemperatureAt(organism.X, organism.Y) / 50.0;
-        double friction = Config.Biomes.For(_terrain.BiomeAt(organism.X, organism.Y)).Friction / 5.0;
-
-        return [energy, age, tileTemperature, friction];
-    }
-
-    private double ResolveIntent(Organism organism, OrganismAction action)
+    private (double Distance, ActionResult Result) ResolveIntent(Organism organism, OrganismAction action)
     {
         (int Dx, int Dy)? direction = action switch
         {
@@ -209,7 +208,8 @@ public sealed class SimulationWorld
 
         if (direction is null)
         {
-            return 0.0;
+            // Idle trivially succeeds; Harvest-*/Reproduce have no real mechanic yet.
+            return (0.0, action == OrganismAction.Idle ? ActionResult.Success : ActionResult.NoOp);
         }
 
         // Multi-tile movement: step tile-by-tile, stopping at the first off-grid or occupied tile,
@@ -246,7 +246,7 @@ public sealed class SimulationWorld
             _occupancy[(x, y)] = organism.Id;
         }
 
-        return traveled;
+        return (traveled, traveled > 0 ? ActionResult.Success : ActionResult.Blocked);
     }
 
     private void ScatterGenesisPopulation()

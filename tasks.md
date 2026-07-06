@@ -45,13 +45,13 @@ This document turns the architectural blueprint in [`lifesim.md`](./lifesim.md) 
 **Goal:** An implicit, seed-reconstructed world of biomes and ground energy (Plan §2).
 **Depends on:** Phase 1.
 
-- [ ] Implement the continuous 2D tile grid with implicit (non-serialized) terrain reconstructed from seed + `noise_config` (Plan §2, §12).
-- [ ] Derive biome per tile from Moisture × Temperature noise per the biome matrix: Grassland, Desert, Swamp, Ice Sheet (Plan §2).
-- [ ] Implement per-biome characteristics from config: temperature, movement friction, ambient regen rate, and energy cap (Plan §2, Appendix A).
-- [ ] Implement the ground energy pool per tile with per-tick regen toward the biome cap (Plan §2).
-- [ ] Add an optional debug snapshot mode that caches tile data for inspection (Plan §12).
+- [x] Implement the continuous 2D tile grid with implicit (non-serialized) terrain reconstructed from seed + `noise_config` (Plan §2, §12). *(`World/TerrainSampler.cs` — moisture/temperature noise layers derived from the world seed via a fixed, non-PRNG-consuming mix.)*
+- [x] Derive biome per tile from Moisture × Temperature noise per the biome matrix: Grassland, Desert, Swamp, Ice Sheet (Plan §2). *(`World/BiomeClassifier.cs`, matrix-driven by `Configuration/BiomeThresholds`; `TerrainSampler.BiomeAt`.)*
+- [x] Implement per-biome characteristics from config: temperature, movement friction, ambient regen rate, and energy cap (Plan §2, Appendix A). *(Already modelled in `Configuration/SimulationConfig.cs`'s `BiomesConfig`/`BiomeSettings` from Phase 1; wired to `TerrainSampler`/`GroundEnergyGrid` here.)*
+- [x] Implement the ground energy pool per tile with per-tick regen toward the biome cap (Plan §2). *(`World/GroundEnergyGrid.cs` — sparse override map; untouched tiles are implicitly at cap. Serialized as `ground_energy` in the snapshot.)*
+- [x] Add an optional debug snapshot mode that caches tile data for inspection (Plan §12). *(`TerrainSampler.CaptureDebugGrid`, `WorldSnapshot.DebugTerrain` — nullable, omitted from output unless explicitly populated.)*
 
-**Exit criteria:** Given a seed, the Core reconstructs byte-identical biome maps under both its desktop and WASM builds; ground energy regenerates to cap and no further.
+**Exit criteria:** Given a seed, the Core reconstructs byte-identical biome maps ✅ (`FoundationDeterminismTests.BiomeMap_sameSeed_isByteIdentical`, `TerrainSamplerTests`) — ⚠️ desktop/WASM cross-build parity still not manually re-verified in a browser (same caveat as Phase 1's simplex noise). Ground energy regenerates to cap and no further ✅ (`GroundEnergyGridTests`, `FoundationDeterminismTests.GroundEnergy_regeneratesToCap_andNeverExceedsIt`). All 41 tests pass (`dotnet test`); `dotnet format --verify-no-changes` is clean.
 
 ---
 

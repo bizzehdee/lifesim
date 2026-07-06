@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using LifeSim.Core.Configuration;
 using LifeSim.Core.Determinism;
 using LifeSim.Core.Snapshot;
+using LifeSim.Core.World;
 
 namespace LifeSim.Core.Tests;
 
@@ -42,6 +43,34 @@ public class SnapshotSerializerTests
 
         Assert.Single(loaded.Organisms);
         Assert.Equal(1, loaded.Organisms[0].GetProperty("id").GetInt32());
+    }
+
+    [Fact]
+    public void GroundEnergyAndDebugTerrain_roundTrip()
+    {
+        WorldSnapshot original = SampleSnapshot() with
+        {
+            GroundEnergy = [new GroundEnergyEntry(3, 4, 12.5), new GroundEnergyEntry(-1, 0, 0.0)],
+            DebugTerrain = [new DebugTileEntry(0, 0, Biome.Grassland, 0.1, 0.2)],
+        };
+
+        WorldSnapshot loaded = SnapshotSerializer.Load(SnapshotSerializer.Save(original));
+
+        Assert.Equal(original.GroundEnergy, loaded.GroundEnergy);
+        Assert.Equal(original.DebugTerrain, loaded.DebugTerrain);
+    }
+
+    [Fact]
+    public void DebugTerrain_isOmittedWhenNull()
+    {
+        WorldSnapshot original = SampleSnapshot();
+        Assert.Null(original.DebugTerrain);
+
+        string json = SnapshotSerializer.Save(original);
+        Assert.DoesNotContain("debug_terrain", json);
+
+        WorldSnapshot loaded = SnapshotSerializer.Load(json);
+        Assert.Null(loaded.DebugTerrain);
     }
 
     [Fact]

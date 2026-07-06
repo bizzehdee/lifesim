@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using LifeSim.Core.Configuration;
+using LifeSim.Core.World;
 
 namespace LifeSim.Core.Snapshot;
 
@@ -24,6 +25,12 @@ public sealed record WorldSnapshot
     public Dictionary<string, ulong[]> PrngStreams { get; init; } = [];
 
     public EvolutionBookkeeping EvolutionBookkeeping { get; init; } = new();
+
+    /// <summary>Sparse ground-energy overrides — tiles omitted here are implicitly at their biome cap (lifesim.md §2).</summary>
+    public List<GroundEnergyEntry> GroundEnergy { get; init; } = [];
+
+    /// <summary>Optional cached terrain window for inspection/debugging; never required for replay (lifesim.md §12).</summary>
+    public List<DebugTileEntry>? DebugTerrain { get; init; }
 
     // --- Blocks fleshed out in later phases; raw JSON keeps files round-trippable now. ---
     public List<JsonElement> EnvironmentModifiers { get; init; } = [];

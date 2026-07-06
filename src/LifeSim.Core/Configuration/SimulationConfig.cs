@@ -59,6 +59,9 @@ public sealed record BiomesConfig
     public BiomeSettings Swamp { get; init; } = new() { Friction = 3.0, RegenRate = 1.5, EnergyCap = 40.0, Temperature = 25.0 };
     public BiomeSettings IceSheet { get; init; } = new() { Friction = 1.2, RegenRate = 0.0, EnergyCap = 0.0, Temperature = -15.0 };
 
+    /// <summary>Moisture/temperature noise bands that select a biome from the matrix (lifesim.md §2).</summary>
+    public BiomeThresholds Thresholds { get; init; } = new();
+
     public BiomeSettings For(Biome biome) => biome switch
     {
         Biome.Grassland => Grassland,
@@ -75,6 +78,17 @@ public sealed record BiomeSettings
     public double RegenRate { get; init; } = 0.5;
     public double EnergyCap { get; init; } = 20.0;
     public double Temperature { get; init; } = 20.0;
+}
+
+/// <summary>
+/// Splits the moisture and temperature noise fields (each roughly [-1, 1]) into the bands used
+/// by the biome matrix (lifesim.md §2): Low/High moisture and Cold/Temperate/Hot temperature.
+/// </summary>
+public sealed record BiomeThresholds
+{
+    public double MoistureHighThreshold { get; init; }
+    public double TemperatureColdThreshold { get; init; } = -0.33;
+    public double TemperatureHotThreshold { get; init; } = 0.33;
 }
 
 /// <summary>Reproduction economy (lifesim.md §8, §11, §17, Appendix A).</summary>

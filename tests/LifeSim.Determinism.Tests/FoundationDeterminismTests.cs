@@ -91,4 +91,51 @@ public class FoundationDeterminismTests
             }
         }
     }
+
+    [Fact]
+    public void BiomeMap_sameSeed_isByteIdentical()
+    {
+        // Phase 2 exit criteria (lifesim.md §2, §12): given a seed, the Core reconstructs a
+        // byte-identical biome map — no terrain layout is ever stored, only the seed is.
+        var config = SimulationConfig.Default;
+        var a = new TerrainSampler(2024, config);
+        var b = new TerrainSampler(2024, config);
+
+        for (int y = 0; y < 96; y++)
+        {
+            for (int x = 0; x < 96; x++)
+            {
+                Assert.Equal(a.BiomeAt(x, y), b.BiomeAt(x, y));
+                Assert.Equal(a.MoistureAt(x, y), b.MoistureAt(x, y));
+                Assert.Equal(a.TemperatureAt(x, y), b.TemperatureAt(x, y));
+            }
+        }
+    }
+
+    [Fact]
+    public void GroundEnergy_regeneratesToCap_andNeverExceedsIt()
+    {
+        var config = SimulationConfig.Default;
+        var terrain = new TerrainSampler(2024, config);
+        var grid = new GroundEnergyGrid(terrain, config);
+
+        // Grassland regenerates a finite amount per tick (lifesim.md §2); a fully-drained tile
+        // must climb back to exactly its cap and never overshoot, however long it's given.
+        int x = 0;
+        while (terrain.BiomeAt(x, 0) != Biome.Grassland)
+        {
+            x++;
+        }
+
+        double cap = grid.CapAt(x, 0);
+        grid.Drain(x, 0, cap);
+
+        for (int tick = 0; tick < 5_000; tick++)
+        {
+            grid.RegenerateTick();
+            Assert.True(grid.EnergyAt(x, 0) <= cap);
+        }
+
+        Assert.Equal(cap, grid.EnergyAt(x, 0));
+    }
 }

@@ -13,6 +13,7 @@
     "configuration",
     "prng_streams",
     "evolution_bookkeeping",
+    "ground_energy",
     "environment_modifiers",
     "organisms",
     "lineages",
@@ -49,6 +50,32 @@
       "properties": {
         "next_innovation_id": { "type": "integer", "minimum": 0 },
         "next_organism_id": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "ground_energy": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["x", "y", "energy"],
+        "properties": {
+          "x": { "type": "integer" },
+          "y": { "type": "integer" },
+          "energy": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "debug_terrain": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["x", "y", "biome", "moisture", "temperature"],
+        "properties": {
+          "x": { "type": "integer" },
+          "y": { "type": "integer" },
+          "biome": { "type": "string" },
+          "moisture": { "type": "number" },
+          "temperature": { "type": "number" }
+        }
       }
     },
     "environment_modifiers": { "type": "array" },

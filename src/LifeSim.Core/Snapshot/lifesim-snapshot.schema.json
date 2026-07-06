@@ -139,11 +139,28 @@
             }
           },
           "last_action": { "type": ["string", "null"] },
-          "last_action_result": { "type": "string" }
+          "last_action_result": { "type": "string" },
+          "last_birth_tick": { "type": ["integer", "null"], "minimum": 0 }
         }
       }
     },
-    "lineages": { "type": "array" },
+    "lineages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["organism_id", "lineage_id", "birth_tick", "generation_depth", "birth_traits"],
+        "properties": {
+          "organism_id": { "type": "integer", "minimum": 0 },
+          "parent_id": { "type": ["integer", "null"], "minimum": 0 },
+          "lineage_id": { "type": "integer", "minimum": 0 },
+          "birth_tick": { "type": "integer", "minimum": 0 },
+          "death_tick": { "type": ["integer", "null"], "minimum": 0 },
+          "generation_depth": { "type": "integer", "minimum": 0 },
+          "birth_traits": { "type": "object" },
+          "death_traits": { "type": ["object", "null"] }
+        }
+      }
+    },
     "metrics": {
       "type": ["object", "null"],
       "properties": {

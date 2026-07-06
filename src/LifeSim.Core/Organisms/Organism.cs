@@ -34,11 +34,15 @@ public sealed class Organism
     /// <summary>The outcome of <see cref="LastAction"/> (lifesim.md §12, §13), fed back in as a sensory input.</summary>
     public ActionResult LastActionResult { get; private set; }
 
+    /// <summary>The tick of this organism's most recent successful birth; null if it has never reproduced (lifesim.md §8, §12, §17).</summary>
+    public long? LastBirthTick { get; private set; }
+
     public bool IsAlive => Energy > 0.0;
 
     public Organism(
         long id, Genome genome, string name, double energy, int x, int y, NeatGenome brain,
-        long age = 0, OrganismAction? lastAction = null, ActionResult lastActionResult = ActionResult.None)
+        long age = 0, OrganismAction? lastAction = null, ActionResult lastActionResult = ActionResult.None,
+        long? lastBirthTick = null)
     {
         ArgumentNullException.ThrowIfNull(genome);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -54,6 +58,7 @@ public sealed class Organism
         Age = age;
         LastAction = lastAction;
         LastActionResult = lastActionResult;
+        LastBirthTick = lastBirthTick;
     }
 
     public void AddEnergy(double amount)
@@ -82,6 +87,8 @@ public sealed class Organism
     public void RecordAction(OrganismAction action) => LastAction = action;
 
     public void RecordActionResult(ActionResult result) => LastActionResult = result;
+
+    public void RecordBirth(long tick) => LastBirthTick = tick;
 
     public void UpdateBrain(NeatGenome brain)
     {

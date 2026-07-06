@@ -29,6 +29,7 @@ namespace LifeSim.Core.Snapshot;
 [JsonSerializable(typeof(NeatGenome))]
 [JsonSerializable(typeof(NodeGene))]
 [JsonSerializable(typeof(ConnectionGene))]
+[JsonSerializable(typeof(LineageSnapshot))]
 internal sealed partial class SnapshotJsonContext : JsonSerializerContext
 {
 }

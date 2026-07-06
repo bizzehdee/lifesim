@@ -7,7 +7,7 @@ namespace LifeSim.Core.Snapshot;
 
 /// <summary>
 /// A self-describing, validated, replayable world state file (lifesim.md §12). Blocks that are
-/// modelled in later phases (lineages, events, edit log) are carried as raw JSON for now so files
+/// modelled in later phases (events, edit log) are carried as raw JSON for now so files
 /// round-trip losslessly before those types exist.
 /// </summary>
 public sealed record WorldSnapshot
@@ -37,8 +37,9 @@ public sealed record WorldSnapshot
     /// <summary>Population and the extinction flag for now; the full §14 metrics set arrives in Phase 10.</summary>
     public SimulationMetrics? Metrics { get; init; }
 
+    public List<LineageSnapshot> Lineages { get; init; } = [];
+
     // --- Blocks fleshed out in later phases; raw JSON keeps files round-trippable now. ---
     public List<JsonElement> EnvironmentModifiers { get; init; } = [];
-    public List<JsonElement> Lineages { get; init; } = [];
     public List<JsonElement> EditLog { get; init; } = [];
 }

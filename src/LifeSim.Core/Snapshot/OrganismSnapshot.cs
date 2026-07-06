@@ -23,6 +23,9 @@ public sealed record OrganismSnapshot
     /// <summary>The outcome of <see cref="LastAction"/> (lifesim.md §12, §13), fed back in as a sensory input.</summary>
     public ActionResult LastActionResult { get; init; }
 
+    /// <summary>Null if this organism has never reproduced; reconstructs cooldown/readiness without replay (lifesim.md §12).</summary>
+    public long? LastBirthTick { get; init; }
+
     public static OrganismSnapshot From(Organism organism) => new()
     {
         OrganismId = organism.Id,
@@ -35,10 +38,11 @@ public sealed record OrganismSnapshot
         Brain = organism.Brain,
         LastAction = organism.LastAction,
         LastActionResult = organism.LastActionResult,
+        LastBirthTick = organism.LastBirthTick,
     };
 
     public Organism ToOrganism() =>
-        new(OrganismId, Genome.ToGenome(), Name, Energy, X, Y, Brain, Age, LastAction, LastActionResult);
+        new(OrganismId, Genome.ToGenome(), Name, Energy, X, Y, Brain, Age, LastAction, LastActionResult, LastBirthTick);
 }
 
 /// <summary>The inheritable trait values (lifesim.md §3, §8), as stored in a snapshot.</summary>

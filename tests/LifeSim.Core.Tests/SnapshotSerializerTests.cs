@@ -70,6 +70,35 @@ public class SnapshotSerializerTests
     }
 
     [Fact]
+    public void Lineages_roundTrip_includingClosedRecords()
+    {
+        var birthTraits = Genome.MidRange(new TraitBounds());
+        var deathTraits = birthTraits with { Size = birthTraits.Size + 1.0 };
+
+        WorldSnapshot original = SampleSnapshot() with
+        {
+            Lineages =
+            [
+                new LineageSnapshot
+                {
+                    OrganismId = 1, ParentId = null, LineageId = 1, BirthTick = 0,
+                    GenerationDepth = 0, BirthTraits = GenomeSnapshot.From(birthTraits),
+                },
+                new LineageSnapshot
+                {
+                    OrganismId = 2, ParentId = 1, LineageId = 1, BirthTick = 5, DeathTick = 20,
+                    GenerationDepth = 1, BirthTraits = GenomeSnapshot.From(birthTraits),
+                    DeathTraits = GenomeSnapshot.From(deathTraits),
+                },
+            ],
+        };
+
+        WorldSnapshot loaded = SnapshotSerializer.Load(SnapshotSerializer.Save(original));
+
+        Assert.Equal(original.Lineages, loaded.Lineages);
+    }
+
+    [Fact]
     public void DebugTerrain_isOmittedWhenNull()
     {
         WorldSnapshot original = SampleSnapshot();

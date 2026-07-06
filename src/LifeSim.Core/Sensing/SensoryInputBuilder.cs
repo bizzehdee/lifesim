@@ -35,7 +35,7 @@ public sealed class SensoryInputBuilder
         _world = world;
     }
 
-    public double[] Build(Organism self, IReadOnlyDictionary<long, Organism> allOrganisms, Prng sensoryNoiseStream)
+    public double[] Build(Organism self, IReadOnlyDictionary<long, Organism> allOrganisms, long currentTick, Prng sensoryNoiseStream)
     {
         var values = new double[NeatTopology.InputCount];
 
@@ -65,13 +65,15 @@ public sealed class SensoryInputBuilder
         values[(int)SensoryField.LastActionResult] = self.LastActionResult switch
         {
             ActionResult.Success => 1.0,
-            ActionResult.Blocked => -1.0,
+            ActionResult.Blocked or ActionResult.Failed => -1.0,
             ActionResult.NoOp => 0.5,
             _ => 0.0, // ActionResult.None
         };
 
         double reproductionCost = _config.Reproduction.ReproductionBaseCost * self.Genome.Size;
-        values[(int)SensoryField.ReproductiveReadiness] = self.Energy >= reproductionCost ? 1.0 : 0.0;
+        bool offCooldown = self.LastBirthTick is null
+            || currentTick - self.LastBirthTick.Value >= _config.Reproduction.ReproductionCooldownTicks;
+        values[(int)SensoryField.ReproductiveReadiness] = self.Energy >= reproductionCost && offCooldown ? 1.0 : 0.0;
 
         // Global stress level reflects active environmental events (lifesim.md §6, §13);
         // there are none until Phase 9, so this is a fixed placeholder for now.

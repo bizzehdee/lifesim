@@ -74,17 +74,19 @@ This document turns the architectural blueprint in [`lifesim.md`](./lifesim.md) 
 **Goal:** A complete phased tick loop running a headless world with a **stubbed random-action brain**, plus the two flagship determinism tests. This is the risk-reduction milestone.
 **Depends on:** Phase 3.
 
-- [ ] Implement the phased tick model in authoritative order: Environment → Sensing → Decision → Intent Resolution → Metabolism → Death & Transfer → Resource Regen → Mutation & Birth Commit → Metrics & Snapshot (Plan §7).
-- [ ] Implement deterministic ordering (ascending `organism_id`) and explicit tie-breaking for all simulation-sensitive iteration (Plan §7, §9).
-- [ ] Implement **fixed-order floating-point reductions** for cross-organism aggregations; restrict parallelism to per-organism-independent work only (Plan §9).
-- [ ] Implement the one-organism-per-tile spatial model and movement resolution, including **multi-tile path-checking** that stops at the first blocked/occupied tile and pays only distance travelled (Plan §10, §17).
-- [ ] Stub the decision phase with a behavior-PRNG random action pick (no NEAT yet) so the loop is exercisable end-to-end.
-- [ ] Implement genesis/initialization: config-driven `initial_population` scattered in Grassland via the genesis PRNG stream (Plan §17).
-- [ ] Implement full-extinction handling: halt, set `metrics.extinct = true`, write final snapshot, no auto-reseed (Plan §17).
-- [ ] **Flagship test — Seed Replay:** same seed, N ticks, twice → byte-identical snapshots (Plan §15).
-- [ ] **Flagship test — Save/Reload Equivalence:** 100 ticks straight == 50 + serialize + reload + 50 (Plan §15).
+- [x] Implement the phased tick model in authoritative order: Environment → Sensing → Decision → Intent Resolution → Metabolism → Death & Transfer → Resource Regen → Mutation & Birth Commit → Metrics & Snapshot (Plan §7). *(`Simulation/SimulationWorld.cs` — `Advance()`. Environment/Sensing/Mutation & Birth Commit are documented no-op stubs until the phases that give them content (5-9); Harvest/Reproduce intents likewise stub to 0-cost no-ops until Phase 7/8.)*
+- [x] Implement deterministic ordering (ascending `organism_id`) and explicit tie-breaking for all simulation-sensitive iteration (Plan §7, §9). *(Organisms are held in a `SortedDictionary<long, Organism>`; every phase iterates `.Keys` in ascending id order, and movement conflicts resolve implicitly by mutating occupancy as each organism is processed.)*
+- [x] Implement **fixed-order floating-point reductions** for cross-organism aggregations; restrict parallelism to per-organism-independent work only (Plan §9). *(No cross-organism reduction exists yet — Phase 4 only sums a plain `Count` for `population`; real aggregations (energy sums, density) arrive with Phase 6/10 and will follow this same ascending-id, single-threaded rule. The decision phase is documented as parallelizable once real per-organism brain inference lands in Phase 5 — the Phase 4 stub itself stays sequential since it draws from one shared PRNG stream.)*
+- [x] Implement the one-organism-per-tile spatial model and movement resolution, including **multi-tile path-checking** that stops at the first blocked/occupied tile and pays only distance travelled (Plan §10, §17). *(`SimulationWorld.ResolveIntent` — steps tile-by-tile up to `floor(SpeedCapacity)` tiles, stopping at the first off-grid or occupied tile; `Metabolism.LocomotionTax` is charged only for tiles actually crossed.)*
+- [x] Stub the decision phase with a behavior-PRNG random action pick (no NEAT yet) so the loop is exercisable end-to-end. *(`Organisms/StubBrain.cs`, `Organisms/OrganismAction.cs` — uniform pick over the 11 action outputs via the behavior stream.)*
+- [x] Implement genesis/initialization: config-driven `initial_population` scattered in Grassland via the genesis PRNG stream (Plan §17). *(`SimulationWorld.CreateGenesis`/`ScatterGenesisPopulation` — mid-range genome, full starting energy; rejection-samples tiles via the genesis stream.)*
+- [x] Implement full-extinction handling: halt, set `metrics.extinct = true`, write final snapshot, no auto-reseed (Plan §17). *(`SimulationWorld.Extinct`/`RefreshExtinction`; `Advance()` throws if called again once extinct. `Snapshot/SimulationMetrics.cs` carries `population`/`extinct` — the rest of §14's metrics arrive in Phase 10.)*
+- [x] **Flagship test — Seed Replay:** same seed, N ticks, twice → byte-identical snapshots (Plan §15). *(`FlagshipDeterminismTests.SeedReplay_sameSeed_producesByteIdenticalSnapshots`.)*
+- [x] **Flagship test — Save/Reload Equivalence:** 100 ticks straight == 50 + serialize + reload + 50 (Plan §15). *(`FlagshipDeterminismTests.SaveReloadEquivalence_matchesAnUninterruptedRun`.)*
 
-**Exit criteria:** A headless world runs for N ticks and both flagship determinism tests pass. These two tests now gate all later merges.
+**Exit criteria:** A headless world runs for N ticks ✅ (`SimulationWorldTests`, including a real starvation-to-extinction run since Harvest is still stubbed) and both flagship determinism tests pass ✅ (`FlagshipDeterminismTests`, 100 ticks). These two tests now gate all later merges. All 79 tests pass (`dotnet test`); `dotnet format --verify-no-changes` is clean.
+
+**Note:** the organism snapshot block, previously a raw-JSON placeholder, is now a typed `OrganismSnapshot`/`GenomeSnapshot` (id, name, x/y, energy, age, genome, last_action) since the flagship tests need real organism round-tripping; the NEAT brain block (§12) is still to come in Phase 5. `WorldSnapshot.Metrics` is likewise now the typed `SimulationMetrics` (population, extinct) rather than raw JSON, extended with the rest of §14 in Phase 10.
 
 ---
 

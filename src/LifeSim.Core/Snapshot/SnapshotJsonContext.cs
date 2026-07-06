@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using LifeSim.Core.Organisms;
 using LifeSim.Core.World;
 
 namespace LifeSim.Core.Snapshot;
@@ -13,10 +14,13 @@ namespace LifeSim.Core.Snapshot;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     WriteIndented = true,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    Converters = [typeof(JsonStringEnumConverter<Biome>)])]
+    Converters = [typeof(JsonStringEnumConverter<Biome>), typeof(JsonStringEnumConverter<OrganismAction>)])]
 [JsonSerializable(typeof(WorldSnapshot))]
 [JsonSerializable(typeof(GroundEnergyEntry))]
 [JsonSerializable(typeof(DebugTileEntry))]
+[JsonSerializable(typeof(OrganismSnapshot))]
+[JsonSerializable(typeof(GenomeSnapshot))]
+[JsonSerializable(typeof(SimulationMetrics))]
 internal sealed partial class SnapshotJsonContext : JsonSerializerContext
 {
 }

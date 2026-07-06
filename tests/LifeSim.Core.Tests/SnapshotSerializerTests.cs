@@ -1,7 +1,7 @@
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using LifeSim.Core.Configuration;
 using LifeSim.Core.Determinism;
+using LifeSim.Core.Organisms;
 using LifeSim.Core.Snapshot;
 using LifeSim.Core.World;
 
@@ -16,7 +16,8 @@ public class SnapshotSerializerTests
         Configuration = SimulationConfig.Default,
         PrngStreams = PrngStreams.FromSeed(42).CaptureState(),
         EvolutionBookkeeping = new EvolutionBookkeeping { NextInnovationId = 5, NextOrganismId = 10 },
-        Organisms = [JsonDocument.Parse("""{"id":1}""").RootElement.Clone()],
+        Organisms = [OrganismSnapshot.From(new Organism(1, Genome.MidRange(new TraitBounds()), "Silent-Amber-Vole", 50.0, 3, 4))],
+        Metrics = new SimulationMetrics { Population = 1, Extinct = false },
     };
 
     [Fact]
@@ -42,7 +43,8 @@ public class SnapshotSerializerTests
         }
 
         Assert.Single(loaded.Organisms);
-        Assert.Equal(1, loaded.Organisms[0].GetProperty("id").GetInt32());
+        Assert.Equal(original.Organisms[0], loaded.Organisms[0]);
+        Assert.Equal(original.Metrics, loaded.Metrics);
     }
 
     [Fact]

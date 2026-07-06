@@ -1,8 +1,9 @@
 namespace LifeSim.Core.Organisms;
 
 /// <summary>
-/// An organism instance: a dynamic state machine over an immutable <see cref="Genome"/>
-/// (lifesim.md §3, §11). Removed from the simulation once its energy hits zero.
+/// An organism instance: a dynamic state machine over an immutable <see cref="Genome"/>,
+/// occupying a single grid tile (lifesim.md §3, §10, §11). Removed from the simulation once its
+/// energy hits zero.
 /// </summary>
 public sealed class Organism
 {
@@ -19,9 +20,18 @@ public sealed class Organism
 
     public long Age { get; private set; }
 
+    public int X { get; private set; }
+
+    public int Y { get; private set; }
+
+    /// <summary>The action selected last tick (lifesim.md §12); null before the organism's first decision.</summary>
+    public OrganismAction? LastAction { get; private set; }
+
     public bool IsAlive => Energy > 0.0;
 
-    public Organism(long id, Genome genome, string name, double initialEnergy)
+    public Organism(
+        long id, Genome genome, string name, double energy, int x, int y,
+        long age = 0, OrganismAction? lastAction = null)
     {
         ArgumentNullException.ThrowIfNull(genome);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -29,7 +39,11 @@ public sealed class Organism
         Id = id;
         Genome = genome;
         Name = name;
-        Energy = Math.Clamp(initialEnergy, 0.0, EnergyCeiling);
+        Energy = Math.Clamp(energy, 0.0, EnergyCeiling);
+        X = x;
+        Y = y;
+        Age = age;
+        LastAction = lastAction;
     }
 
     public void AddEnergy(double amount)
@@ -48,4 +62,12 @@ public sealed class Organism
     }
 
     public void Tick() => Age++;
+
+    public void MoveTo(int x, int y)
+    {
+        X = x;
+        Y = y;
+    }
+
+    public void RecordAction(OrganismAction action) => LastAction = action;
 }

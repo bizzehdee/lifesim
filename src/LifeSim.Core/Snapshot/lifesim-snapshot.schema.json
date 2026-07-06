@@ -79,9 +79,43 @@
       }
     },
     "environment_modifiers": { "type": "array" },
-    "organisms": { "type": "array" },
+    "organisms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["organism_id", "name", "x", "y", "energy", "age", "genome"],
+        "properties": {
+          "organism_id": { "type": "integer", "minimum": 0 },
+          "name": { "type": "string", "minLength": 1 },
+          "x": { "type": "integer" },
+          "y": { "type": "integer" },
+          "energy": { "type": "number", "minimum": 0, "maximum": 100 },
+          "age": { "type": "integer", "minimum": 0 },
+          "genome": {
+            "type": "object",
+            "required": ["size", "speed_capacity", "thermal_center", "thermal_width", "env_radius", "org_radius", "sensory_acuity"],
+            "properties": {
+              "size": { "type": "number" },
+              "speed_capacity": { "type": "number" },
+              "thermal_center": { "type": "number" },
+              "thermal_width": { "type": "number" },
+              "env_radius": { "type": "number" },
+              "org_radius": { "type": "number" },
+              "sensory_acuity": { "type": "number" }
+            }
+          },
+          "last_action": { "type": ["string", "null"] }
+        }
+      }
+    },
     "lineages": { "type": "array" },
-    "metrics": { "type": ["object", "null"] },
+    "metrics": {
+      "type": ["object", "null"],
+      "properties": {
+        "population": { "type": "integer", "minimum": 0 },
+        "extinct": { "type": "boolean" }
+      }
+    },
     "edit_log": { "type": "array" }
   }
 }

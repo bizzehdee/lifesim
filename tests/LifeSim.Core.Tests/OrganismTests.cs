@@ -10,22 +10,30 @@ public class OrganismTests
     [Fact]
     public void Constructor_clampsInitialEnergyToTheCeiling()
     {
-        var organism = new Organism(1, NewGenome(), "Test-Test-Organism", Organism.EnergyCeiling + 50.0);
+        var organism = new Organism(1, NewGenome(), "Test-Test-Organism", Organism.EnergyCeiling + 50.0, 0, 0);
         Assert.Equal(Organism.EnergyCeiling, organism.Energy);
     }
 
     [Fact]
     public void Constructor_clampsNegativeInitialEnergyToZero()
     {
-        var organism = new Organism(1, NewGenome(), "Test-Test-Organism", -10.0);
+        var organism = new Organism(1, NewGenome(), "Test-Test-Organism", -10.0, 0, 0);
         Assert.Equal(0.0, organism.Energy);
         Assert.False(organism.IsAlive);
     }
 
     [Fact]
+    public void Constructor_setsPosition()
+    {
+        var organism = new Organism(1, NewGenome(), "Test-Test-Organism", 50.0, 3, 7);
+        Assert.Equal(3, organism.X);
+        Assert.Equal(7, organism.Y);
+    }
+
+    [Fact]
     public void AddEnergy_neverExceedsTheCeiling()
     {
-        var organism = new Organism(1, NewGenome(), "Test-Test-Organism", 90.0);
+        var organism = new Organism(1, NewGenome(), "Test-Test-Organism", 90.0, 0, 0);
         organism.AddEnergy(50.0);
         Assert.Equal(Organism.EnergyCeiling, organism.Energy);
     }
@@ -33,7 +41,7 @@ public class OrganismTests
     [Fact]
     public void SpendEnergy_clampsAtZero_andReturnsAmountActuallySpent()
     {
-        var organism = new Organism(1, NewGenome(), "Test-Test-Organism", 10.0);
+        var organism = new Organism(1, NewGenome(), "Test-Test-Organism", 10.0, 0, 0);
         double spent = organism.SpendEnergy(30.0);
 
         Assert.Equal(10.0, spent);
@@ -44,18 +52,39 @@ public class OrganismTests
     [Fact]
     public void Tick_incrementsAge()
     {
-        var organism = new Organism(1, NewGenome(), "Test-Test-Organism", 50.0);
+        var organism = new Organism(1, NewGenome(), "Test-Test-Organism", 50.0, 0, 0);
         organism.Tick();
         organism.Tick();
         Assert.Equal(2, organism.Age);
     }
 
     [Fact]
+    public void MoveTo_updatesPosition()
+    {
+        var organism = new Organism(1, NewGenome(), "Test-Test-Organism", 50.0, 0, 0);
+        organism.MoveTo(5, 9);
+        Assert.Equal(5, organism.X);
+        Assert.Equal(9, organism.Y);
+    }
+
+    [Fact]
+    public void RecordAction_setsLastAction()
+    {
+        var organism = new Organism(1, NewGenome(), "Test-Test-Organism", 50.0, 0, 0);
+        Assert.Null(organism.LastAction);
+
+        organism.RecordAction(OrganismAction.Reproduce);
+        Assert.Equal(OrganismAction.Reproduce, organism.LastAction);
+    }
+
+    [Fact]
     public void Factory_resolvesTheDeterministicName()
     {
         var config = new NamingConfig();
-        Organism organism = OrganismFactory.Create(42, NewGenome(), config, 50.0);
+        Organism organism = OrganismFactory.Create(42, NewGenome(), config, 50.0, 1, 2);
 
         Assert.Equal(Naming.OrganismNamer.Name(42, config), organism.Name);
+        Assert.Equal(1, organism.X);
+        Assert.Equal(2, organism.Y);
     }
 }

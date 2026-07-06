@@ -8,8 +8,9 @@ using LifeSim.Core.World;
 namespace LifeSim.Determinism.Tests;
 
 /// <summary>
-/// Determinism foundations (lifesim.md §9). The two flagship tests — Seed Replay and Save/Reload
-/// Equivalence — arrive in Phase 4 once the tick loop exists; these guard the primitives they rely on.
+/// Determinism foundations (lifesim.md §9) — the primitives the two flagship tests
+/// (<see cref="FlagshipDeterminismTests"/>) rely on: PRNG streams, simplex noise, ground energy,
+/// and organism naming.
 /// </summary>
 public class FoundationDeterminismTests
 {

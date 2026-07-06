@@ -1,5 +1,7 @@
 using LifeSim.Core.Configuration;
 using LifeSim.Core.Determinism;
+using LifeSim.Core.Naming;
+using LifeSim.Core.Organisms;
 using LifeSim.Core.Snapshot;
 using LifeSim.Core.World;
 
@@ -137,5 +139,21 @@ public class FoundationDeterminismTests
         }
 
         Assert.Equal(cap, grid.EnergyAt(x, 0));
+    }
+
+    [Fact]
+    public void OrganismNaming_isPureFunctionOfIdAndWordListVersion_consumesNoPrngDraw()
+    {
+        // lifesim.md §9/§19: names are a pure function of organism_id + word-list version and
+        // must not disturb any PRNG stream.
+        var config = new NamingConfig();
+        var streams = PrngStreams.FromSeed(2024);
+        ulong[] before = streams[PrngStream.Genesis].GetState();
+
+        string first = OrganismNamer.Name(777, config);
+        string second = OrganismNamer.Name(777, config);
+
+        Assert.Equal(first, second);
+        Assert.Equal(before, streams[PrngStream.Genesis].GetState());
     }
 }

@@ -15,10 +15,10 @@ public sealed class Prng
     {
         // SplitMix64 expands the scalar seed into the 256-bit state.
         ulong sm = seed;
-        _s0 = SplitMix64(ref sm);
-        _s1 = SplitMix64(ref sm);
-        _s2 = SplitMix64(ref sm);
-        _s3 = SplitMix64(ref sm);
+        _s0 = ExpandSeed(ref sm);
+        _s1 = ExpandSeed(ref sm);
+        _s2 = ExpandSeed(ref sm);
+        _s3 = ExpandSeed(ref sm);
         // xoshiro requires a non-zero state; SplitMix64 effectively never produces all-zero,
         // but guard anyway for total determinism.
         if ((_s0 | _s1 | _s2 | _s3) == 0)
@@ -109,12 +109,9 @@ public sealed class Prng
 
     private static ulong Rotl(ulong x, int k) => (x << k) | (x >> (64 - k));
 
-    private static ulong SplitMix64(ref ulong x)
+    private static ulong ExpandSeed(ref ulong x)
     {
         x += 0x9E3779B97F4A7C15UL;
-        ulong z = x;
-        z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9UL;
-        z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL;
-        return z ^ (z >> 31);
+        return SplitMix64.Finalize(x);
     }
 }

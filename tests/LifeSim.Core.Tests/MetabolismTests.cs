@@ -1,0 +1,80 @@
+using LifeSim.Core.Configuration;
+using LifeSim.Core.Organisms;
+
+namespace LifeSim.Core.Tests;
+
+public class MetabolismTests
+{
+    private static readonly MetabolismConfig Metabolic = new();
+    private static readonly MovementCombatConfig MovementCombat = new();
+
+    private static Genome NewGenome(double thermalCenter = 20.0, double thermalWidth = 10.0) => new()
+    {
+        Size = 2.0,
+        SpeedCapacity = 1.0,
+        ThermalCenter = thermalCenter,
+        ThermalWidth = thermalWidth,
+        EnvRadius = 3.0,
+        OrgRadius = 2.0,
+        SensoryAcuity = 0.5,
+    };
+
+    [Fact]
+    public void BaseMetabolism_isSizeTimesConfiguredBase()
+    {
+        Genome genome = NewGenome();
+        Assert.Equal(genome.Size * Metabolic.BaseMetabolismPerSize, Metabolism.BaseMetabolism(genome, Metabolic));
+    }
+
+    [Fact]
+    public void ThermalStress_isZero_insideTheEnvelope()
+    {
+        // Center 20, width 10 -> comfortable in [15, 25].
+        Genome genome = NewGenome(thermalCenter: 20.0, thermalWidth: 10.0);
+
+        Assert.Equal(0.0, Metabolism.ThermalStress(genome, 20.0, Metabolic));
+        Assert.Equal(0.0, Metabolism.ThermalStress(genome, 15.0, Metabolic));
+        Assert.Equal(0.0, Metabolism.ThermalStress(genome, 25.0, Metabolic));
+    }
+
+    [Fact]
+    public void ThermalStress_scalesLinearlyBeyondTheEnvelope()
+    {
+        Genome genome = NewGenome(thermalCenter: 20.0, thermalWidth: 10.0);
+
+        // 30 is 5 degrees past the [15, 25] envelope.
+        double expected = 5.0 * Metabolic.ThermalStressScale;
+        Assert.Equal(expected, Metabolism.ThermalStress(genome, 30.0, Metabolic), precision: 10);
+    }
+
+    [Fact]
+    public void SensoryTax_matchesTheConfiguredFormula()
+    {
+        Genome genome = NewGenome();
+        double expected = (genome.EnvRadius * Metabolic.SensoryTaxC1)
+            + (genome.OrgRadius * genome.OrgRadius * Metabolic.SensoryTaxC2)
+            + (genome.SensoryAcuity * Metabolic.SensoryTaxC3);
+
+        Assert.Equal(expected, Metabolism.SensoryTax(genome, Metabolic), precision: 10);
+    }
+
+    [Fact]
+    public void Total_sumsBaseThermalAndSensory()
+    {
+        Genome genome = NewGenome(thermalCenter: 20.0, thermalWidth: 10.0);
+        double expected = Metabolism.BaseMetabolism(genome, Metabolic)
+            + Metabolism.ThermalStress(genome, 40.0, Metabolic)
+            + Metabolism.SensoryTax(genome, Metabolic);
+
+        Assert.Equal(expected, Metabolism.Total(genome, 40.0, Metabolic), precision: 10);
+    }
+
+    [Fact]
+    public void LocomotionTax_isDistanceTimesVelocitySquaredTimesFriction()
+    {
+        double tax = Metabolism.LocomotionTax(distance: 3.0, velocity: 2.0, biomeFriction: 1.5, MovementCombat);
+        double expected = 3.0 * Math.Pow(2.0, MovementCombat.LocomotionVelocityExponent) * 1.5;
+
+        Assert.Equal(expected, tax, precision: 10);
+    }
+}

@@ -16,6 +16,12 @@
     <EmbeddedResource Include="Snapshot\lifesim-snapshot.schema.json">
       <LogicalName>LifeSim.Core.Snapshot.schema.json</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="Naming\adjectives-1.txt">
+      <LogicalName>LifeSim.Core.Naming.adjectives-1.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Naming\nouns-1.txt">
+      <LogicalName>LifeSim.Core.Naming.nouns-1.txt</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

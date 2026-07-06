@@ -59,14 +59,14 @@ This document turns the architectural blueprint in [`lifesim.md`](./lifesim.md) 
 **Goal:** Organisms as genome-driven state machines with a working energy budget — but no brain yet (Plan §3, §11, §19).
 **Depends on:** Phase 2.
 
-- [ ] Define the organism record and inheritable genome traits: Size, Speed Capacity, Thermal Envelope, `env_radius`, `org_radius`, Sensory Acuity — each with hard bounds from `trait_bounds` (Plan §3, §8).
-- [ ] Implement stable, never-reused `organism_id` allocation via `evolution_bookkeeping.next_organism_id` (Plan §9, §12).
-- [ ] Implement the energy budget (0.0–100.0, clamped ceiling) and the metabolism equation: base + thermal stress + sensory tax (Plan §3, §11).
-- [ ] Implement the sensory tax (linear `env_radius`, quadratic `org_radius`, acuity term) and locomotion tax (distance × velocity² × friction) (Plan §3).
-- [ ] Implement **organism naming**: deterministic `name = f(organism_id, wordlist_version)` (hash split into two adjective indices + one noun index); ship default word lists (~1,000 adjectives × ~1,000 nouns) and store the resolved `name` on the record (Plan §19).
-- [ ] Add unit tests for the naming namespace/collision expectations and for energy-transaction math.
+- [x] Define the organism record and inheritable genome traits: Size, Speed Capacity, Thermal Envelope, `env_radius`, `org_radius`, Sensory Acuity — each with hard bounds from `trait_bounds` (Plan §3, §8). *(`Organisms/Genome.cs` — Thermal Envelope modelled as center ± half-width; `Genome.Clamped`/`MidRange` against `TraitBounds`.)*
+- [x] Implement stable, never-reused `organism_id` allocation via `evolution_bookkeeping.next_organism_id` (Plan §9, §12). *(`Organisms/OrganismIdAllocator.cs`, seeded from the bookkeeping counter on resume.)*
+- [x] Implement the energy budget (0.0–100.0, clamped ceiling) and the metabolism equation: base + thermal stress + sensory tax (Plan §3, §11). *(`Organisms/Organism.cs` — `EnergyCeiling`, `AddEnergy`/`SpendEnergy`; `Organisms/Metabolism.cs` — `BaseMetabolism`, `ThermalStress`, `Total`.)*
+- [x] Implement the sensory tax (linear `env_radius`, quadratic `org_radius`, acuity term) and locomotion tax (distance × velocity² × friction) (Plan §3). *(`Metabolism.SensoryTax`, `Metabolism.LocomotionTax`.)*
+- [x] Implement **organism naming**: deterministic `name = f(organism_id, wordlist_version)` (hash split into two adjective indices + one noun index); ship default word lists and store the resolved `name` on the record (Plan §19). *(`Naming/OrganismNamer.cs`, `Naming/WordList.cs`, `Organisms/OrganismFactory.cs`. Shipped lists are 389 adjectives × 411 nouns — smaller than the spec's suggested 1,000×1,000 but curated for quality; namespace ≈62M names, ample for any near-term run. Sized up later by extending `Naming/adjectives-1.txt`/`nouns-1.txt` or shipping a new versioned list.)*
+- [x] Add unit tests for the naming namespace/collision expectations and for energy-transaction math. *(`WordListTests`, `OrganismNamerTests`, `GenomeTests`, `MetabolismTests`, `OrganismTests`, `OrganismIdAllocatorTests`.)*
 
-**Exit criteria:** An organism can be constructed, named deterministically, accrue/pay energy, and be removed at zero energy; names reproduce identically from id + word-list version.
+**Exit criteria:** An organism can be constructed, named deterministically, accrue/pay energy, and be removed at zero energy ✅ (`OrganismTests`); names reproduce identically from id + word-list version and consume no PRNG draw ✅ (`OrganismNamerTests`, `FoundationDeterminismTests.OrganismNaming_isPureFunctionOfIdAndWordListVersion_consumesNoPrngDraw`). All 67 tests pass (`dotnet test`); `dotnet format --verify-no-changes` is clean.
 
 ---
 

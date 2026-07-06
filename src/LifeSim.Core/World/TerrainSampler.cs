@@ -1,4 +1,5 @@
 using LifeSim.Core.Configuration;
+using LifeSim.Core.Determinism;
 
 namespace LifeSim.Core.World;
 
@@ -52,13 +53,8 @@ public sealed class TerrainSampler
 
     // Mixes the world seed with a fixed per-layer salt (SplitMix64 finalizer) so the moisture and
     // temperature fields are decorrelated without consuming any PRNG stream state.
-    private static ulong DeriveLayerSeed(ulong worldSeed, ulong salt)
-    {
-        ulong x = worldSeed + (salt * 0x9E3779B97F4A7C15UL);
-        x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9UL;
-        x = (x ^ (x >> 27)) * 0x94D049BB133111EBUL;
-        return x ^ (x >> 31);
-    }
+    private static ulong DeriveLayerSeed(ulong worldSeed, ulong salt) =>
+        SplitMix64.Finalize(worldSeed + (salt * 0x9E3779B97F4A7C15UL));
 }
 
 /// <summary>A single sampled tile, used only by the optional debug snapshot cache (lifesim.md §12).</summary>

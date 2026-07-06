@@ -61,11 +61,6 @@ public sealed class PrngStreams
     }
 
     // Mix the master seed with the stream ordinal so streams are decorrelated yet reproducible.
-    private static ulong DeriveSeed(ulong masterSeed, PrngStream stream)
-    {
-        ulong x = masterSeed + ((ulong)stream + 1) * 0x9E3779B97F4A7C15UL;
-        x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9UL;
-        x = (x ^ (x >> 27)) * 0x94D049BB133111EBUL;
-        return x ^ (x >> 31);
-    }
+    private static ulong DeriveSeed(ulong masterSeed, PrngStream stream) =>
+        SplitMix64.Finalize(masterSeed + (((ulong)stream + 1) * 0x9E3779B97F4A7C15UL));
 }

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lifesim.local/snapshot.schema.json",
+  "title": "LifeSim Snapshot",
+  "description": "Envelope schema for a LifeSim world snapshot (lifesim.md §12). Nested configuration and the not-yet-modelled blocks are validated structurally; their internal shape is enforced by later phases.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "config_version",
+    "simulation_version",
+    "tick",
+    "world",
+    "configuration",
+    "prng_streams",
+    "evolution_bookkeeping",
+    "environment_modifiers",
+    "organisms",
+    "lineages",
+    "edit_log"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+" },
+    "config_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+" },
+    "simulation_version": { "type": "string", "minLength": 1 },
+    "tick": { "type": "integer", "minimum": 0 },
+    "world": {
+      "type": "object",
+      "required": ["seed", "width", "height"],
+      "properties": {
+        "seed": { "type": "integer", "minimum": 0 },
+        "width": { "type": "integer", "minimum": 0 },
+        "height": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "configuration": { "type": "object" },
+    "prng_streams": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "integer", "minimum": 0 },
+        "minItems": 4,
+        "maxItems": 4
+      }
+    },
+    "evolution_bookkeeping": {
+      "type": "object",
+      "required": ["next_innovation_id", "next_organism_id"],
+      "properties": {
+        "next_innovation_id": { "type": "integer", "minimum": 0 },
+        "next_organism_id": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "environment_modifiers": { "type": "array" },
+    "organisms": { "type": "array" },
+    "lineages": { "type": "array" },
+    "metrics": { "type": ["object", "null"] },
+    "edit_log": { "type": "array" }
+  }
+}

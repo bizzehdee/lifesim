@@ -30,14 +30,14 @@ This document turns the architectural blueprint in [`lifesim.md`](./lifesim.md) 
 **Goal:** Reproducible randomness, terrain noise, and a validated, versioned snapshot format — the pieces the whole determinism contract rests on (Plan §1, §9, §12).
 **Depends on:** Phase 0.
 
-- [ ] Implement the custom deterministic PRNG with **separable named streams**: genesis, behavior (softmax + combat rolls), mutation, environmental events, sensory noise (Plan §9).
-- [ ] Make full PRNG stream state serializable/deserializable (not just the seed) (Plan §9, §12).
-- [ ] Implement 2D Simplex noise in C# with a `noise_config` (frequency/octaves/thresholds); it runs on every surface including the Avalonia WASM target, so no second-language port or cross-language parity test is needed (Plan §1, §2, Appendix A).
-- [ ] Define the snapshot schema objects and a JSON Schema file covering all required blocks: `schema_version`, `config_version`, `simulation_version`, `tick`, `world`, `configuration`, `prng_streams`, `evolution_bookkeeping`, `environment_modifiers`, `organisms`, `lineages`, `metrics`, `edit_log` (Plan §12).
-- [ ] Implement snapshot serialize/deserialize with JSON Schema validation on import and **semver version gating** (hard-reject on major mismatch for both `schema_version` and `config_version`) (Plan §12).
-- [ ] Implement the `configuration` block as a typed, versioned object seeded from the defaults in Plan Appendix A.
+- [x] Implement the custom deterministic PRNG with **separable named streams**: genesis, behavior (softmax + combat rolls), mutation, environmental events, sensory noise (Plan §9). *(`Determinism/Prng.cs` — xoshiro256**/SplitMix64; `Determinism/PrngStream.cs`, `PrngStreams.cs`.)*
+- [x] Make full PRNG stream state serializable/deserializable (not just the seed) (Plan §9, §12). *(`PrngStreams.CaptureState`/`FromState`; round-trip covered by `FoundationDeterminismTests`.)*
+- [x] Implement 2D Simplex noise in C# with a `noise_config` (frequency/octaves/thresholds); it runs on every surface including the Avalonia WASM target, so no second-language port or cross-language parity test is needed (Plan §1, §2, Appendix A). *(`World/SimplexNoise.cs`, `World/NoiseConfig.cs` — transcendental-free, bit-deterministic.)*
+- [x] Define the snapshot schema objects and a JSON Schema file covering all required blocks: `schema_version`, `config_version`, `simulation_version`, `tick`, `world`, `configuration`, `prng_streams`, `evolution_bookkeeping`, `environment_modifiers`, `organisms`, `lineages`, `metrics`, `edit_log` (Plan §12). *(`Snapshot/Snapshot.cs`, `Snapshot/lifesim-snapshot.schema.json`; later-phase blocks carried as raw JSON until their types exist.)*
+- [x] Implement snapshot serialize/deserialize with JSON Schema validation on import and **semver version gating** (hard-reject on major mismatch for both `schema_version` and `config_version`) (Plan §12). *(`Snapshot/SnapshotSerializer.cs`, `SnapshotSchema.cs`, `SnapshotVersion.cs`.)*
+- [x] Implement the `configuration` block as a typed, versioned object seeded from the defaults in Plan Appendix A. *(`Configuration/SimulationConfig.cs` — metabolism, movement/combat, biomes, reproduction, mutation, trait bounds, events, naming.)*
 
-**Exit criteria:** A snapshot can be written and re-read losslessly; PRNG stream state round-trips exactly; the Simplex implementation produces identical values under the desktop and WASM builds of the Core; schema validation rejects a malformed / wrong-major-version file.
+**Exit criteria:** A snapshot can be written and re-read losslessly ✅; PRNG stream state round-trips exactly ✅; the Simplex implementation is transcendental-free and bit-deterministic for same input ✅ (`SimplexNoiseTests`, `FoundationDeterminismTests`) — ⚠️ actual desktop/WASM cross-build parity has not been manually re-verified since the crash. Schema validation rejects a malformed / wrong-major-version file ✅ (`SnapshotSerializerTests`). All 22 unit/determinism tests pass (`dotnet test`).
 
 ---
 

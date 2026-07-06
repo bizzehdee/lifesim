@@ -1,24 +1,24 @@
 <Project>
-    <!-- https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management -->
-    <PropertyGroup>
-        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    </PropertyGroup>
-    <ItemGroup>
-        <!-- Avalonia packages — keep versions in sync! -->
-        <PackageVersion Include="Avalonia" Version="12.0.5" />
-        <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.5" />
-        <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.0.5" />
-        <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3" />
-        <PackageVersion Include="Avalonia.Desktop" Version="12.0.5" />
-        <PackageVersion Include="Avalonia.Browser" Version="12.0.5" />
-
-        <!-- MVVM -->
-        <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-
-        <!-- Test stack -->
-        <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-        <PackageVersion Include="xunit" Version="2.9.3" />
-        <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
-        <PackageVersion Include="coverlet.collector" Version="6.0.4" />
-    </ItemGroup>
+  <!-- https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Avalonia packages — keep versions in sync! -->
+    <PackageVersion Include="Avalonia" Version="12.0.5" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.0.5" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.0.5" />
+    <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.0.5" />
+    <PackageVersion Include="Avalonia.Browser" Version="12.0.5" />
+    <!-- MVVM -->
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <!-- Core: snapshot JSON Schema validation -->
+    <PackageVersion Include="JsonSchema.Net" Version="9.2.2" />
+    <!-- Test stack -->
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+  </ItemGroup>
 </Project>

@@ -14,6 +14,8 @@ csharp_style_namespace_declarations = file_scoped:warning
 dotnet_style_qualification_for_field = false:suggestion
 dotnet_sort_system_directives_first = true
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:suggestion
+# "Stream" is a domain term for our named PRNG streams (PrngStream), not an I/O stream.
+dotnet_diagnostic.CA1711.severity = none
 
 [*.{xml,csproj,props,targets,axaml,xaml}]
 indent_size = 2

@@ -8,4 +8,14 @@
     <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="JsonSchema.Net" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Snapshot\lifesim-snapshot.schema.json">
+      <LogicalName>LifeSim.Core.Snapshot.schema.json</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>

@@ -110,6 +110,19 @@ public class MorphologyTests
     }
 
     [Fact]
+    public void OffspringGrowthBias_nudgesMulticellularOffspringUpward_butLeavesUnicellularAndDisabledAlone()
+    {
+        // Default bias 0.5: a 5-cell parent adds 0.5 * (5 - 1) = 2 to its offspring's mutated cell count.
+        Assert.Equal(6.0, Morphology.BiasedOffspringCellCount(offspringCellCount: 4.0, parentCellCount: 5.0, Enabled), precision: 10);
+
+        // A unicellular parent gets no bias — multicellularity only reinforces itself once it exists.
+        Assert.Equal(4.0, Morphology.BiasedOffspringCellCount(4.0, 1.0, Enabled), precision: 10);
+
+        // No bias when multicellularity is disabled.
+        Assert.Equal(4.0, Morphology.BiasedOffspringCellCount(4.0, 5.0, Disabled), precision: 10);
+    }
+
+    [Fact]
     public void GermCells_gateFertility_sterileSomaCannotReproduce()
     {
         // A body that invests everything except germ (germ fraction below the threshold) is sterile.

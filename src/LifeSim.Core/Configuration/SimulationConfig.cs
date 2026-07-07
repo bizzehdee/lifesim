@@ -157,6 +157,15 @@ public sealed record MulticellularConfig
 
     /// <summary>A body needs at least this germ fraction to reproduce; below it the body is sterile soma (lifesim.md §21).</summary>
     public double GermReproductionThreshold { get; init; } = 0.05;
+
+    /// <summary>
+    /// Heredity bias toward multicellularity (lifesim.md §21): when a multicellular parent reproduces,
+    /// its offspring's cell count is nudged upward by this fraction of the parent's extra cells
+    /// (<c>parent_cells − 1</c>). Without it, symmetric trait drift near the unicellular floor erodes
+    /// multicellularity back to single cells; with it, the trait is self-reinforcing and the square-cube
+    /// economy (not drift) is what caps eventual body size. 0 disables the bias.
+    /// </summary>
+    public double OffspringGrowthBias { get; init; } = 0.5;
 }
 
 /// <summary>Per-biome physics/resource settings (lifesim.md §2, Appendix A).</summary>

@@ -464,6 +464,42 @@ public class SimulationWorldTests
     }
 
     [Fact]
+    public void Advance_offspringGrowthBias_raisesTypicalBodySize()
+    {
+        // Offspring of multicellular parents lean multicellular (lifesim.md §21). Isolated in an
+        // economy where multicellularity is viable (no per-cell coordination/upkeep, no surface cap),
+        // so the heredity bias — not the square-cube selection — is the deciding factor: with the bias
+        // on, mean body size climbs well above what symmetric drift alone produces.
+        static double PeakMeanCells(double bias)
+        {
+            var config = SimulationConfig.Default with
+            {
+                InitialPopulation = 80,
+                Metabolism = SimulationConfig.Default.Metabolism with { BaseMetabolismPerSize = 0.01 },
+                Multicellular = SimulationConfig.Default.Multicellular with
+                {
+                    OffspringGrowthBias = bias,
+                    CoordinationCostPerCell = 0.0,
+                    IntakeSurfaceCoeff = 1000.0,
+                },
+            };
+            var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), config);
+
+            double peak = 0.0;
+            for (int i = 0; i < 250 && !world.Extinct; i++)
+            {
+                world.Advance();
+                peak = Math.Max(peak, world.Metrics.TraitAverages.CellCount);
+            }
+
+            return peak;
+        }
+
+        Assert.True(PeakMeanCells(1.0) > PeakMeanCells(0.0) + 0.5,
+            "The heredity bias should push typical body size well above what symmetric drift produces.");
+    }
+
+    [Fact]
     public void Advance_withMulticellularityDisabled_keepsEveryBodyUnicellular()
     {
         var config = SimulationConfig.Default with

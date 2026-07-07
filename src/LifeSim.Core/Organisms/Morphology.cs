@@ -107,6 +107,17 @@ public static class Morphology
     public static bool CanReproduce(Genome genome, MulticellularConfig config) =>
         !config.Enabled || Fractions(genome, config).Germ >= config.GermReproductionThreshold;
 
+    /// <summary>
+    /// Nudges a mutated offspring's cell count upward when its parent was multicellular (lifesim.md
+    /// §21), so multicellularity is heritable rather than eroding back to unicellular under symmetric
+    /// drift. Returns the value unchanged for a unicellular parent or when multicellularity is off;
+    /// the caller still clamps to the trait bounds.
+    /// </summary>
+    public static double BiasedOffspringCellCount(double offspringCellCount, double parentCellCount, MulticellularConfig config) =>
+        config.Enabled && parentCellCount > 1.0
+            ? offspringCellCount + (config.OffspringGrowthBias * (parentCellCount - 1.0))
+            : offspringCellCount;
+
     /// <summary>The specialisation share above the generalist baseline (0 for generalist or de-emphasised types); the driver of every bonus.</summary>
     private static double Excess(double fraction) => Math.Max(0.0, fraction - GeneralistShare);
 

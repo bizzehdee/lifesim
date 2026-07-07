@@ -361,6 +361,14 @@ public sealed class SimulationWorld
         foreach (PendingBirth birth in pendingBirths.OrderBy(b => b.OffspringId))
         {
             Genome offspringGenome = GenomeMutator.Mutate(birth.Genome, Config.Mutation, Config.TraitBounds, mutation);
+
+            // Multicellular parents bias their offspring toward more cells (lifesim.md §21), so the
+            // trait is self-reinforcing; the square-cube economy still caps the viable size. Applied
+            // after mutation and re-clamped; draws no randomness, so replay stays deterministic (§9).
+            double biasedCells = Morphology.BiasedOffspringCellCount(
+                offspringGenome.CellCount, birth.Genome.CellCount, Config.Multicellular);
+            offspringGenome = (offspringGenome with { CellCount = biasedCells }).Clamped(Config.TraitBounds);
+
             NeatGenome offspringBrain = NeatMutator.Mutate(birth.Brain, Config.Mutation, mutation, _innovationIdAllocator);
             Organism offspring = OrganismFactory.Create(
                 birth.OffspringId, offspringGenome, Config.Naming, birth.OffspringEnergy, birth.X, birth.Y, offspringBrain,

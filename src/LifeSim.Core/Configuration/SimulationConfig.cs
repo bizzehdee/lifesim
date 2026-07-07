@@ -220,6 +220,14 @@ public sealed record BiomesConfig
     /// </summary>
     public double TemperatureVariation { get; init; } = 5.0;
 
+    /// <summary>
+    /// Radius (in tiles) of the box blur applied to biome baseline temperatures, so sharp biome
+    /// borders become temperature *gradients* rather than walls — an organism at a margin feels an
+    /// intermediate temperature and can adapt into the neighbouring biome incrementally. 0 restores
+    /// hard biome-edged temperatures; interior tiles far from any border are unchanged.
+    /// </summary>
+    public int TemperatureGradientRadius { get; init; } = 2;
+
     public BiomeSettings For(Biome biome) => biome switch
     {
         Biome.Grassland => Grassland,

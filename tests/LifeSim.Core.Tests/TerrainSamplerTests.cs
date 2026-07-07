@@ -62,24 +62,57 @@ public class TerrainSamplerTests
     }
 
     [Fact]
-    public void TemperatureCelsiusAt_tracksTheBiomeBaselineWithinItsVariationBand()
+    public void TemperatureCelsiusAt_staysWithinTheGlobalBiomeRange()
     {
         var config = SimulationConfig.Default;
         var sampler = new TerrainSampler(2024, config);
         double variation = config.Biomes.TemperatureVariation;
 
+        // With gradient smoothing a margin tile blends toward its neighbours, so it is no longer
+        // pinned to its own biome's band — but every tile still lies within the global range spanned
+        // by the coldest and hottest biomes (± the noise band).
+        double coldest = config.Biomes.IceSheet.Temperature;
+        double hottest = config.Biomes.Desert.Temperature;
+
         for (int y = 0; y < 32; y++)
         {
             for (int x = 0; x < 32; x++)
             {
-                double baseline = config.Biomes.For(sampler.BiomeAt(x, y)).Temperature;
                 double celsius = sampler.TemperatureCelsiusAt(x, y);
-
-                // Temperature-noise field is ~[-1, 1], so a tile stays within ±(variation·~1) of its
-                // biome baseline — i.e. biomes are genuinely thermally distinct, not one flat field.
-                Assert.True(Math.Abs(celsius - baseline) <= (variation * 2.0) + 1e-9);
+                Assert.InRange(celsius, coldest - (variation * 2.0), hottest + (variation * 2.0));
             }
         }
+    }
+
+    [Fact]
+    public void TemperatureGradient_smoothsBiomeBorders_intoIntermediateTemperatures()
+    {
+        var sharp = new TerrainSampler(2024, SimulationConfig.Default with
+        {
+            Biomes = SimulationConfig.Default.Biomes with { TemperatureGradientRadius = 0 },
+        });
+        var smooth = new TerrainSampler(2024, SimulationConfig.Default); // default radius 2
+        double variation = SimulationConfig.Default.Biomes.TemperatureVariation;
+
+        bool foundSmoothedBorder = false;
+        for (int y = 0; y < 48 && !foundSmoothedBorder; y++)
+        {
+            for (int x = 0; x < 48; x++)
+            {
+                // The noise field is identical for both (same seed/config), so subtracting it isolates
+                // the biome-baseline component: sharp = own biome temp, smooth = blurred temp.
+                double noise = smooth.TemperatureAt(x, y) * variation;
+                double sharpBase = sharp.TemperatureCelsiusAt(x, y) - noise;
+                double smoothBase = smooth.TemperatureCelsiusAt(x, y) - noise;
+                if (Math.Abs(sharpBase - smoothBase) > 1e-6)
+                {
+                    foundSmoothedBorder = true; // a border tile pulled toward a neighbouring biome
+                    break;
+                }
+            }
+        }
+
+        Assert.True(foundSmoothedBorder, "The gradient should turn at least one biome border into an intermediate temperature.");
     }
 
     [Fact]

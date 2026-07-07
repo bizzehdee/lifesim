@@ -43,7 +43,35 @@ public sealed class TerrainSampler
     /// stresses cold-adapted organisms, an Ice Sheet (cold) stresses warm-adapted ones.
     /// </summary>
     public double TemperatureCelsiusAt(int x, int y) =>
-        _config.Biomes.For(BiomeAt(x, y)).Temperature + (TemperatureAt(x, y) * _config.Biomes.TemperatureVariation);
+        SmoothedBiomeTemperature(x, y) + (TemperatureAt(x, y) * _config.Biomes.TemperatureVariation);
+
+    /// <summary>
+    /// The biome baseline temperature at (x,y), box-blurred over
+    /// <see cref="BiomesConfig.TemperatureGradientRadius"/> so biome borders read as gradients, not
+    /// walls. Radius 0 is the raw per-biome temperature; a tile whose whole kernel is one biome is
+    /// unchanged, so only the margins soften.
+    /// </summary>
+    private double SmoothedBiomeTemperature(int x, int y)
+    {
+        int radius = _config.Biomes.TemperatureGradientRadius;
+        if (radius <= 0)
+        {
+            return _config.Biomes.For(BiomeAt(x, y)).Temperature;
+        }
+
+        double sum = 0.0;
+        int count = 0;
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                sum += _config.Biomes.For(BiomeAt(x + dx, y + dy)).Temperature;
+                count++;
+            }
+        }
+
+        return sum / count;
+    }
 
     /// <summary>
     /// Samples a rectangular window of tiles for inspection — never required for normal replay, since terrain is always reconstructable.

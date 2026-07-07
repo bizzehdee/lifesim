@@ -9,7 +9,7 @@ run, tick for tick, on any machine and at any thread count.
 
 ## 1. The world
 - The map is a grid of tiles reconstructed from the world **seed** — no two seeds look alike, and terrain is never stored, only regenerated.
-- Every tile belongs to one of four **biomes**, each with its own temperature, friction (movement cost), and food: **Grassland** (balanced), **Desert** (hot, barren), **Swamp** (wet, rich, sticky), **Ice Sheet** (freezing, lifeless ground).
+- Every tile belongs to one of four **biomes**, each with its own temperature, friction (movement cost), and food: **Grassland** (balanced), **Desert** (hot, barren), **Swamp** (wet, rich, sticky), **Ice Sheet** (freezing, lifeless ground). Temperatures are **smoothed across biome borders into gradients** rather than hard walls, so an organism at a margin can adapt into a neighbouring biome incrementally.
 - Each tile holds a **ground energy pool** that regrows toward its biome's cap every tick. This is the base of the food web.
 
 ## 2. Organisms

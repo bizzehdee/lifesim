@@ -168,6 +168,7 @@ public class MorphologyTests
         Assert.Equal(Enabled.MaxNeuralSteps, Morphology.BrainSteps(Cell(count: 32), Enabled));
     }
 
+
     [Fact]
     public void GrazingReach_growsWithCellCount_soFootprintAreaScales()
     {

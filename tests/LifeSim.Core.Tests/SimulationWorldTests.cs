@@ -514,7 +514,7 @@ public class SimulationWorldTests
                     IntakeSurfaceCoeff = 1000.0,
                 },
             };
-            var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), config);
+            var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 7), config);
 
             double peak = 0.0;
             for (int i = 0; i < 250 && !world.Extinct; i++)
@@ -526,7 +526,7 @@ public class SimulationWorldTests
             return peak;
         }
 
-        Assert.True(PeakMeanCells(1.0) > PeakMeanCells(0.0) + 0.5,
+        Assert.True(PeakMeanCells(1.0) > PeakMeanCells(0.0) + 1.0,
             "The heredity bias should push typical body size well above what symmetric drift produces.");
     }
 

@@ -5,13 +5,13 @@ description: Use when writing or reviewing UI code for LifeSim (the LifeSim.App 
 
 # LifeSim UI (Avalonia)
 
-Project-specific UI guidance for `LifeSim.App`. **For all standard Avalonia/Fluent design, theming, components, accessibility, and styling practices, follow the general user-level `avalonia-ui` skill** — this skill only adds what is specific to LifeSim. See [`lifesim.md`](../../../lifesim.md) §1 (architecture), §18 (visualization), and [`tasks.md`](../../../tasks.md) Phases 13–15.
+Project-specific UI guidance for `LifeSim.App`. **For all standard Avalonia/Fluent design, theming, components, accessibility, and styling practices, follow the general user-level `avalonia-ui` skill** — this skill only adds what is specific to LifeSim.
 
 ## Non-negotiables (LifeSim-specific)
-- **One codebase, two targets** (desktop + browser/WASM); views render identically and are pure functions of state (lifesim.md §12, §18).
-- **No engine logic in the UI.** `LifeSim.App` references `LifeSim.Core` and never reimplements ticking, PRNG, or noise; the Core stays trimming/AOT-friendly so it also runs under WASM (lifesim.md §1, §9).
-- **Every colour has a legend entry** (lifesim.md §18).
-- **The simulation map canvas is a deliberate exception** to the general card/Fluent surface rules — it is full-bleed custom rendering per lifesim.md §18. The *chrome* around it (nav, panels, control deck, legend, dialogs) follows the general house rules.
+- **One codebase, two targets** (desktop + browser/WASM); views render identically and are pure functions of state.
+- **No engine logic in the UI.** `LifeSim.App` references `LifeSim.Core` and never reimplements ticking, PRNG, or noise; the Core stays trimming/AOT-friendly so it also runs under WASM.
+- **Every colour has a legend entry**.
+- **The simulation map canvas is a deliberate exception** to the general card/Fluent surface rules — it is full-bleed custom rendering. The *chrome* around it (nav, panels, control deck, legend, dialogs) follows the general house rules.
 - **The browser (WASM) target is a constrained demo** — design against its scale / bundle / threading limits.
 
 ## What NOT to pull from the general skill here

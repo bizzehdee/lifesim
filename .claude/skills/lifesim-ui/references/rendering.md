@@ -1,11 +1,11 @@
 # Custom Simulation Rendering
 
-Drawing the world on a canvas — the highest-risk UI area. See [`lifesim.md`](../../../../lifesim.md) §18, §2.
+Drawing the world on a canvas — the highest-risk UI area.
 
 > **This is the Fluent exception.** The map viewport is full-bleed custom rendering and does **not** follow the card/surface/spacing rules of the general design system (`avalonia-ui` skill). The chrome *around* it (nav, inspector, control deck, legend, dialogs) does. Accessibility still applies: the map must not convey state by colour alone.
 
 ## Simulation palette (project tokens)
-Separate from the app's chrome tokens (the general `avalonia-ui` skill's `theming.md`); defined by lifesim.md §18. Keep as its own token set so it can't drift from the sim spec:
+Separate from the app's chrome tokens (the general `avalonia-ui` skill's `theming.md`). Keep as its own token set so it can't drift from the sim spec:
 - Biome base colours (grassland, desert, swamp, ice sheet) + ground-energy brightness ramp.
 - Action palette (move / graze / predation / reproduce / idle) — organism outlines + the Action colour mode.
 - Colour-mode palettes: Energy, Diet tendency, Stress fit, Lineage.

@@ -1,6 +1,6 @@
 # Performance & the WASM Demo Constraints
 
-The browser target is a **constrained demo**, not a peer of desktop. Design against its limits from the start. See [`lifesim.md`](../../../../lifesim.md) §1, §9.
+The browser target is a **constrained demo**, not a peer of desktop. Design against its limits from the start.
 
 ## Frame budget
 <!-- TODO -->
@@ -19,4 +19,4 @@ The browser target is a **constrained demo**, not a peer of desktop. Design agai
 
 ## Verification
 <!-- TODO -->
-- The Phase 0 render-performance spike thresholds (tasks.md Phase 0) that gate Avalonia-for-web.
+- The render-performance spike thresholds that gate Avalonia-for-web.

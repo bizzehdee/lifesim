@@ -1,6 +1,6 @@
 # LifeSim App Architecture
 
-How `LifeSim.App` is structured and how it targets desktop + browser. See [`lifesim.md`](../../../../lifesim.md) §1. For general Avalonia project/styling and cross-platform (Windows + Linux) rules, see the user-level **`avalonia-ui`** skill (`practices.md`).
+How `LifeSim.App` is structured and how it targets desktop + browser. For general Avalonia project/styling and cross-platform (Windows + Linux) rules, see the user-level **`avalonia-ui`** skill (`practices.md`).
 
 ## Project & target setup
 <!-- TODO -->

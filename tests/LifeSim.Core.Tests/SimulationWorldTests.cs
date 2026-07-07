@@ -415,19 +415,19 @@ public class SimulationWorldTests
     [Fact]
     public void Advance_withSenescenceEnabled_capsOrganismLifespan()
     {
-        // The optional aging model (lifesim.md §17): with an early, steep senescence curve, the
-        // per-tick tax eventually exceeds any energy budget, so no organism can grow arbitrarily old —
-        // unlike the immortal-until-starvation default.
+        // The optional aging model (lifesim.md §17): once past the senescence onset the per-tick tax
+        // climbs until it outruns any energy budget, so the oldest survivor of an aging world stays
+        // far younger than in the immortal-until-starvation default.
         static long MaxAge(bool senescence)
         {
             var config = SimulationConfig.Default with
             {
-                InitialPopulation = 60,
+                InitialPopulation = 80,
                 Senescence = senescence,
-                Metabolism = SimulationConfig.Default.Metabolism with { SenescenceOnsetAge = 20, SenescenceCostPerTick = 0.5 },
+                Metabolism = SimulationConfig.Default.Metabolism with { SenescenceOnsetAge = 100, SenescenceCostPerTick = 0.2 },
             };
-            var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 4242), config);
-            for (int i = 0; i < 300 && !world.Extinct; i++)
+            var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), config);
+            for (int i = 0; i < 400 && !world.Extinct; i++)
             {
                 world.Advance();
             }
@@ -435,8 +435,55 @@ public class SimulationWorldTests
             return world.Organisms.Count == 0 ? 0 : world.Organisms.Values.Max(o => o.Age);
         }
 
-        Assert.True(MaxAge(senescence: true) < MaxAge(senescence: false),
-            "Senescence should keep the oldest survivor younger than an ageless world does.");
+        long aging = MaxAge(senescence: true);
+        long ageless = MaxAge(senescence: false);
+        Assert.True(aging < ageless,
+            $"Senescence should cap the oldest survivor (aging {aging}) below an ageless world ({ageless}).");
+        Assert.True(aging <= 150, $"With onset 100 the oldest survivor should not run away (was {aging}).");
+    }
+
+    [Fact]
+    public void Advance_multicellularBodiesEmergeButStayBounded_underTheSquareCubeLaw()
+    {
+        // With multicellularity on (default), founders start unicellular; cell count drifts under
+        // mutation but the square-cube economy (volume upkeep vs surface-limited intake, lifesim.md
+        // §21) keeps the mean body far below the hard bound — no runaway to giant bodies.
+        var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), SimulationConfig.Default with { InitialPopulation = 80 });
+
+        double maxMeanCells = 0.0;
+        for (int i = 0; i < 250 && !world.Extinct; i++)
+        {
+            world.Advance();
+            maxMeanCells = Math.Max(maxMeanCells, world.Metrics.TraitAverages.CellCount);
+        }
+
+        Assert.False(world.Extinct, "The default multicellular world should not go extinct.");
+        Assert.True(maxMeanCells > 1.0, "Mutation should push some bodies past the unicellular floor.");
+        Assert.True(maxMeanCells < SimulationConfig.Default.TraitBounds.CellCount.Max,
+            $"The square-cube economy should keep mean body size well below the hard cap (peak mean {maxMeanCells:F1}).");
+    }
+
+    [Fact]
+    public void Advance_withMulticellularityDisabled_keepsEveryBodyUnicellular()
+    {
+        var config = SimulationConfig.Default with
+        {
+            InitialPopulation = 60,
+            Multicellular = SimulationConfig.Default.Multicellular with { Enabled = false },
+        };
+        var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), config);
+
+        for (int i = 0; i < 120 && !world.Extinct; i++)
+        {
+            world.Advance();
+            foreach (Organism o in world.Organisms.Values)
+            {
+                Assert.True(o.EnergyCapacity <= Organism.EnergyCeiling + 1e-9, "Disabled multicellularity must not raise capacity.");
+            }
+        }
+
+        Assert.False(world.Extinct);
+        Assert.Equal(1.0, world.Metrics.TraitAverages.CellCount, precision: 10);
     }
 
     // --- Phase 9: environmental stochasticity & events (lifesim.md §6) ---

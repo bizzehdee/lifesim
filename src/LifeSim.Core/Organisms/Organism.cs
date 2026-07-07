@@ -9,8 +9,11 @@ namespace LifeSim.Core.Organisms;
 /// </summary>
 public sealed class Organism
 {
-    /// <summary>The hard energy ceiling every organism is clamped to (lifesim.md §3).</summary>
+    /// <summary>The default energy ceiling for a single-cell body (lifesim.md §3); multicellular bodies raise it via Store cells (§21).</summary>
     public const double EnergyCeiling = 100.0;
+
+    /// <summary>This body's actual energy ceiling — <see cref="EnergyCeiling"/> for a plain cell, higher for a Store-rich body (lifesim.md §21).</summary>
+    public double EnergyCapacity { get; }
 
     public long Id { get; }
 
@@ -42,7 +45,7 @@ public sealed class Organism
     public Organism(
         long id, Genome genome, string name, double energy, int x, int y, NeatGenome brain,
         long age = 0, OrganismAction? lastAction = null, ActionResult lastActionResult = ActionResult.None,
-        long? lastBirthTick = null)
+        long? lastBirthTick = null, double? energyCapacity = null)
     {
         ArgumentNullException.ThrowIfNull(genome);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -51,7 +54,8 @@ public sealed class Organism
         Id = id;
         Genome = genome;
         Name = name;
-        Energy = Math.Clamp(energy, 0.0, EnergyCeiling);
+        EnergyCapacity = energyCapacity ?? EnergyCeiling;
+        Energy = Math.Clamp(energy, 0.0, EnergyCapacity);
         X = x;
         Y = y;
         Brain = brain;
@@ -64,7 +68,7 @@ public sealed class Organism
     public void AddEnergy(double amount)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(amount);
-        Energy = Math.Min(EnergyCeiling, Energy + amount);
+        Energy = Math.Min(EnergyCapacity, Energy + amount);
     }
 
     /// <summary>Removes up to <paramref name="amount"/> energy, clamped at zero; returns what was actually spent.</summary>

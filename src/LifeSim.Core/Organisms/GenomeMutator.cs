@@ -32,6 +32,13 @@ public static class GenomeMutator
             OrgRadius = Drift(genome.OrgRadius, bounds.OrgRadius, config, mutationStream),
             SensoryAcuity = Drift(genome.SensoryAcuity, bounds.SensoryAcuity, config, mutationStream),
             ShareFraction = Drift(genome.ShareFraction, bounds.ShareFraction, config, mutationStream),
+            CellCount = Drift(genome.CellCount, bounds.CellCount, config, mutationStream),
+            GermWeight = Drift(genome.GermWeight, bounds.GermWeight, config, mutationStream),
+            FeederWeight = Drift(genome.FeederWeight, bounds.FeederWeight, config, mutationStream),
+            StoreWeight = Drift(genome.StoreWeight, bounds.StoreWeight, config, mutationStream),
+            DefenderWeight = Drift(genome.DefenderWeight, bounds.DefenderWeight, config, mutationStream),
+            MoverWeight = Drift(genome.MoverWeight, bounds.MoverWeight, config, mutationStream),
+            SensorWeight = Drift(genome.SensorWeight, bounds.SensorWeight, config, mutationStream),
         }.Clamped(bounds);
     }
 

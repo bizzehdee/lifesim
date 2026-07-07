@@ -8,15 +8,17 @@ public static class BuildInfo
 {
     /// <summary>
     /// Snapshot schema version (semver). Import hard-rejects on major mismatch (lifesim.md §12).
-    /// 1.1 adds the evolvable <c>share_fraction</c> genome trait (lifesim.md §20).
+    /// 1.1 adds the evolvable <c>share_fraction</c> genome trait (§20); 1.2 adds the multicellular
+    /// body-plan genome traits — cell count + six specialisation weights (§21).
     /// </summary>
-    public const string SchemaVersion = "1.1";
+    public const string SchemaVersion = "1.2";
 
     /// <summary>
     /// Configuration block version (semver). Validated alongside the schema version (lifesim.md §12).
-    /// 1.1 adds the cooperation toggle, evolvable generosity, and senescence knobs (lifesim.md §17, §20).
+    /// 1.1 adds the cooperation toggle, evolvable generosity, and senescence knobs (§17, §20);
+    /// 1.2 adds the multicellularity block (§21).
     /// </summary>
-    public const string ConfigVersion = "1.1";
+    public const string ConfigVersion = "1.2";
 
     /// <summary>Engine version that stamps snapshots it creates.</summary>
     public const string SimulationVersion = "0.1.0";

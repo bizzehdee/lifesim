@@ -23,6 +23,9 @@ public sealed record EconomyBreakdown(double Base, double ThermalStress, double 
 /// <summary>One action's current softmax probability (lifesim.md §4, §18).</summary>
 public sealed record ActionProbability(OrganismAction Action, double Probability);
 
+/// <summary>One cell type's share of a multicellular body (lifesim.md §21): its cell count and fraction of the body.</summary>
+public sealed record CellTypeReading(string Type, double Cells, double Fraction);
+
 /// <summary>
 /// Every stat behind one organism (lifesim.md §18), all sourced from its snapshot record plus the
 /// world config/terrain — identity &amp; lineage, physical state, genome-vs-bounds, the per-tick
@@ -66,6 +69,12 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
 
     // Genome vs bounds.
     public IReadOnlyList<TraitReading> Traits { get; private init; } = [];
+
+    // Body plan (multicellularity, lifesim.md §21).
+    public bool Multicellular { get; private init; }
+    public double CellCount { get; private init; } = 1.0;
+    public bool Fertile { get; private init; } = true;
+    public IReadOnlyList<CellTypeReading> CellComposition { get; private init; } = [];
 
     // Per-tick economy.
     public EconomyBreakdown Economy { get; private init; } = new(0, 0, 0, 0);
@@ -120,8 +129,24 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
 
         double[] probabilities = NeatBrain.ActionProbabilities(organism.Brain);
 
+        MulticellularConfig mc = config.Multicellular;
+        double cells = Morphology.CellCount(genome, mc);
+        Morphology.CellFractions fr = Morphology.Fractions(genome, mc);
+
         return new OrganismInspectorViewModel(organism)
         {
+            Multicellular = mc.Enabled,
+            CellCount = cells,
+            Fertile = Morphology.CanReproduce(genome, mc),
+            CellComposition =
+            [
+                new CellTypeReading("Germ", fr.Germ * cells, fr.Germ),
+                new CellTypeReading("Feeder", fr.Feeder * cells, fr.Feeder),
+                new CellTypeReading("Store", fr.Store * cells, fr.Store),
+                new CellTypeReading("Defender", fr.Defender * cells, fr.Defender),
+                new CellTypeReading("Mover", fr.Mover * cells, fr.Mover),
+                new CellTypeReading("Sensor", fr.Sensor * cells, fr.Sensor),
+            ],
             LineageId = lineage?.LineageId ?? organismId,
             ParentId = lineage?.ParentId,
             ParentName = parentName,

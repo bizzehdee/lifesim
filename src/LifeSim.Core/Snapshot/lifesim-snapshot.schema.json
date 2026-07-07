@@ -117,7 +117,14 @@
               "env_radius": { "type": "number" },
               "org_radius": { "type": "number" },
               "sensory_acuity": { "type": "number" },
-              "share_fraction": { "type": "number" }
+              "share_fraction": { "type": "number" },
+              "cell_count": { "type": "number" },
+              "germ_weight": { "type": "number" },
+              "feeder_weight": { "type": "number" },
+              "store_weight": { "type": "number" },
+              "defender_weight": { "type": "number" },
+              "mover_weight": { "type": "number" },
+              "sensor_weight": { "type": "number" }
             }
           },
           "brain": {

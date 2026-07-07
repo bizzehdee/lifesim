@@ -85,6 +85,10 @@
                                       Content="Senescence (aging)" Margin="0,4,0,0" />
                             <TextBlock Opacity="0.6" FontSize="12" Margin="28,0,0,0" TextWrapping="Wrap"
                                        Text="Old organisms pay a growing metabolic cost so no lineage is immortal. Off = death only by starvation or predation." />
+                            <CheckBox IsChecked="{Binding MulticellularEnabled}"
+                                      Content="Multicellularity (differentiated bodies)" Margin="0,4,0,0" />
+                            <TextBlock Opacity="0.6" FontSize="12" Margin="28,0,0,0" TextWrapping="Wrap"
+                                       Text="Bodies can evolve many cells specialised to jobs (germ, feeder, store, defender, mover, sensor). Bigger bodies cost more but store more; the square-cube law caps size. Off = every organism is a single cell." />
                         </StackPanel>
 
                         <Expander Header="Advanced: full configuration (JSON)">

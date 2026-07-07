@@ -124,7 +124,9 @@ public sealed class SimulationWorld
 
         foreach (OrganismSnapshot entry in snapshot.Organisms)
         {
-            Organism organism = entry.ToOrganism();
+            // Capacity is a deterministic function of genome + config (lifesim.md §21), recomputed on
+            // load rather than stored — so save/reload stays byte-identical.
+            Organism organism = entry.ToOrganism(Morphology.Capacity(entry.Genome.ToGenome(), snapshot.Configuration.Multicellular));
             simWorld._organisms[organism.Id] = organism;
             simWorld._occupancy[(organism.X, organism.Y)] = organism.Id;
         }
@@ -257,8 +259,17 @@ public sealed class SimulationWorld
             double tileTemperature = _terrain.TemperatureCelsiusAt(organism.X, organism.Y) + temperatureShift;
             double friction = Config.Biomes.For(_terrain.BiomeAt(organism.X, organism.Y)).Friction;
             int localDensity = LocalOrganismDensity(organism); // 3×3 including self
-            double cost = Metabolism.Total(organism.Genome, tileTemperature, Config.Metabolism)
-                + Metabolism.LocomotionTax(distanceTraveled[id], organism.Genome.SpeedCapacity, friction, Config.MovementCombat)
+
+            // Body economy (lifesim.md §21): cell maintenance scales with volume (∝ N); Defender cells
+            // insulate against thermal stress; Mover cells cut locomotion tax; extra cells add a
+            // coordination cost. A generalist 1-cell body reduces to the plain per-organism cost.
+            Genome g = organism.Genome;
+            MulticellularConfig mc = Config.Multicellular;
+            double cost = (Metabolism.BaseMetabolism(g, Config.Metabolism) * Morphology.CellCount(g, mc))
+                + (Metabolism.ThermalStress(g, tileTemperature, Config.Metabolism) * Morphology.ThermalStressFactor(g, mc))
+                + Metabolism.SensoryTax(g, Config.Metabolism)
+                + Morphology.CoordinationCost(g, mc)
+                + (Metabolism.LocomotionTax(distanceTraveled[id], g.SpeedCapacity, friction, Config.MovementCombat) * Morphology.LocomotionFactor(g, mc))
                 + Metabolism.CrowdingTax(localDensity - 1, Config.Metabolism); // density-dependent overpopulation cost (lifesim.md §3, §6)
 
             if (Config.Senescence)
@@ -318,7 +329,8 @@ public sealed class SimulationWorld
             Genome offspringGenome = GenomeMutator.Mutate(birth.Genome, Config.Mutation, Config.TraitBounds, mutation);
             NeatGenome offspringBrain = NeatMutator.Mutate(birth.Brain, Config.Mutation, mutation, _innovationIdAllocator);
             Organism offspring = OrganismFactory.Create(
-                birth.OffspringId, offspringGenome, Config.Naming, birth.OffspringEnergy, birth.X, birth.Y, offspringBrain);
+                birth.OffspringId, offspringGenome, Config.Naming, birth.OffspringEnergy, birth.X, birth.Y, offspringBrain,
+                Morphology.Capacity(offspringGenome, Config.Multicellular));
             _organisms[offspring.Id] = offspring;
             _lineageRecords[offspring.Id] = new LineageEntry(
                 offspring.Id, birth.ParentId, birth.LineageId, birth.BirthTick, birth.GenerationDepth, offspring.Genome);
@@ -449,7 +461,10 @@ public sealed class SimulationWorld
         if (_occupancy.TryGetValue((x, y), out long targetId) && targetId != organism.Id
             && _organisms.TryGetValue(targetId, out Organism? victim))
         {
-            double killProbability = Combat.KillProbability(organism.Genome.Size, victim.Genome.Size);
+            // Combat scales with effective body mass (cells × size), boosted by Defender cells (lifesim.md §21).
+            double killProbability = Combat.KillProbability(
+                Morphology.CombatMass(organism.Genome, Config.Multicellular),
+                Morphology.CombatMass(victim.Genome, Config.Multicellular));
             bool killed = behaviorStream.NextDouble() < killProbability;
 
             if (killed)
@@ -477,9 +492,12 @@ public sealed class SimulationWorld
             return ActionResult.Failed;
         }
 
-        // Ambient grazing: drain whatever's currently on the tile (possibly nothing).
-        double drained = _groundEnergy.Drain(x, y, _groundEnergy.EnergyAt(x, y));
-        organism.AddEnergy(drained);
+        // Ambient grazing (lifesim.md §21): surface exchange caps how much ground a body can process
+        // per tick at ∝ N^⅔ (the square-cube ceiling), while Feeder cells raise how much usable energy
+        // it extracts from what it processes. A generalist 1-cell body grazes exactly as before.
+        double throughput = Math.Min(_groundEnergy.EnergyAt(x, y), Morphology.MaxGrazingIntake(organism.Genome, Config.Multicellular));
+        double drained = _groundEnergy.Drain(x, y, throughput);
+        organism.AddEnergy(drained * Morphology.FeedMultiplier(organism.Genome, Config.Multicellular));
         if (drained > 0.0)
         {
             counters.SuccessfulGrazing++;
@@ -536,10 +554,17 @@ public sealed class SimulationWorld
         return ActionResult.Success;
     }
 
-    /// <summary>Asexual reproduction gating and offspring reservation (lifesim.md §8, §17).</summary>
+    /// <summary>Asexual reproduction gating and offspring reservation (lifesim.md §8, §17, §21).</summary>
     private ActionResult ResolveReproduce(Organism organism, long currentTick, List<PendingBirth> pendingBirths)
     {
-        double cost = Config.Reproduction.ReproductionBaseCost * organism.Genome.Size;
+        // A body with too few germ cells is sterile soma — it can support the body but not reproduce (lifesim.md §21).
+        if (!Morphology.CanReproduce(organism.Genome, Config.Multicellular))
+        {
+            return ActionResult.Failed;
+        }
+
+        // Cost scales with whole-body mass (cells × size): a bigger body is dearer to reproduce (lifesim.md §21).
+        double cost = Config.Reproduction.ReproductionBaseCost * Morphology.Mass(organism.Genome, Config.Multicellular);
         if (organism.Energy < cost)
         {
             return ActionResult.Failed;
@@ -613,7 +638,9 @@ public sealed class SimulationWorld
 
                 long id = _idAllocator.Allocate();
                 NeatGenome brain = NeatGenomeFactory.CreateMinimalFullyConnected(genesis);
-                Organism organism = OrganismFactory.Create(id, genome, Config.Naming, Organism.EnergyCeiling, x, y, brain);
+                Organism organism = OrganismFactory.Create(
+                    id, genome, Config.Naming, Organism.EnergyCeiling, x, y, brain,
+                    Morphology.Capacity(genome, Config.Multicellular));
                 _organisms[id] = organism;
                 _occupancy[(x, y)] = id;
                 _lineageRecords[id] = new LineageEntry(id, parentId: null, lineageId: id, birthTick: 0, generationDepth: 0, birthTraits: genome);
@@ -670,7 +697,7 @@ public sealed class SimulationWorld
         TraitBounds bounds = Config.TraitBounds;
 
         double energyMin = 0.0, energyMax = 0.0, energySum = 0.0;
-        double sumSize = 0, sumSpeed = 0, sumThermalC = 0, sumThermalW = 0, sumEnv = 0, sumOrg = 0, sumAcuity = 0, sumShare = 0;
+        double sumSize = 0, sumSpeed = 0, sumThermalC = 0, sumThermalW = 0, sumEnv = 0, sumOrg = 0, sumAcuity = 0, sumShare = 0, sumCells = 0;
 
         var biomeCounts = new Dictionary<Biome, long>
         {
@@ -688,6 +715,7 @@ public sealed class SimulationWorld
         var orgRadiusBuckets = new int[HistogramBucketCount];
         var acuityBuckets = new int[HistogramBucketCount];
         var shareBuckets = new int[HistogramBucketCount];
+        var cellBuckets = new int[HistogramBucketCount];
 
         bool first = true;
         foreach (Organism organism in _organisms.Values)
@@ -715,6 +743,7 @@ public sealed class SimulationWorld
             sumOrg += g.OrgRadius;
             sumAcuity += g.SensoryAcuity;
             sumShare += g.ShareFraction;
+            sumCells += Morphology.CellCount(g, Config.Multicellular);
 
             biomeCounts[_terrain.BiomeAt(organism.X, organism.Y)]++;
 
@@ -726,6 +755,7 @@ public sealed class SimulationWorld
             orgRadiusBuckets[BucketIndex(g.OrgRadius, bounds.OrgRadius)]++;
             acuityBuckets[BucketIndex(g.SensoryAcuity, bounds.SensoryAcuity)]++;
             shareBuckets[BucketIndex(g.ShareFraction, bounds.ShareFraction)]++;
+            cellBuckets[BucketIndex(Morphology.CellCount(g, Config.Multicellular), bounds.CellCount)]++;
         }
 
         double Average(double sum) => population > 0 ? sum / population : 0.0;
@@ -778,6 +808,7 @@ public sealed class SimulationWorld
                 OrgRadius = Average(sumOrg),
                 SensoryAcuity = Average(sumAcuity),
                 ShareFraction = Average(sumShare),
+                CellCount = Average(sumCells),
             },
             TraitHistograms =
             [
@@ -789,6 +820,7 @@ public sealed class SimulationWorld
                 Histogram("org_radius", bounds.OrgRadius, orgRadiusBuckets),
                 Histogram("sensory_acuity", bounds.SensoryAcuity, acuityBuckets),
                 Histogram("share_fraction", bounds.ShareFraction, shareBuckets),
+                Histogram("cell_count", bounds.CellCount, cellBuckets),
             ],
             PopulationByBiome =
             [

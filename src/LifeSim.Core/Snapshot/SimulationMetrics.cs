@@ -124,6 +124,9 @@ public sealed record TraitAverages
 
     /// <summary>Mean evolvable generosity (lifesim.md §20) — tracks whether the population drifts toward hoarding or over-sharing.</summary>
     public double ShareFraction { get; init; }
+
+    /// <summary>Mean body size in cells (lifesim.md §21) — tracks the multicellular transition across the population.</summary>
+    public double CellCount { get; init; } = 1.0;
 }
 
 /// <summary>

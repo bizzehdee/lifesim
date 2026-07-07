@@ -82,6 +82,10 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _senescenceEnabled = true;
 
+    /// <summary>Multicellularity (lifesim.md §21); on by default. Founders start unicellular and can evolve differentiated multi-cell bodies.</summary>
+    [ObservableProperty]
+    private bool _multicellularEnabled = true;
+
     /// <summary>The full simulation configuration as JSON — pre-filled with the defaults, editable so any starting constant can be set (same block as <c>sim new --config</c>).</summary>
     [ObservableProperty]
     private string _configJson = SnapshotSerializer.SaveConfig(SimulationConfig.Default);
@@ -157,6 +161,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                 InitialPopulation = (int)Population,
                 Senescence = SenescenceEnabled,
                 Cooperation = parsed.Cooperation with { Enabled = CooperationEnabled },
+                Multicellular = parsed.Multicellular with { Enabled = MulticellularEnabled },
             };
         }
         catch (SnapshotValidationException ex)

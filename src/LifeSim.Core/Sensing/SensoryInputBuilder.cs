@@ -73,16 +73,19 @@ public sealed class SensoryInputBuilder
             _ => 0.0, // ActionResult.None
         };
 
-        double reproductionCost = _config.Reproduction.ReproductionBaseCost * self.Genome.Size;
+        // Reproduction cost scales with whole-body mass and needs germ cells (lifesim.md §21), matching ResolveReproduce.
+        double reproductionCost = _config.Reproduction.ReproductionBaseCost * Morphology.Mass(self.Genome, _config.Multicellular);
         bool offCooldown = self.LastBirthTick is null
             || currentTick - self.LastBirthTick.Value >= _config.Reproduction.ReproductionCooldownTicks;
-        values[(int)SensoryField.ReproductiveReadiness] = self.Energy >= reproductionCost && offCooldown ? 1.0 : 0.0;
+        bool fertile = Morphology.CanReproduce(self.Genome, _config.Multicellular);
+        values[(int)SensoryField.ReproductiveReadiness] = fertile && self.Energy >= reproductionCost && offCooldown ? 1.0 : 0.0;
 
         // Global stress level reflects active environmental events (lifesim.md §6, §13), already
         // normalized to [0, 1] by the environment state.
         values[(int)SensoryField.GlobalStressLevel] = globalStress;
 
-        InjectNoise(values, self.Genome.SensoryAcuity, sensoryNoiseStream);
+        // Sensor cells sharpen perception — a higher effective acuity means less injected noise (lifesim.md §21).
+        InjectNoise(values, Morphology.EffectiveAcuity(self.Genome, _config.Multicellular), sensoryNoiseStream);
         return values;
     }
 

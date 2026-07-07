@@ -58,6 +58,27 @@
             </ItemsControl>
         </StackPanel>
 
+        <!-- Body plan (multicellularity, lifesim.md §21) -->
+        <StackPanel Spacing="4" IsVisible="{Binding Multicellular}">
+            <TextBlock Text="Body" FontWeight="SemiBold" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock FontSize="12" Text="{Binding CellCount, StringFormat='cells {0:F1}'}" />
+                <TextBlock FontSize="12" Opacity="0.75" Text="fertile" IsVisible="{Binding Fertile}" />
+                <TextBlock FontSize="12" Opacity="0.6" Text="sterile soma" IsVisible="{Binding !Fertile}" />
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding CellComposition}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CellTypeReading">
+                        <Grid ColumnDefinitions="80,*,44" Margin="0,1">
+                            <TextBlock Grid.Column="0" Text="{Binding Type}" FontSize="12" />
+                            <ProgressBar Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Fraction}" VerticalAlignment="Center" Margin="4,0" />
+                            <TextBlock Grid.Column="2" Text="{Binding Cells, StringFormat='{}{0:F1}'}" FontSize="12" HorizontalAlignment="Right" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
         <!-- Per-tick economy -->
         <StackPanel Spacing="2">
             <TextBlock Text="Per-tick economy" FontWeight="SemiBold" />

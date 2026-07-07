@@ -14,6 +14,7 @@ public sealed record SimulationConfig
     public MetabolismConfig Metabolism { get; init; } = new();
     public MovementCombatConfig MovementCombat { get; init; } = new();
     public CooperationConfig Cooperation { get; init; } = new();
+    public MulticellularConfig Multicellular { get; init; } = new();
     public BiomesConfig Biomes { get; init; } = new();
     public ReproductionConfig Reproduction { get; init; } = new();
     public MutationConfig Mutation { get; init; } = new();
@@ -115,6 +116,49 @@ public sealed record CooperationConfig
     public double KinPredationPenalty { get; init; }
 }
 
+/// <summary>
+/// Multicellularity controls (lifesim.md §21): a body is a single tile-occupant made of
+/// <c>cell_count</c> cells, each specialised toward one of six jobs. Bigger bodies pay more upkeep
+/// (volume, ∝ N) but exchange energy only through their surface (∝ N^⅔), so the square-cube law caps
+/// viable size. Every specialisation effect is a <em>bonus for emphasising a type above the ⅙
+/// generalist baseline</em>, so a perfectly generalist 1-cell body behaves like a plain organism.
+/// </summary>
+public sealed record MulticellularConfig
+{
+    /// <summary>Master switch, selectable per world at genesis. When off, every body is a single generalist cell (current model).</summary>
+    public bool Enabled { get; init; } = true;
+
+    /// <summary>Energy ceiling of a 1-cell / storage-free body (matches <see cref="Organisms.Organism.EnergyCeiling"/>).</summary>
+    public double BaseCapacity { get; init; } = 100.0;
+
+    /// <summary>Extra energy ceiling per Store cell above the generalist baseline — how a body "stores more" (lifesim.md §21).</summary>
+    public double StoreCapacityPerCell { get; init; } = 12.0;
+
+    /// <summary>Coordination/upkeep energy each cell beyond the first costs per tick — the "requires more energy" term (volume, ∝ N).</summary>
+    public double CoordinationCostPerCell { get; init; } = 0.15;
+
+    /// <summary>Surface-exchange coefficient: max energy a body can absorb from grazing per tick is this × N^⅔ (lifesim.md §21).</summary>
+    public double IntakeSurfaceCoeff { get; init; } = 20.0;
+
+    /// <summary>Feeder emphasis (above baseline) multiplies grazing yield up to 1 + this.</summary>
+    public double FeederYieldBonus { get; init; } = 1.0;
+
+    /// <summary>Defender emphasis multiplies effective combat mass up to 1 + this.</summary>
+    public double DefenderCombatBonus { get; init; } = 1.0;
+
+    /// <summary>Defender emphasis reduces thermal stress by up to this fraction.</summary>
+    public double DefenderThermalResist { get; init; } = 0.5;
+
+    /// <summary>Mover emphasis reduces locomotion tax by up to this fraction.</summary>
+    public double MoverEfficiency { get; init; } = 0.5;
+
+    /// <summary>Sensor emphasis adds up to this to effective sensory acuity (less perception noise).</summary>
+    public double SensorAcuityBonus { get; init; } = 0.6;
+
+    /// <summary>A body needs at least this germ fraction to reproduce; below it the body is sterile soma (lifesim.md §21).</summary>
+    public double GermReproductionThreshold { get; init; } = 0.05;
+}
+
 /// <summary>Per-biome physics/resource settings (lifesim.md §2, Appendix A).</summary>
 public sealed record BiomesConfig
 {
@@ -194,6 +238,17 @@ public sealed record TraitBounds
 
     /// <summary>Generosity bounds (lifesim.md §20): 0 = never donates, 1 = donates all of its energy per Share.</summary>
     public Range ShareFraction { get; init; } = new(0.0, 1.0);
+
+    /// <summary>Body size in cells (lifesim.md §21): 1 = unicellular; the square-cube economy caps the viable maximum well below this hard bound.</summary>
+    public Range CellCount { get; init; } = new(1.0, 32.0);
+
+    /// <summary>Specialisation weights (lifesim.md §21): raw propensities, normalised to fractions across the six cell types at use.</summary>
+    public Range GermWeight { get; init; } = new(0.0, 1.0);
+    public Range FeederWeight { get; init; } = new(0.0, 1.0);
+    public Range StoreWeight { get; init; } = new(0.0, 1.0);
+    public Range DefenderWeight { get; init; } = new(0.0, 1.0);
+    public Range MoverWeight { get; init; } = new(0.0, 1.0);
+    public Range SensorWeight { get; init; } = new(0.0, 1.0);
 
     public sealed record Range(double Min, double Max);
 }

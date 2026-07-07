@@ -26,6 +26,22 @@ public sealed record Genome
     /// </summary>
     public double ShareFraction { get; init; }
 
+    /// <summary>
+    /// Body size in cells (lifesim.md §21): the body plan for aggregate multicellularity. 1 is
+    /// unicellular (a plain organism); larger bodies pay volume upkeep (∝ N) but can only feed
+    /// through their surface (∝ N^⅔), so the square-cube law caps the viable value. Ignored when
+    /// multicellularity is disabled (every body is then a single cell).
+    /// </summary>
+    public double CellCount { get; init; } = 1.0;
+
+    /// <summary>Specialisation weights (lifesim.md §21): relative propensities toward each cell job, normalised to fractions at use.</summary>
+    public double GermWeight { get; init; }
+    public double FeederWeight { get; init; }
+    public double StoreWeight { get; init; }
+    public double DefenderWeight { get; init; }
+    public double MoverWeight { get; init; }
+    public double SensorWeight { get; init; }
+
     /// <summary>Clamps every trait to its hard min/max (lifesim.md §3, §8).</summary>
     public Genome Clamped(TraitBounds bounds) => this with
     {
@@ -37,12 +53,21 @@ public sealed record Genome
         OrgRadius = Clamp(OrgRadius, bounds.OrgRadius),
         SensoryAcuity = Clamp(SensoryAcuity, bounds.SensoryAcuity),
         ShareFraction = Clamp(ShareFraction, bounds.ShareFraction),
+        CellCount = Clamp(CellCount, bounds.CellCount),
+        GermWeight = Clamp(GermWeight, bounds.GermWeight),
+        FeederWeight = Clamp(FeederWeight, bounds.FeederWeight),
+        StoreWeight = Clamp(StoreWeight, bounds.StoreWeight),
+        DefenderWeight = Clamp(DefenderWeight, bounds.DefenderWeight),
+        MoverWeight = Clamp(MoverWeight, bounds.MoverWeight),
+        SensorWeight = Clamp(SensorWeight, bounds.SensorWeight),
     };
 
     /// <summary>
-    /// Mid-range genome for genesis organisms (lifesim.md §17): the midpoint of every bound.
-    /// Genesis <see cref="ShareFraction"/> is seeded separately from <c>CooperationConfig.ShareFraction</c>
-    /// (§20) rather than the bound midpoint, so the starting generosity is a tunable constant.
+    /// Mid-range genome for genesis organisms (lifesim.md §17): the midpoint of every bound, with two
+    /// deliberate exceptions. <see cref="ShareFraction"/> is seeded separately from
+    /// <c>CooperationConfig.ShareFraction</c> (§20). <see cref="CellCount"/> starts at 1 (unicellular,
+    /// not the bound midpoint) so founders begin the multicellular transition from a single cell (§21);
+    /// the equal specialisation-weight midpoints make that cell a generalist.
     /// </summary>
     public static Genome MidRange(TraitBounds bounds) => new()
     {
@@ -54,6 +79,13 @@ public sealed record Genome
         OrgRadius = Midpoint(bounds.OrgRadius),
         SensoryAcuity = Midpoint(bounds.SensoryAcuity),
         ShareFraction = Midpoint(bounds.ShareFraction),
+        CellCount = bounds.CellCount.Min,
+        GermWeight = Midpoint(bounds.GermWeight),
+        FeederWeight = Midpoint(bounds.FeederWeight),
+        StoreWeight = Midpoint(bounds.StoreWeight),
+        DefenderWeight = Midpoint(bounds.DefenderWeight),
+        MoverWeight = Midpoint(bounds.MoverWeight),
+        SensorWeight = Midpoint(bounds.SensorWeight),
     };
 
     private static double Clamp(double value, TraitBounds.Range range) =>

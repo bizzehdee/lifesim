@@ -41,8 +41,8 @@ public sealed record OrganismSnapshot
         LastBirthTick = organism.LastBirthTick,
     };
 
-    public Organism ToOrganism() =>
-        new(OrganismId, Genome.ToGenome(), Name, Energy, X, Y, Brain, Age, LastAction, LastActionResult, LastBirthTick);
+    public Organism ToOrganism(double? energyCapacity = null) =>
+        new(OrganismId, Genome.ToGenome(), Name, Energy, X, Y, Brain, Age, LastAction, LastActionResult, LastBirthTick, energyCapacity);
 }
 
 /// <summary>The inheritable trait values (lifesim.md §3, §8), as stored in a snapshot.</summary>
@@ -56,6 +56,13 @@ public sealed record GenomeSnapshot
     public double OrgRadius { get; init; }
     public double SensoryAcuity { get; init; }
     public double ShareFraction { get; init; }
+    public double CellCount { get; init; } = 1.0;
+    public double GermWeight { get; init; }
+    public double FeederWeight { get; init; }
+    public double StoreWeight { get; init; }
+    public double DefenderWeight { get; init; }
+    public double MoverWeight { get; init; }
+    public double SensorWeight { get; init; }
 
     public static GenomeSnapshot From(Organisms.Genome genome) => new()
     {
@@ -67,6 +74,13 @@ public sealed record GenomeSnapshot
         OrgRadius = genome.OrgRadius,
         SensoryAcuity = genome.SensoryAcuity,
         ShareFraction = genome.ShareFraction,
+        CellCount = genome.CellCount,
+        GermWeight = genome.GermWeight,
+        FeederWeight = genome.FeederWeight,
+        StoreWeight = genome.StoreWeight,
+        DefenderWeight = genome.DefenderWeight,
+        MoverWeight = genome.MoverWeight,
+        SensorWeight = genome.SensorWeight,
     };
 
     public Organisms.Genome ToGenome() => new()
@@ -79,5 +93,12 @@ public sealed record GenomeSnapshot
         OrgRadius = OrgRadius,
         SensoryAcuity = SensoryAcuity,
         ShareFraction = ShareFraction,
+        CellCount = CellCount,
+        GermWeight = GermWeight,
+        FeederWeight = FeederWeight,
+        StoreWeight = StoreWeight,
+        DefenderWeight = DefenderWeight,
+        MoverWeight = MoverWeight,
+        SensorWeight = SensorWeight,
     };
 }

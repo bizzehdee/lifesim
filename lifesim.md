@@ -646,7 +646,27 @@ Cooperation is expected to be favoured **inside kin clusters** (Hamilton's `rB >
 
 ## 21. Multicellular Individuals
 
-*Post-v1 extension (see `tasks.md` Phase 17), independent of §20. This introduces a **new level of individuality** — bodies of differentiated cells grown from a genome, with a germline/soma split, selected and reproduced as whole organisms. Intra-body coordination is structural (a shared energy pool + a germline that alone reproduces), not evolved social behaviour, which is why it needs nothing from §20. See Phase 17 for the staged task breakdown.*
+*Independent of §20. This introduces a **new level of individuality** — a body of many differentiated cells, selected and reproduced as one organism, with a germline/soma split. Intra-body coordination is structural (one shared energy budget, a germline that alone reproduces), not evolved social behaviour, which is why it needs nothing from §20.*
+
+### The aggregate body model
+A body is an **aggregate that still occupies a single tile** (not a spatial multi-tile cluster): it carries an evolvable `cell_count` and, from six evolvable specialisation weights, a normalised split of those cells across six jobs. A single `cell_count = 1` body is a plain organism, so the transition is **continuous** — founders start unicellular and lineages evolve upward. The existing single NEAT brain is the body-level controller (the whole body acts as one agent); there is no separate developmental program in this model. Multicellularity is a **per-world toggle** (`multicellular.enabled`, default on); with it off, every body is a single generalist cell and the model reduces exactly to the pre-§21 engine.
+
+### Cell types (division of labour)
+Six jobs, each a *bonus for emphasising that type above the ⅙ generalist baseline*, so a perfectly generalist body is neutral (behaves like a plain organism scaled by its cell count):
+- **Germ** — reproduction. A body below `germ_reproduction_threshold` germ fraction is **sterile soma**: it can support the body but cannot bud. This is the germline/soma split and the transition's stability mechanism.
+- **Feeder** — multiplies the usable energy extracted from grazing.
+- **Store** — raises the body's **energy capacity** (`base_capacity + store_cells · store_capacity_per_cell`); this is how a bigger body "stores more".
+- **Defender** — raises effective combat mass and insulates against thermal stress.
+- **Mover** — cuts locomotion tax.
+- **Sensor** — sharpens perception (higher effective `sensory_acuity`, i.e. less injected noise).
+
+A body of `N` cells has `fraction_type · N` cells of each type — many cells per job, not one-of-each — so specialisation is a matter of *how much* of the body is devoted to each.
+
+### The square-cube law (why bodies stay small)
+Body **mass** is `cell_count · size`; metabolism and combat scale with it. The size limit is emergent, not a hard cap: **maintenance scales with volume (∝ N)** — every cell must be fed, plus a per-cell `coordination_cost` — while **grazing intake is capped by surface area (∝ N^⅔)** (`intake_surface_coeff · N^⅔`), because only surface cells exchange with the environment. The ratio of sustainable intake to upkeep therefore *falls* as the body grows (∝ N^{−⅓}), so beyond an optimal size a body runs a permanent deficit and starves. This — the classic square-cube constraint — is what keeps `cell_count` bounded well below its hard limit under selection, and why specialisation (feeder efficiency, store buffering) is what makes a larger body pay off.
+
+### Economy, reproduction & determinism
+Capacity is a deterministic function of genome + config, recomputed on load (not serialized), so save/reload stays byte-identical. Reproduction is gated on germ fraction and costs energy proportional to whole-body mass, so bigger bodies are dearer to bud; offspring inherit the body-plan genome (cell count + six weights) with mutation, exactly like every other trait — new draws come from the mutation stream in fixed order (§9). All effects are pure functions of the genome (see the engine's `Morphology`), so the whole model is deterministic and replayable. Metrics track mean and distribution of `cell_count`; the inspector shows a body's cell composition and whether it is fertile or sterile soma.
 
 ---
 

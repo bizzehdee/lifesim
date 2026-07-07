@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LifeSim.App.Presentation;
+using LifeSim.Core.Events;
 using LifeSim.Core.Naming;
 using LifeSim.Core.Snapshot;
 
@@ -99,6 +100,22 @@ public partial class WorldViewModel : ViewModelBase
     public int Population => Snapshot?.Organisms.Count ?? 0;
 
     public bool Extinct => Snapshot?.Metrics?.Extinct ?? false;
+
+    /// <summary>Labels for any active world events (blight, plague, ice age / heatwave), for the status bar.</summary>
+    public IReadOnlyList<string> ActiveEvents =>
+        Snapshot is null ? [] : [.. Snapshot.EnvironmentModifiers.Select(EventLabel)];
+
+    private static string EventLabel(EnvironmentModifier modifier)
+    {
+        string name = modifier.Type switch
+        {
+            EventType.ResourceBlight => "🥀 Blight",
+            EventType.DensityPlague => "☣ Plague",
+            EventType.ClimaticAnomaly => modifier.Magnitude < 0 ? "❄ Ice age" : "🔥 Heatwave",
+            _ => modifier.Type.ToString(),
+        };
+        return $"{name} · {modifier.RemainingTicks}t";
+    }
 
     public bool HasSelection => Inspector is not null;
 
@@ -222,6 +239,7 @@ public partial class WorldViewModel : ViewModelBase
         OnPropertyChanged(nameof(Tick));
         OnPropertyChanged(nameof(Population));
         OnPropertyChanged(nameof(Extinct));
+        OnPropertyChanged(nameof(ActiveEvents));
 
         if (value is not null)
         {

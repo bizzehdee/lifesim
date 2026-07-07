@@ -120,6 +120,34 @@ public class WorldViewTests
     }
 
     [Fact]
+    public void ActiveEvents_labelsRunningEvents_forTheStatusBar()
+    {
+        static WorldSnapshot Frame(params EnvironmentModifier[] events) => new()
+        {
+            World = new WorldState { Seed = 1, Width = 16, Height = 16 },
+            Configuration = SimulationConfig.Default,
+            Metrics = new SimulationMetrics(),
+            EnvironmentModifiers = [.. events],
+        };
+
+        var vm = new WorldViewModel();
+        vm.LoadSnapshot(Frame(
+            new EnvironmentModifier { Type = EventType.ClimaticAnomaly, Magnitude = -20, RemainingTicks = 42 },
+            new EnvironmentModifier { Type = EventType.ResourceBlight, RemainingTicks = 10 }));
+
+        Assert.Contains(vm.ActiveEvents, e => e.Contains("Ice age") && e.Contains("42"));
+        Assert.Contains(vm.ActiveEvents, e => e.Contains("Blight"));
+
+        // A warming anomaly reads as a heatwave, not an ice age.
+        vm.LoadSnapshot(Frame(new EnvironmentModifier { Type = EventType.ClimaticAnomaly, Magnitude = 20, RemainingTicks = 5 }));
+        Assert.Contains(vm.ActiveEvents, e => e.Contains("Heatwave"));
+
+        // No events → nothing to show.
+        vm.LoadSnapshot(Frame());
+        Assert.Empty(vm.ActiveEvents);
+    }
+
+    [Fact]
     public void FocusOrganism_selectsItAndSwitchesToTheInfoTab()
     {
         WorldSnapshot snapshot = BuildSnapshot();

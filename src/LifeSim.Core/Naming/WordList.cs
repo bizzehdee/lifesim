@@ -4,7 +4,7 @@ using System.Reflection;
 namespace LifeSim.Core.Naming;
 
 /// <summary>
-/// An immutable, embedded word list referenced by its version string (lifesim.md §19). A run
+/// An immutable, embedded word list referenced by its version string. A run
 /// pins its word-list version in <c>configuration</c>, so a fixed run always replays to
 /// identical names even if the shipped default lists are later expanded.
 /// </summary>

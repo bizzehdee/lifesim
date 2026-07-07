@@ -3,7 +3,7 @@ using LifeSim.Core.Organisms;
 
 namespace LifeSim.Core.Snapshot;
 
-/// <summary>An organism's dynamic state, inherited genome, and brain, as stored in a snapshot (lifesim.md §12).</summary>
+/// <summary>An organism's dynamic state, inherited genome, and brain, as stored in a snapshot.</summary>
 public sealed record OrganismSnapshot
 {
     public long OrganismId { get; init; }
@@ -14,16 +14,16 @@ public sealed record OrganismSnapshot
     public long Age { get; init; }
     public GenomeSnapshot Genome { get; init; } = new();
 
-    /// <summary>The NEAT genome (lifesim.md §4, §12); node <c>state</c> must round-trip for the save/reload test.</summary>
+    /// <summary>The NEAT genome; node <c>state</c> must round-trip for the save/reload test.</summary>
     public NeatGenome Brain { get; init; } = new();
 
-    /// <summary>The action selected last tick (lifesim.md §12, §18); null before an organism's first decision.</summary>
+    /// <summary>The action selected last tick; null before an organism's first decision.</summary>
     public OrganismAction? LastAction { get; init; }
 
-    /// <summary>The outcome of <see cref="LastAction"/> (lifesim.md §12, §13), fed back in as a sensory input.</summary>
+    /// <summary>The outcome of <see cref="LastAction"/>, fed back in as a sensory input.</summary>
     public ActionResult LastActionResult { get; init; }
 
-    /// <summary>Null if this organism has never reproduced; reconstructs cooldown/readiness without replay (lifesim.md §12).</summary>
+    /// <summary>Null if this organism has never reproduced; reconstructs cooldown/readiness without replay.</summary>
     public long? LastBirthTick { get; init; }
 
     public static OrganismSnapshot From(Organism organism) => new()
@@ -45,7 +45,7 @@ public sealed record OrganismSnapshot
         new(OrganismId, Genome.ToGenome(), Name, Energy, X, Y, Brain, Age, LastAction, LastActionResult, LastBirthTick, energyCapacity);
 }
 
-/// <summary>The inheritable trait values (lifesim.md §3, §8), as stored in a snapshot.</summary>
+/// <summary>The inheritable trait values, as stored in a snapshot.</summary>
 public sealed record GenomeSnapshot
 {
     public double Size { get; init; }

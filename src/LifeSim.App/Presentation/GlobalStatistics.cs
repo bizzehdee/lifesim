@@ -7,14 +7,14 @@ using LifeSim.Core.World;
 
 namespace LifeSim.App.Presentation;
 
-/// <summary>One labelled statistic in the global-statistics panel (lifesim.md §18).</summary>
+/// <summary>One labelled statistic in the global-statistics panel.</summary>
 public sealed record StatRow(string Label, string Value);
 
 /// <summary>A titled group of related statistics.</summary>
 public sealed record StatSection(string Title, IReadOnlyList<StatRow> Rows);
 
 /// <summary>
-/// Builds the world-level statistics panel (lifesim.md §18) purely from a <see cref="WorldSnapshot"/>
+/// Builds the world-level statistics panel purely from a <see cref="WorldSnapshot"/>
 /// — population and vital rates, the energy economy, foraging and cooperation flows, trait means, the
 /// multicellular picture, biome spread, and active events. Like every other view it derives only from
 /// snapshot/state fields, so it reads identically for a live frame or a loaded file.

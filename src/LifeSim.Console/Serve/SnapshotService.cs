@@ -5,7 +5,7 @@ using LifeSim.Core.Snapshot;
 namespace LifeSim.Console.Serve;
 
 /// <summary>
-/// Thread-safe access to a running world for the serve endpoint (lifesim.md §1): the background
+/// Thread-safe access to a running world for the serve endpoint: the background
 /// engine loop advances it while HTTP/WebSocket handlers read the latest snapshot or post an edited
 /// one back. All access is serialized under a single lock, so the engine and the transport never
 /// touch the world concurrently. This class is transport-agnostic and directly unit-testable.
@@ -43,7 +43,7 @@ public sealed class SnapshotService
         }
     }
 
-    /// <summary>The current world state as a snapshot JSON document (lifesim.md §12).</summary>
+    /// <summary>The current world state as a snapshot JSON document.</summary>
     public string CurrentSnapshotJson()
     {
         lock (_gate)
@@ -52,7 +52,7 @@ public sealed class SnapshotService
         }
     }
 
-    /// <summary>The current tick's metrics as a single NDJSON line (lifesim.md §14).</summary>
+    /// <summary>The current tick's metrics as a single NDJSON line.</summary>
     public string CurrentMetricsLine()
     {
         lock (_gate)
@@ -61,7 +61,7 @@ public sealed class SnapshotService
         }
     }
 
-    /// <summary>Advances one tick; returns false (without advancing) once the world is extinct (lifesim.md §17).</summary>
+    /// <summary>Advances one tick; returns false (without advancing) once the world is extinct.</summary>
     public bool AdvanceOnce()
     {
         lock (_gate)
@@ -78,7 +78,7 @@ public sealed class SnapshotService
 
     /// <summary>
     /// Replaces the running world with an imported (edited) snapshot — the browser demo's write-back
-    /// path (lifesim.md §1, §16). The snapshot is validated by <see cref="SnapshotSerializer.Load"/>
+    /// path. The snapshot is validated by <see cref="SnapshotSerializer.Load"/>
     /// before it is adopted, so a malformed post never corrupts the live world.
     /// </summary>
     public void Import(string snapshotJson)

@@ -3,7 +3,7 @@ using LifeSim.Core.Configuration;
 namespace LifeSim.Core.Organisms;
 
 /// <summary>
-/// The inheritable structural traits (lifesim.md §3, §8). Thermal Envelope is modelled as a
+/// The inheritable structural traits. Thermal Envelope is modelled as a
 /// center ± half-width band (<see cref="ThermalCenter"/>, <see cref="ThermalWidth"/>); every
 /// trait is hard-bounded by the configured <see cref="TraitBounds"/>.
 /// </summary>
@@ -18,7 +18,7 @@ public sealed record Genome
     public double SensoryAcuity { get; init; }
 
     /// <summary>
-    /// Evolvable generosity (lifesim.md §20): the fraction of its own energy the organism donates
+    /// Evolvable generosity: the fraction of its own energy the organism donates
     /// when it performs a Share action. Under selection this drifts freely — lineages can evolve
     /// toward hoarding (→ 0) or over-sharing (→ 1), whichever the local kin economy favours. The
     /// brain still decides <em>whether</em> to share and relatedness gates <em>whether it lands</em>
@@ -27,14 +27,14 @@ public sealed record Genome
     public double ShareFraction { get; init; }
 
     /// <summary>
-    /// Body size in cells (lifesim.md §21): the body plan for aggregate multicellularity. 1 is
+    /// Body size in cells: the body plan for aggregate multicellularity. 1 is
     /// unicellular (a plain organism); larger bodies pay volume upkeep (∝ N) but can only feed
     /// through their surface (∝ N^⅔), so the square-cube law caps the viable value. Ignored when
     /// multicellularity is disabled (every body is then a single cell).
     /// </summary>
     public double CellCount { get; init; } = 1.0;
 
-    /// <summary>Specialisation weights (lifesim.md §21): relative propensities toward each cell job, normalised to fractions at use.</summary>
+    /// <summary>Specialisation weights: relative propensities toward each cell job, normalised to fractions at use.</summary>
     public double GermWeight { get; init; }
     public double FeederWeight { get; init; }
     public double StoreWeight { get; init; }
@@ -42,7 +42,7 @@ public sealed record Genome
     public double MoverWeight { get; init; }
     public double SensorWeight { get; init; }
 
-    /// <summary>Clamps every trait to its hard min/max (lifesim.md §3, §8).</summary>
+    /// <summary>Clamps every trait to its hard min/max.</summary>
     public Genome Clamped(TraitBounds bounds) => this with
     {
         Size = Clamp(Size, bounds.Size),
@@ -63,7 +63,7 @@ public sealed record Genome
     };
 
     /// <summary>
-    /// Mid-range genome for genesis organisms (lifesim.md §17): the midpoint of every bound, with two
+    /// Mid-range genome for genesis organisms: the midpoint of every bound, with two
     /// deliberate exceptions. <see cref="ShareFraction"/> is seeded separately from
     /// <c>CooperationConfig.ShareFraction</c> (§20). <see cref="CellCount"/> starts at 1 (unicellular,
     /// not the bound midpoint) so founders begin the multicellular transition from a single cell (§21);

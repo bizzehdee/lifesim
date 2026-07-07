@@ -11,7 +11,7 @@ public class NeatBrainTests
     [Fact]
     public void Propagate_withSteps_chainsSingleStepsAndClampsToOne()
     {
-        // A larger multicellular body runs several recurrent steps per tick (lifesim.md §4, §21):
+        // A larger multicellular body runs several recurrent steps per tick:
         // N steps must equal chaining the single-step forward pass N times, and steps <= 1 is the base.
         NeatGenome brain = NeatGenomeFactory.CreateMinimalFullyConnected(new Prng(7));
 
@@ -26,7 +26,7 @@ public class NeatBrainTests
     [Fact]
     public void Evaluate_firstTick_outputsIgnoreCurrentInputs_sinceAllStateStartsAtZero()
     {
-        // One-tick propagation latency (lifesim.md §4): every node reads its inputs' *previous*
+        // One-tick propagation latency: every node reads its inputs' *previous*
         // tick state, which is all-zero at birth, so the very first evaluation's outputs must be
         // exactly tanh(0) = 0 regardless of what's fed in this tick.
         NeatGenome brain = NeatGenomeFactory.CreateMinimalFullyConnected(new Prng(1));

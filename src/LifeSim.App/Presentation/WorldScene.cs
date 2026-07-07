@@ -7,12 +7,11 @@ using LifeSim.Core.World;
 
 namespace LifeSim.App.Presentation;
 
-/// <summary>The selected organism's sensory footprint, highlighted on the map (lifesim.md §17, §18).</summary>
+/// <summary>The selected organism's sensory footprint, highlighted on the map.</summary>
 public sealed record OrganismFootprint(double CentreX, double CentreY, double EnvRadius, double OrgRadius);
 
 /// <summary>
-/// A fully render-ready view of one frame, built purely from a <see cref="WorldSnapshot"/> (lifesim.md
-/// §12, §18). Terrain/biomes are reconstructed from the world seed via the Core's Simplex and ground
+/// A fully render-ready view of one frame, built purely from a <see cref="WorldSnapshot"/>. Terrain/biomes are reconstructed from the world seed via the Core's Simplex and ground
 /// energy from the snapshot's sparse overrides — nothing here reimplements engine logic, and a live
 /// frame (<c>world.ToSnapshot()</c>) and a loaded file produce identical scenes. The canvas draws
 /// this; it holds no engine state of its own.

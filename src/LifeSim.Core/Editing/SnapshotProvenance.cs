@@ -3,7 +3,7 @@ using LifeSim.Core.Snapshot;
 namespace LifeSim.Core.Editing;
 
 /// <summary>
-/// Branch provenance for interventions (lifesim.md §16). An edit doesn't overwrite the original run;
+/// Branch provenance for interventions. An edit doesn't overwrite the original run;
 /// it forks a new branch that records the snapshot it came from, so interventions form comparable
 /// timelines. These ids are provenance metadata supplied by the UI — the deterministic engine only
 /// carries them through, never mints them, so an untouched run stays byte-identical.

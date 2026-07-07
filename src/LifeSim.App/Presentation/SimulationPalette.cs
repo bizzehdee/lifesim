@@ -5,7 +5,7 @@ using LifeSim.Core.World;
 namespace LifeSim.App.Presentation;
 
 /// <summary>
-/// The simulation colour tokens (lifesim.md §18), kept as their own set separate from the app's
+/// The simulation colour tokens, kept as their own set separate from the app's
 /// Fluent chrome tokens so they can't drift from the sim spec. Colours are chosen to stay
 /// distinguishable under common colour-vision deficiencies; the map never relies on colour alone —
 /// action is also carried by outline + legend glyph, and every colour has a legend entry.
@@ -13,13 +13,13 @@ namespace LifeSim.App.Presentation;
 /// </summary>
 public static class SimulationPalette
 {
-    // --- Biome base colours (lifesim.md §18). ---
+    // --- Biome base colours. ---
     public static readonly Color Grassland = Color.FromRgb(0x4C, 0x9A, 0x5A); // temperate green
     public static readonly Color Desert = Color.FromRgb(0xC9, 0xA2, 0x4B);    // hot amber/tan
     public static readonly Color Swamp = Color.FromRgb(0x1E, 0x5F, 0x63);     // murky dark teal
     public static readonly Color IceSheet = Color.FromRgb(0xD5, 0xE6, 0xEE);  // pale blue-white
 
-    // --- Action palette (organism outline + Action fill mode) (lifesim.md §18). ---
+    // --- Action palette (organism outline + Action fill mode). ---
     public static readonly Color Move = Color.FromRgb(0x3B, 0x7D, 0xD8);       // blue
     public static readonly Color Graze = Color.FromRgb(0x4C, 0xAF, 0x50);      // green
     public static readonly Color Predation = Color.FromRgb(0xE5, 0x48, 0x4D);  // red
@@ -64,7 +64,7 @@ public static class SimulationPalette
         _ => Idle,
     };
 
-    /// <summary>Energy fill (lifesim.md §18): red → amber → green across [0, <paramref name="ceiling"/>].</summary>
+    /// <summary>Energy fill: red → amber → green across [0, <paramref name="ceiling"/>].</summary>
     public static Color EnergyColour(double energy, double ceiling)
     {
         double t = ceiling <= 0.0 ? 0.0 : Math.Clamp(energy / ceiling, 0.0, 1.0);
@@ -74,7 +74,7 @@ public static class SimulationPalette
     }
 
     /// <summary>
-    /// Stress-fit fill (lifesim.md §18): comfortable inside the thermal envelope, shading toward
+    /// Stress-fit fill: comfortable inside the thermal envelope, shading toward
     /// blue when the tile is below it and red when above, saturating over <paramref name="range"/> °C.
     /// </summary>
     public static Color StressFitColour(double tileTemperature, double thermalCenter, double thermalWidth, double range = 30.0)
@@ -93,7 +93,7 @@ public static class SimulationPalette
     }
 
     /// <summary>
-    /// Ground-energy brightness modulation (lifesim.md §18): a tile at cap shows its full biome
+    /// Ground-energy brightness modulation: a tile at cap shows its full biome
     /// colour; a depleted tile darkens toward <paramref name="floor"/> of its brightness.
     /// </summary>
     public static Color ModulateByEnergy(Color biomeColour, double energy, double cap, double floor = 0.35)

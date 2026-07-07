@@ -8,7 +8,7 @@ using LifeSim.Core.World;
 namespace LifeSim.Determinism.Tests;
 
 /// <summary>
-/// Determinism foundations (lifesim.md §9) — the primitives the two flagship tests
+/// Determinism foundations — the primitives the two flagship tests
 /// (<see cref="FlagshipDeterminismTests"/>) rely on: PRNG streams, simplex noise, ground energy,
 /// and organism naming.
 /// </summary>
@@ -81,7 +81,7 @@ public class FoundationDeterminismTests
     public void Simplex_sameSeed_producesIdenticalGrid()
     {
         // Transcendental-free simplex is bit-deterministic; running this suite under the WASM
-        // build validates desktop/WASM parity (lifesim.md §1). Here we pin same-input determinism.
+        // build validates desktop/WASM parity. Here we pin same-input determinism.
         var a = new SimplexNoise(31337);
         var b = new SimplexNoise(31337);
         var config = NoiseConfig.Default;
@@ -98,7 +98,7 @@ public class FoundationDeterminismTests
     [Fact]
     public void BiomeMap_sameSeed_isByteIdentical()
     {
-        // Phase 2 exit criteria (lifesim.md §2, §12): given a seed, the Core reconstructs a
+        // Phase 2 exit criteria: given a seed, the Core reconstructs a
         // byte-identical biome map — no terrain layout is ever stored, only the seed is.
         var config = SimulationConfig.Default;
         var a = new TerrainSampler(2024, config);
@@ -122,7 +122,7 @@ public class FoundationDeterminismTests
         var terrain = new TerrainSampler(2024, config);
         var grid = new GroundEnergyGrid(terrain, config);
 
-        // Grassland regenerates a finite amount per tick (lifesim.md §2); a fully-drained tile
+        // Grassland regenerates a finite amount per tick; a fully-drained tile
         // must climb back to exactly its cap and never overshoot, however long it's given.
         int x = 0;
         while (terrain.BiomeAt(x, 0) != Biome.Grassland)
@@ -145,7 +145,7 @@ public class FoundationDeterminismTests
     [Fact]
     public void OrganismNaming_isPureFunctionOfIdAndWordListVersion_consumesNoPrngDraw()
     {
-        // lifesim.md §9/§19: names are a pure function of organism_id + word-list version and
+        // names are a pure function of organism_id + word-list version and
         // must not disturb any PRNG stream.
         var config = new NamingConfig();
         var streams = PrngStreams.FromSeed(2024);

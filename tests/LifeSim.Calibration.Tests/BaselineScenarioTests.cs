@@ -7,7 +7,7 @@ using LifeSim.Core.World;
 namespace LifeSim.Calibration.Tests;
 
 /// <summary>
-/// Fixed-seed calibration scenarios (lifesim.md §15) run through the <c>sim</c> CLI harness. These
+/// Fixed-seed calibration scenarios run through the <c>sim</c> CLI harness. These
 /// don't prove evolution is "correct"; they catch obvious runaway dynamics and broken mechanics
 /// with the tuned default configuration.
 /// </summary>

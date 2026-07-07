@@ -8,26 +8,26 @@ using LifeSim.Core.World;
 
 namespace LifeSim.App.ViewModels;
 
-/// <summary>A genome trait shown against its hard bounds (lifesim.md §18); <see cref="Fraction"/> ∈ [0,1] drives a bar.</summary>
+/// <summary>A genome trait shown against its hard bounds; <see cref="Fraction"/> ∈ [0,1] drives a bar.</summary>
 public sealed record TraitReading(string Name, double Value, double Min, double Max)
 {
     public double Fraction => Max <= Min ? 0.0 : Math.Clamp((Value - Min) / (Max - Min), 0.0, 1.0);
 }
 
-/// <summary>The metabolism equation broken out for one organism (lifesim.md §3, §18).</summary>
+/// <summary>The metabolism equation broken out for one organism.</summary>
 public sealed record EconomyBreakdown(double Base, double ThermalStress, double SensoryTax, double LastMovementCost)
 {
     public double Total => Base + ThermalStress + SensoryTax + LastMovementCost;
 }
 
-/// <summary>One action's current softmax probability (lifesim.md §4, §18).</summary>
+/// <summary>One action's current softmax probability.</summary>
 public sealed record ActionProbability(OrganismAction Action, double Probability);
 
-/// <summary>One cell type's share of a multicellular body (lifesim.md §21): its cell count and fraction of the body.</summary>
+/// <summary>One cell type's share of a multicellular body: its cell count and fraction of the body.</summary>
 public sealed record CellTypeReading(string Type, double Cells, double Fraction);
 
 /// <summary>
-/// Every stat behind one organism (lifesim.md §18), all sourced from its snapshot record plus the
+/// Every stat behind one organism, all sourced from its snapshot record plus the
 /// world config/terrain — identity &amp; lineage, physical state, genome-vs-bounds, the per-tick
 /// economy breakdown, behaviour + softmax distribution, and the brain graph. Built fresh per
 /// selection; a pure projection of state, so live and loaded frames inspect identically.
@@ -59,7 +59,7 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
     public int X => Organism.X;
     public int Y => Organism.Y;
 
-    /// <summary>Grid coordinate as "(x, y)" — a single binding source so both components render (lifesim.md §18).</summary>
+    /// <summary>Grid coordinate as "(x, y)" — a single binding source so both components render.</summary>
     public string Position => $"({X}, {Y})";
     public Biome Biome { get; private init; }
     public double Energy => Organism.Energy;
@@ -70,12 +70,12 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
     // Genome vs bounds.
     public IReadOnlyList<TraitReading> Traits { get; private init; } = [];
 
-    // Body plan (multicellularity, lifesim.md §21).
+    // Body plan (multicellularity).
     public bool Multicellular { get; private init; }
     public double CellCount { get; private init; } = 1.0;
     public bool Fertile { get; private init; } = true;
 
-    /// <summary>Recurrent brain-propagation steps this body runs per tick (lifesim.md §21) — its neural depth.</summary>
+    /// <summary>Recurrent brain-propagation steps this body runs per tick — its neural depth.</summary>
     public int BrainSteps { get; private init; } = 1;
     public IReadOnlyList<CellTypeReading> CellComposition { get; private init; } = [];
 

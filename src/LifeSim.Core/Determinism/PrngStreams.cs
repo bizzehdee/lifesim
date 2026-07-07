@@ -4,8 +4,7 @@ namespace LifeSim.Core.Determinism;
 
 /// <summary>
 /// The full set of named deterministic streams for a world, each independently seeded from the
-/// master seed. The complete state of every stream is serialized into each snapshot (lifesim.md
-/// §9, §12) — not just the master seed — so a run resumes bit-identically.
+/// master seed. The complete state of every stream is serialized into each snapshot — not just the master seed — so a run resumes bit-identically.
 /// </summary>
 public sealed class PrngStreams
 {

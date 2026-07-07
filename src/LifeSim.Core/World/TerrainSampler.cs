@@ -5,7 +5,7 @@ namespace LifeSim.Core.World;
 
 /// <summary>
 /// Reconstructs the implicit terrain (moisture, temperature, biome) for any tile from the world
-/// seed and noise configuration alone — nothing here is persisted (lifesim.md §2, §12). The two
+/// seed and noise configuration alone — nothing here is persisted. The two
 /// noise layers are seeded from the world seed via a fixed, non-PRNG-consuming mix so terrain is
 /// stable regardless of how far gameplay PRNG streams have advanced.
 /// </summary>
@@ -27,7 +27,7 @@ public sealed class TerrainSampler
 
     /// <summary>
     /// The raw temperature-noise field (~[-1, 1]) that drives biome *classification* against the
-    /// cold/hot thresholds (lifesim.md §2). This is the climate axis of the biome matrix, not a
+    /// cold/hot thresholds. This is the climate axis of the biome matrix, not a
     /// physical temperature — for that, see <see cref="TemperatureCelsiusAt"/>.
     /// </summary>
     public double TemperatureAt(int x, int y) => _temperatureNoise.SampleFractal(x, y, _config.TemperatureNoise);
@@ -36,7 +36,7 @@ public sealed class TerrainSampler
         BiomeClassifier.Classify(MoistureAt(x, y), TemperatureAt(x, y), _config.Biomes.Thresholds);
 
     /// <summary>
-    /// The tile's physical temperature in °C (lifesim.md §2, §3): its biome's baseline temperature
+    /// The tile's physical temperature in °C: its biome's baseline temperature
     /// plus the temperature-noise field scaled by <see cref="BiomesConfig.TemperatureVariation"/>.
     /// This is what thermal-stress metabolism and the temperature sensor read, so an organism's °C
     /// <c>thermal_center</c> is compared against a °C tile temperature — a Desert tile (hot) genuinely
@@ -46,8 +46,7 @@ public sealed class TerrainSampler
         _config.Biomes.For(BiomeAt(x, y)).Temperature + (TemperatureAt(x, y) * _config.Biomes.TemperatureVariation);
 
     /// <summary>
-    /// Samples a rectangular window of tiles for inspection (lifesim.md §12's debug snapshot
-    /// mode) — never required for normal replay, since terrain is always reconstructable.
+    /// Samples a rectangular window of tiles for inspection — never required for normal replay, since terrain is always reconstructable.
     /// </summary>
     public List<DebugTileEntry> CaptureDebugGrid(int x0, int y0, int width, int height)
     {
@@ -72,5 +71,5 @@ public sealed class TerrainSampler
         SplitMix64.Finalize(worldSeed + (salt * 0x9E3779B97F4A7C15UL));
 }
 
-/// <summary>A single sampled tile, used only by the optional debug snapshot cache (lifesim.md §12).</summary>
+/// <summary>A single sampled tile, used only by the optional debug snapshot cache.</summary>
 public sealed record DebugTileEntry(int X, int Y, Biome Biome, double Moisture, double Temperature);

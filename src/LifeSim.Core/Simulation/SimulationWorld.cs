@@ -12,8 +12,8 @@ namespace LifeSim.Core.Simulation;
 /// <summary>
 /// The tick-loop aggregate root: terrain, ground energy, PRNG streams, active event modifiers, and
 /// the live organism index, advanced one phased tick at a time in the authoritative order
-/// (lifesim.md §7). Offspring inherit their parent's genome and brain with mutation applied in the
-/// Birth Commit phase (lifesim.md §8).
+///. Offspring inherit their parent's genome and brain with mutation applied in the
+/// Birth Commit phase.
 /// </summary>
 public sealed class SimulationWorld
 {
@@ -27,21 +27,21 @@ public sealed class SimulationWorld
     private readonly SortedDictionary<long, Organism> _organisms = new();
     private readonly Dictionary<(int X, int Y), long> _occupancy = new();
 
-    /// <summary>Number of bins in each per-trait distribution histogram (lifesim.md §14).</summary>
+    /// <summary>Number of bins in each per-trait distribution histogram.</summary>
     private const int HistogramBucketCount = 10;
 
-    /// <summary>Metrics for the most recently completed tick (lifesim.md §7, §14); rebuilt every Metrics phase.</summary>
+    /// <summary>Metrics for the most recently completed tick; rebuilt every Metrics phase.</summary>
     private SimulationMetrics _metrics = new();
 
-    /// <summary>Provenance of UI interventions (lifesim.md §16), preserved across resume so it never silently drops.</summary>
+    /// <summary>Provenance of UI interventions, preserved across resume so it never silently drops.</summary>
     private List<EditLogEntry> _editLog = [];
 
-    // Branch provenance (lifesim.md §16); carried verbatim across resume, never minted by the engine.
+    // Branch provenance; carried verbatim across resume, never minted by the engine.
     private string? _snapshotId;
     private string? _parentSnapshotId;
     private string? _branchId;
 
-    /// <summary>Ancestry records for every organism that has ever lived — never removed, unlike <see cref="_organisms"/> (lifesim.md §8, §14).</summary>
+    /// <summary>Ancestry records for every organism that has ever lived — never removed, unlike <see cref="_organisms"/>.</summary>
     private readonly SortedDictionary<long, LineageEntry> _lineageRecords = new();
 
     public WorldState World { get; }
@@ -51,7 +51,7 @@ public sealed class SimulationWorld
     public long Tick { get; private set; }
 
     /// <summary>
-    /// Max threads for the per-organism brain forward pass (lifesim.md §7). Purely an execution knob:
+    /// Max threads for the per-organism brain forward pass. Purely an execution knob:
     /// the forward pass is a pure function with no shared writes and no PRNG, so results are
     /// byte-identical for any value ≥ 1 (the single softmax roll stays sequential in id order). Not
     /// part of the snapshot; default 1 (serial). Clamped to ≥ 1 on set.
@@ -64,16 +64,16 @@ public sealed class SimulationWorld
 
     private int _maxDegreeOfParallelism = 1;
 
-    /// <summary>Set once population reaches zero; the engine halts and never auto-reseeds (lifesim.md §17).</summary>
+    /// <summary>Set once population reaches zero; the engine halts and never auto-reseeds.</summary>
     public bool Extinct { get; private set; }
 
-    /// <summary>Living organisms in ascending id order (lifesim.md §7, §9).</summary>
+    /// <summary>Living organisms in ascending id order.</summary>
     public IReadOnlyDictionary<long, Organism> Organisms => _organisms;
 
     /// <summary>Ancestry records for every organism that has ever lived, ascending by id.</summary>
     public IReadOnlyDictionary<long, LineageEntry> LineageRecords => _lineageRecords;
 
-    /// <summary>The most recently computed tick metrics (lifesim.md §14) — the same object <see cref="ToSnapshot"/> carries.</summary>
+    /// <summary>The most recently computed tick metrics — the same object <see cref="ToSnapshot"/> carries.</summary>
     public SimulationMetrics Metrics => _metrics;
 
     private SimulationWorld(
@@ -93,7 +93,7 @@ public sealed class SimulationWorld
     }
 
     /// <summary>
-    /// Builds Tick 0 (lifesim.md §17): scatters <see cref="SimulationConfig.InitialPopulation"/>
+    /// Builds Tick 0: scatters <see cref="SimulationConfig.InitialPopulation"/>
     /// mid-range-genome organisms across Grassland tiles via the genesis PRNG stream.
     /// </summary>
     public static SimulationWorld CreateGenesis(WorldState world, SimulationConfig config)
@@ -138,7 +138,7 @@ public sealed class SimulationWorld
 
         foreach (OrganismSnapshot entry in snapshot.Organisms)
         {
-            // Capacity is a deterministic function of genome + config (lifesim.md §21), recomputed on
+            // Capacity is a deterministic function of genome + config, recomputed on
             // load rather than stored — so save/reload stays byte-identical.
             Organism organism = entry.ToOrganism(Morphology.Capacity(entry.Genome.ToGenome(), snapshot.Configuration.Multicellular));
             simWorld._organisms[organism.Id] = organism;
@@ -173,7 +173,7 @@ public sealed class SimulationWorld
         PrngStreams = _prngStreams.CaptureState(),
         EvolutionBookkeeping = new EvolutionBookkeeping
         {
-            // Advanced by structural brain mutations in the Birth Commit phase (lifesim.md §4, §8);
+            // Advanced by structural brain mutations in the Birth Commit phase;
             // seeded past the fixed genesis topology's reserved range so the two never collide.
             NextInnovationId = _innovationIdAllocator.NextId,
             NextOrganismId = _idAllocator.NextId,
@@ -186,12 +186,12 @@ public sealed class SimulationWorld
         EditLog = _editLog.ToList(),
     };
 
-    /// <summary>Advances exactly one tick through the authoritative phase order (lifesim.md §7).</summary>
+    /// <summary>Advances exactly one tick through the authoritative phase order.</summary>
     public void Advance()
     {
         if (Extinct)
         {
-            throw new InvalidOperationException("Cannot advance an extinct (halted) world (lifesim.md §17).");
+            throw new InvalidOperationException("Cannot advance an extinct (halted) world.");
         }
 
         // The tick this Advance() call is producing (Tick itself only increments at the very end,
@@ -199,14 +199,14 @@ public sealed class SimulationWorld
         long currentTick = Tick + 1;
 
         // 1. Environment Phase: age/expire active event modifiers, then roll for new stochastic
-        //    events against the events stream (lifesim.md §6, §7). Newly-triggered events are live
+        //    events against the events stream. Newly-triggered events are live
         //    for the rest of this same tick — the Sensing phase below already sees them.
         _environment.RunEnvironmentPhase(_prngStreams[PrngStream.Events], Config.Events, currentTick);
 
         // 2. Sensing Phase: every organism's input vector is built from world state as it stands
         //    at the start of the tick — positions/energy are still whatever the previous tick's
         //    Intent Resolution left them, since this phase runs in full before any organism's
-        //    decision is even made, let alone resolved (lifesim.md §7).
+        //    decision is even made, let alone resolved.
         Prng sensoryNoise = _prngStreams[PrngStream.SensoryNoise];
         double globalStress = _environment.GlobalStress;
         double temperatureOffset = _environment.TemperatureOffset;
@@ -220,11 +220,11 @@ public sealed class SimulationWorld
         // 3. Decision Phase. Per-organism NEAT evaluation is independent of every other organism
         //    (each reads only its own cached inputs and its own prior brain state). The expensive
         //    forward pass is pure — no PRNG, no shared writes — so it runs across up to
-        //    MaxDegreeOfParallelism threads (lifesim.md §7). The single softmax roll then draws from
+        //    MaxDegreeOfParallelism threads. The single softmax roll then draws from
         //    the shared behavior stream strictly in ascending organism-id order, so the stream is
         //    consumed identically regardless of the parallelism — results are byte-identical for any
-        //    thread count (lifesim.md §9).
-        // A larger body runs more recurrent propagation steps per tick (lifesim.md §21), so it
+        //    thread count.
+        // A larger body runs more recurrent propagation steps per tick, so it
         // reasons more deeply before acting; a single cell runs one step (the base model).
         Prng behavior = _prngStreams[PrngStream.Behavior];
         MulticellularConfig decisionMc = Config.Multicellular;
@@ -258,7 +258,7 @@ public sealed class SimulationWorld
         // 4. Intent Resolution Phase: movement, harvest (grazing/predation), and reproduction
         //    validity/tile-claiming all resolve here, in a single ascending-id pass, since they
         //    share occupancy state and must interleave in strict organism-id priority order
-        //    (lifesim.md §7, §10). Offspring are only *reserved* here (tile claimed, parent
+        //   . Offspring are only *reserved* here (tile claimed, parent
         //    charged, id allocated) — actual insertion into the live index happens in the Birth
         //    Commit phase below.
         var counters = new TickCounters();
@@ -280,7 +280,7 @@ public sealed class SimulationWorld
             organism.RecordActionResult(result);
         }
 
-        // 5. Metabolism Phase. Base + thermal stress + sensory tax + movement, plus (lifesim.md §7)
+        // 5. Metabolism Phase. Base + thermal stress + sensory tax + movement, plus
         //    any active-event drains: a climatic anomaly shifts the effective tile temperature that
         //    thermal stress is measured against, and a density plague drains organisms crowded
         //    above the configured threshold.
@@ -296,7 +296,7 @@ public sealed class SimulationWorld
             double friction = Config.Biomes.For(_terrain.BiomeAt(organism.X, organism.Y)).Friction;
             int localDensity = LocalOrganismDensity(organism); // 3×3 including self
 
-            // Body economy (lifesim.md §21): one cell's base metabolism plus the multicellular overhead
+            // Body economy: one cell's base metabolism plus the multicellular overhead
             // for the rest — extra-cell upkeep (volume, ∝ N) + coordination, discounted by division of
             // labour so a well-differentiated body is far cheaper than a lopsided one. Defender cells
             // insulate against thermal stress and Mover cells cut locomotion tax. A generalist 1-cell
@@ -309,11 +309,11 @@ public sealed class SimulationWorld
                 + (Metabolism.ThermalStress(g, tileTemperature, Config.Metabolism) * Morphology.ThermalStressFactor(g, mc))
                 + Metabolism.SensoryTax(g, Config.Metabolism)
                 + (Metabolism.LocomotionTax(distanceTraveled[id], g.SpeedCapacity, friction, Config.MovementCombat) * Morphology.LocomotionFactor(g, mc))
-                + Metabolism.CrowdingTax(localDensity - 1, Config.Metabolism); // density-dependent overpopulation cost (lifesim.md §3, §6)
+                + Metabolism.CrowdingTax(localDensity - 1, Config.Metabolism); // density-dependent overpopulation cost
 
             if (Config.Senescence)
             {
-                cost += Metabolism.SenescenceTax(organism.Age, Config.Metabolism); // optional aging model (lifesim.md §17)
+                cost += Metabolism.SenescenceTax(organism.Age, Config.Metabolism); // optional aging model
             }
 
             if (plagueActive && localDensity >= Config.Events.PlagueDensityThreshold)
@@ -329,7 +329,7 @@ public sealed class SimulationWorld
         //    non-predation deaths (starvation/thermal stress) deposit corpse energy here, based on
         //    the energy they had *before* the fatal Metabolism deduction — a predation victim is
         //    already at exactly 0 by this point, so it correctly contributes no corpse energy
-        //    (lifesim.md §11, §17).
+        //   .
         foreach (long id in _organisms.Keys.ToArray())
         {
             Organism organism = _organisms[id];
@@ -351,7 +351,7 @@ public sealed class SimulationWorld
         }
 
         // 7. Resource Regeneration Phase — suspended entirely while a Resource Blight is active
-        //    (lifesim.md §6), which is what forces populations off grazing and toward predation.
+        //   , which is what forces populations off grazing and toward predation.
         if (!_environment.BlightActive)
         {
             _groundEnergy.RegenerateTick();
@@ -359,7 +359,7 @@ public sealed class SimulationWorld
 
         // 8. Mutation & Birth Commit Phase. Trait and brain mutation are applied here, in ascending
         //    offspring-id order, so the mutation stream and the innovation-id counter both advance
-        //    deterministically (lifesim.md §4, §8, §9). pendingBirths is already ascending by
+        //    deterministically. pendingBirths is already ascending by
         //    offspring id (ids are allocated monotonically as births are reserved), but sort
         //    explicitly to make the contract independent of that.
         Prng mutation = _prngStreams[PrngStream.Mutation];
@@ -367,7 +367,7 @@ public sealed class SimulationWorld
         {
             Genome offspringGenome = GenomeMutator.Mutate(birth.Genome, Config.Mutation, Config.TraitBounds, mutation);
 
-            // Multicellular parents bias their offspring toward more cells (lifesim.md §21), so the
+            // Multicellular parents bias their offspring toward more cells, so the
             // trait is self-reinforcing; the square-cube economy still caps the viable size. Applied
             // after mutation and re-clamped; draws no randomness, so replay stays deterministic (§9).
             double biasedCells = Morphology.BiasedOffspringCellCount(
@@ -385,7 +385,7 @@ public sealed class SimulationWorld
 
         counters.Births = pendingBirths.Count;
 
-        // 9. Metrics & Snapshot Phase (lifesim.md §7, §14).
+        // 9. Metrics & Snapshot Phase.
         Tick++;
         RefreshExtinction();
         _metrics = BuildMetrics(counters);
@@ -444,7 +444,7 @@ public sealed class SimulationWorld
 
     /// <summary>
     /// Multi-tile movement: steps tile-by-tile, stopping at the first off-grid or occupied tile,
-    /// so only the distance actually travelled is paid for (lifesim.md §10, §17).
+    /// so only the distance actually travelled is paid for.
     /// </summary>
     private int ResolveMove(Organism organism, int dx, int dy)
     {
@@ -484,9 +484,9 @@ public sealed class SimulationWorld
     }
 
     /// <summary>
-    /// The universal Harvest action (lifesim.md §5, §10): grazes ambient ground energy on an
+    /// The universal Harvest action: grazes ambient ground energy on an
     /// empty target tile, or triggers predatory combat if the target is occupied. Off-grid targets
-    /// are a no-op. Outcomes are tallied into <paramref name="counters"/> for metrics (lifesim.md §14):
+    /// are a no-op. Outcomes are tallied into <paramref name="counters"/> for metrics:
     /// a kill/failure counts as predation, a graze that gained/gained-nothing as successful/failed
     /// grazing (an off-grid or empty-tile harvest is a failed graze).
     /// </summary>
@@ -503,12 +503,12 @@ public sealed class SimulationWorld
 
         // Combat only against a *live* organism. A tile can also be held in _occupancy by an
         // offspring reserved earlier this same tick that hasn't been materialized into the organism
-        // index until Birth Commit (lifesim.md §7) — there's no one physically there to fight yet,
+        // index until Birth Commit — there's no one physically there to fight yet,
         // so that falls through to ambient grazing rather than a phantom combat.
         if (_occupancy.TryGetValue((x, y), out long targetId) && targetId != organism.Id
             && _organisms.TryGetValue(targetId, out Organism? victim))
         {
-            // Combat scales with effective body mass (cells × size), boosted by Defender cells (lifesim.md §21).
+            // Combat scales with effective body mass (cells × size), boosted by Defender cells.
             double killProbability = Combat.KillProbability(
                 Morphology.CombatMass(organism.Genome, Config.Multicellular),
                 Morphology.CombatMass(victim.Genome, Config.Multicellular));
@@ -520,7 +520,7 @@ public sealed class SimulationWorld
                 organism.AddEnergy(victimEnergy * Config.MovementCombat.PredationTransferFraction);
                 counters.SuccessfulPredation++;
 
-                // Kin cannibalism (lifesim.md §20): counted for analytics, and optionally penalised
+                // Kin cannibalism: counted for analytics, and optionally penalised
                 // (default off) as a tunable anti-cannibalism deterrent.
                 if (Kinship.Relatedness(organism.Genome, victim.Genome, Config.TraitBounds) >= Config.Cooperation.KinRelatednessThreshold)
                 {
@@ -539,7 +539,7 @@ public sealed class SimulationWorld
             return ActionResult.Failed;
         }
 
-        // Ambient grazing (lifesim.md §21): a larger body covers more ground, so it skims a footprint
+        // Ambient grazing: a larger body covers more ground, so it skims a footprint
         // of nearby tiles (radius grows with cell count) — pulling energy from more of the surface —
         // while total intake stays bounded by the surface cap (∝ N^⅔). Feeder cells raise the usable
         // yield. A single cell grazes exactly the target tile, as before. Because big bodies drain a
@@ -560,7 +560,7 @@ public sealed class SimulationWorld
     }
 
     /// <summary>
-    /// Drains a body's grazing footprint (lifesim.md §21) centred on (x,y): the target tile first, then
+    /// Drains a body's grazing footprint centred on (x,y): the target tile first, then
     /// expanding square rings out to <see cref="Morphology.GrazingReach"/>, in a fixed order, until the
     /// surface-bounded intake budget (<see cref="Morphology.MaxGrazingIntake"/>) is spent. Returns the
     /// raw ground energy gathered. Fixed iteration + ascending-id resolution keep it deterministic (§9).
@@ -604,7 +604,7 @@ public sealed class SimulationWorld
     }
 
     /// <summary>
-    /// The Share action (lifesim.md §20): donate a fraction of this organism's energy to the live
+    /// The Share action: donate a fraction of this organism's energy to the live
     /// organism on the adjacent target tile, credited at <c>share_efficiency</c> (the lost remainder
     /// is what keeps altruism genuinely costly). Sharing is relatedness-scaled — once chosen, it
     /// actually goes through with probability <c>floor + (ceiling − floor)·relatedness</c> (kin: likely
@@ -616,7 +616,7 @@ public sealed class SimulationWorld
     {
         if (!Config.Cooperation.Enabled)
         {
-            return ActionResult.NoOp; // cooperation disabled for this world (lifesim.md §20)
+            return ActionResult.NoOp; // cooperation disabled for this world
         }
 
         int x = organism.X + dx;
@@ -647,16 +647,16 @@ public sealed class SimulationWorld
         return ActionResult.Success;
     }
 
-    /// <summary>Asexual reproduction gating and offspring reservation (lifesim.md §8, §17, §21).</summary>
+    /// <summary>Asexual reproduction gating and offspring reservation.</summary>
     private ActionResult ResolveReproduce(Organism organism, long currentTick, List<PendingBirth> pendingBirths)
     {
-        // A body with too few germ cells is sterile soma — it can support the body but not reproduce (lifesim.md §21).
+        // A body with too few germ cells is sterile soma — it can support the body but not reproduce.
         if (!Morphology.CanReproduce(organism.Genome, Config.Multicellular))
         {
             return ActionResult.Failed;
         }
 
-        // Cost scales with body mass, but division of labour sheds the size penalty (lifesim.md §21),
+        // Cost scales with body mass, but division of labour sheds the size penalty,
         // so a well-differentiated body reproduces almost as cheaply as a single cell.
         double cost = Config.Reproduction.ReproductionBaseCost * Morphology.ReproductionMass(organism.Genome, Config.Multicellular);
         if (organism.Energy < cost)
@@ -706,7 +706,7 @@ public sealed class SimulationWorld
     }
 
     /// <summary>
-    /// The pure per-organism forward pass for the Decision phase (lifesim.md §7): runs the brain for
+    /// The pure per-organism forward pass for the Decision phase: runs the brain for
     /// <see cref="Morphology.BrainSteps"/> recurrent steps (more for a larger body). Reads only its own
     /// organism and cached inputs and writes no shared state, so it is safe to run concurrently.
     /// </summary>
@@ -716,14 +716,14 @@ public sealed class SimulationWorld
         return NeatBrain.Propagate(organism.Brain, sensoryInputs[id], Morphology.BrainSteps(organism.Genome, mc));
     }
 
-    /// <summary>Node state is dynamic organism state, initialized to zero at birth (lifesim.md §4, §12) — topology/weights are inherited unchanged.</summary>
+    /// <summary>Node state is dynamic organism state, initialized to zero at birth — topology/weights are inherited unchanged.</summary>
     private static NeatGenome ResetBrainState(NeatGenome brain) =>
         brain with { Nodes = brain.Nodes.Select(n => n with { State = 0.0 }).ToList() };
 
     private void ScatterGenesisPopulation()
     {
         Prng genesis = _prngStreams[PrngStream.Genesis];
-        // Founders start at the configured genesis generosity (lifesim.md §20); the trait evolves from there.
+        // Founders start at the configured genesis generosity; the trait evolves from there.
         Genome genome = Genome.MidRange(Config.TraitBounds) with { ShareFraction = Config.Cooperation.ShareFraction };
 
         int maxAttempts = Math.Max(10_000, World.Width * World.Height * 4);
@@ -762,7 +762,7 @@ public sealed class SimulationWorld
 
     /// <summary>
     /// Organisms occupying the 3×3 block centered on this one (including itself) — the crowding
-    /// measure a density plague drains against (lifesim.md §6). An integer count, so it is
+    /// measure a density plague drains against. An integer count, so it is
     /// order-independent and safe to read from settled post-movement occupancy.
     /// </summary>
     private int LocalOrganismDensity(Organism organism)
@@ -791,10 +791,10 @@ public sealed class SimulationWorld
     }
 
     /// <summary>
-    /// Builds the tick's analytics (lifesim.md §14) from the settled world state plus the tick's
+    /// Builds the tick's analytics from the settled world state plus the tick's
     /// flow <paramref name="counters"/>. Every cross-organism reduction iterates
     /// <see cref="_organisms"/> in ascending id order (a <see cref="SortedDictionary{TKey,TValue}"/>)
-    /// so float sums have a fixed reduction order (lifesim.md §9).
+    /// so float sums have a fixed reduction order.
     /// </summary>
     private SimulationMetrics BuildMetrics(TickCounters counters)
     {
@@ -958,7 +958,7 @@ public sealed class SimulationWorld
         return Math.Clamp((int)(t * HistogramBucketCount), 0, HistogramBucketCount - 1);
     }
 
-    /// <summary>Mutable per-tick flow tallies, folded into <see cref="SimulationMetrics"/> in the Metrics phase (lifesim.md §14).</summary>
+    /// <summary>Mutable per-tick flow tallies, folded into <see cref="SimulationMetrics"/> in the Metrics phase.</summary>
     private sealed class TickCounters
     {
         public long Births;

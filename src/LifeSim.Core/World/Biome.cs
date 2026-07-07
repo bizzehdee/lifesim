@@ -1,6 +1,6 @@
 namespace LifeSim.Core.World;
 
-/// <summary>The four structural biomes derived from moisture × temperature noise (lifesim.md §2).</summary>
+/// <summary>The four structural biomes derived from moisture × temperature noise.</summary>
 public enum Biome
 {
     Grassland = 0,

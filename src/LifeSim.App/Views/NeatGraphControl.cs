@@ -8,7 +8,7 @@ using LifeSim.Core.Neat;
 namespace LifeSim.App.Views;
 
 /// <summary>
-/// Renders a NEAT brain graph for the inspector (lifesim.md §18): nodes coloured by live activation
+/// Renders a NEAT brain graph for the inspector: nodes coloured by live activation
 /// (node <c>state</c>), weighted edges (green = excitatory, red = inhibitory, opacity ∝ |weight|),
 /// disabled edges faint, and recurrent (cycle-creating) links dashed to distinguish them from
 /// feed-forward ones. Pure render of a laid-out <see cref="NeatGraph"/>.

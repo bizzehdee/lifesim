@@ -15,15 +15,14 @@ public enum SimNotificationKind
 }
 
 /// <summary>
-/// A single in-app notification (lifesim.md §18): a short title + detail and a severity. When it
+/// A single in-app notification: a short title + detail and a severity. When it
 /// concerns one organism (a multicellular milestone, a sterile-soma body), <see cref="OrganismId"/>
 /// carries that organism so clicking the toast can select it on the map, exactly like a map click.
 /// </summary>
 public sealed record SimNotification(string Title, string Detail, SimNotificationKind Kind, long? OrganismId = null);
 
 /// <summary>
-/// Watches the snapshot stream and flags notable transitions as in-app notifications (lifesim.md
-/// §18). Pure and UI-only: everything is derived from consecutive <see cref="WorldSnapshot"/> frames,
+/// Watches the snapshot stream and flags notable transitions as in-app notifications. Pure and UI-only: everything is derived from consecutive <see cref="WorldSnapshot"/> frames,
 /// never from the engine. The first frame seeds baselines silently (so a loaded mid-run world doesn't
 /// announce its whole history), a tick regression resets state (a new/reloaded world), one-off
 /// milestones latch, crises re-arm after they clear, and noisy per-tick signals use a cooldown.

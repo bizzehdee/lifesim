@@ -10,7 +10,7 @@ using LifeSim.Core.Snapshot;
 
 namespace LifeSim.App.ViewModels;
 
-/// <summary>Where the rendered frames come from (lifesim.md §1, §9).</summary>
+/// <summary>Where the rendered frames come from.</summary>
 public enum SessionMode
 {
     /// <summary>An in-process Core advancing on a background thread (desktop; small-world browser).</summary>
@@ -21,7 +21,7 @@ public enum SessionMode
 }
 
 /// <summary>
-/// The app-shell session (lifesim.md §1, §16, §18) hosting the shared <see cref="WorldViewModel"/>.
+/// The app-shell session hosting the shared <see cref="WorldViewModel"/>.
 /// It exposes the control deck (play / pause / step / speed), save/load and stream exchange with the
 /// console app, and the §16 edit flow. The <c>post</c> delegate marshals engine-thread frames onto
 /// the UI thread (the heads pass the Avalonia dispatcher; tests pass a synchronous delegate). Desktop
@@ -76,26 +76,26 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private decimal _population = 80;
 
-    /// <summary>Cooperation feature set (lifesim.md §20); on by default. Toggles Share actions + kin-predation deterrence for the new world.</summary>
+    /// <summary>Cooperation feature set; on by default. Toggles Share actions + kin-predation deterrence for the new world.</summary>
     [ObservableProperty]
     private bool _cooperationEnabled = true;
 
-    /// <summary>Aging model (lifesim.md §17); on by default. When on, old organisms pay a growing metabolic tax.</summary>
+    /// <summary>Aging model; on by default. When on, old organisms pay a growing metabolic tax.</summary>
     [ObservableProperty]
     private bool _senescenceEnabled = true;
 
-    /// <summary>Multicellularity (lifesim.md §21); on by default. Founders start unicellular and can evolve differentiated multi-cell bodies.</summary>
+    /// <summary>Multicellularity; on by default. Founders start unicellular and can evolve differentiated multi-cell bodies.</summary>
     [ObservableProperty]
     private bool _multicellularEnabled = true;
 
-    /// <summary>Brain-evaluation threads (lifesim.md §7): 1..<see cref="MaxThreads"/>. Execution-only — results are identical for any value.</summary>
+    /// <summary>Brain-evaluation threads: 1..<see cref="MaxThreads"/>. Execution-only — results are identical for any value.</summary>
     [ObservableProperty]
     private decimal _threadCount = 1;
 
     /// <summary>Upper bound for <see cref="ThreadCount"/>: the machine's hardware threads.</summary>
     public int MaxThreads { get; } = Environment.ProcessorCount;
 
-    /// <summary>Structured editor over every starting constant (lifesim.md §18) — the advanced setup panel binds to it, and it round-trips through save/load of options.</summary>
+    /// <summary>Structured editor over every starting constant — the advanced setup panel binds to it, and it round-trips through save/load of options.</summary>
     [ObservableProperty]
     private AdvancedConfigEditor _advancedConfig = new(SnapshotSerializer.SaveConfig(SimulationConfig.Default));
 
@@ -335,7 +335,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
 
         // An intervention forks a new comparable timeline rather than overwriting the original run
-        // (lifesim.md §16): edit the field, record it, then branch off the current snapshot.
+        //: edit the field, record it, then branch off the current snapshot.
         WorldSnapshot edited = SnapshotEditor.SetOrganismEnergy(_current, id, newEnergy, reason ?? "manual edit");
         edited = SnapshotProvenance.Branch(edited, NewId("branch"), NewId("snap"));
 
@@ -346,7 +346,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
         else
         {
-            Adopt(edited); // an edit is a new deterministic starting point (lifesim.md §16)
+            Adopt(edited); // an edit is a new deterministic starting point
         }
 
         Status = $"Edited organism {id} energy → {newEnergy:F1}.";
@@ -358,7 +358,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     partial void OnThreadCountChanged(decimal value) => _runner?.SetMaxDegreeOfParallelism(ResolveThreads(value));
 
-    /// <summary>Clamp a requested thread count to 1..hardware-threads (lifesim.md §7).</summary>
+    /// <summary>Clamp a requested thread count to 1..hardware-threads.</summary>
     private int ResolveThreads(decimal requested) => Math.Clamp((int)requested, 1, MaxThreads);
 
     private static string NewId(string prefix) => $"{prefix}-{Guid.NewGuid():N}";

@@ -2,7 +2,7 @@ using LifeSim.Core.Organisms;
 
 namespace LifeSim.Core.Snapshot;
 
-/// <summary>An ancestry record as stored in a snapshot (lifesim.md §8, §12, §14).</summary>
+/// <summary>An ancestry record as stored in a snapshot.</summary>
 public sealed record LineageSnapshot
 {
     public long OrganismId { get; init; }

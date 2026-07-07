@@ -4,12 +4,12 @@ namespace LifeSim.Core.Neat;
 
 /// <summary>
 /// Builds the genesis brain: a minimal fully-connected network — every input wired directly to
-/// every output, no hidden nodes, random weights (lifesim.md §17). Canonical NEAT starting point;
+/// every output, no hidden nodes, random weights. Canonical NEAT starting point;
 /// structure only grows under real selective pressure (Phase 8).
 /// </summary>
 public static class NeatGenomeFactory
 {
-    /// <summary>Weights are drawn uniformly from [-1, 1] via the genesis PRNG stream (lifesim.md §9's genesis stream).</summary>
+    /// <summary>Weights are drawn uniformly from [-1, 1] via the genesis PRNG stream.</summary>
     public static NeatGenome CreateMinimalFullyConnected(Prng genesisStream)
     {
         ArgumentNullException.ThrowIfNull(genesisStream);

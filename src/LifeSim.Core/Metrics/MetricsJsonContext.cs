@@ -8,8 +8,8 @@ namespace LifeSim.Core.Metrics;
 /// <summary>
 /// Compact (single-line) source-generation context for the metrics stream — distinct from the
 /// indented snapshot context so each <see cref="MetricsSample"/> serializes to exactly one line of
-/// newline-delimited JSON (lifesim.md §14). Source generation keeps it trimming/AOT-friendly for
-/// the WASM target (lifesim.md §1).
+/// newline-delimited JSON. Source generation keeps it trimming/AOT-friendly for
+/// the WASM target.
 /// </summary>
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,

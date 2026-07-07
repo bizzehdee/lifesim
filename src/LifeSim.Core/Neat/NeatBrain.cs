@@ -7,15 +7,15 @@ namespace LifeSim.Core.Neat;
 public sealed record NeatEvaluationResult(NeatGenome Genome, OrganismAction Action);
 
 /// <summary>
-/// The pure part of a tick's brain update (lifesim.md §4): the genome with advanced node state and
+/// The pure part of a tick's brain update: the genome with advanced node state and
 /// the softmax action distribution, computed with no randomness. Splitting this out lets the
 /// expensive forward pass run in parallel across organisms while the single PRNG action roll stays
-/// sequential in id order (lifesim.md §7, §9).
+/// sequential in id order.
 /// </summary>
 public sealed record NeatPropagation(NeatGenome Genome, double[] Probabilities);
 
 /// <summary>
-/// Recurrent NEAT evaluation via a single synchronous update per tick (lifesim.md §4, §7): every
+/// Recurrent NEAT evaluation via a single synchronous update per tick: every
 /// node computes its new activation purely from the *previous* tick's committed values, and all
 /// nodes commit together. This makes node-processing order irrelevant to the result — there is no
 /// "which node fires first" — which is what keeps a network with cycles fully deterministic.
@@ -27,7 +27,7 @@ public static class NeatBrain
     /// <see cref="NeatTopology.InputNodeIds"/>. The output logits (one per
     /// <see cref="NeatTopology.OutputNodeIds"/>, in <see cref="OrganismAction"/> order) are the
     /// tanh-squashed output-node activations, softmaxed, then rolled against
-    /// <paramref name="behaviorStream"/> (lifesim.md §4, §9).
+    /// <paramref name="behaviorStream"/>.
     /// </summary>
     public static NeatEvaluationResult Evaluate(NeatGenome genome, IReadOnlyList<double> inputs, Prng behaviorStream)
     {
@@ -39,8 +39,7 @@ public static class NeatBrain
     }
 
     /// <summary>
-    /// Runs the forward pass <paramref name="steps"/> times over the same held inputs (lifesim.md §4,
-    /// §21): a larger multicellular body propagates its recurrent network more deeply per tick before
+    /// Runs the forward pass <paramref name="steps"/> times over the same held inputs (/// §21): a larger multicellular body propagates its recurrent network more deeply per tick before
     /// acting. <paramref name="steps"/> is clamped to ≥ 1, so a single step is the base model. Pure.
     /// </summary>
     public static NeatPropagation Propagate(NeatGenome genome, IReadOnlyList<double> inputs, int steps)
@@ -56,7 +55,7 @@ public static class NeatBrain
 
     /// <summary>
     /// The randomness-free forward pass: advances node state and returns the softmax action
-    /// distribution (lifesim.md §4). Pure and free of shared state, so it is safe to run for many
+    /// distribution. Pure and free of shared state, so it is safe to run for many
     /// organisms concurrently; the ensuing <see cref="SelectAction"/> roll must stay sequential.
     /// </summary>
     public static NeatPropagation Propagate(NeatGenome genome, IReadOnlyList<double> inputs)
@@ -70,7 +69,7 @@ public static class NeatBrain
             previousState[node.Id] = node.State;
         }
 
-        // Fixed order per incoming edge set (lifesim.md §9): sum by ascending innovation id so
+        // Fixed order per incoming edge set: sum by ascending innovation id so
         // the weighted-sum reduction is not sensitive to the connection list's storage order.
         Dictionary<long, List<ConnectionGene>> incomingByTarget = genome.Connections
             .Where(c => c.Enabled)
@@ -121,7 +120,7 @@ public static class NeatBrain
     /// <summary>
     /// The action-probability distribution implied by the brain's *current* committed output-node
     /// states — the same softmax the next <see cref="Evaluate"/> would roll against, computed without
-    /// advancing or mutating anything. Pure read for inspection/rendering (lifesim.md §18); indices
+    /// advancing or mutating anything. Pure read for inspection/rendering; indices
     /// match <see cref="OrganismAction"/> / <see cref="NeatTopology.OutputNodeIds"/> order.
     /// </summary>
     public static double[] ActionProbabilities(NeatGenome genome)
@@ -167,7 +166,7 @@ public static class NeatBrain
         return exp;
     }
 
-    /// <summary>Rolls the behaviour stream once to pick an action from a softmax distribution (lifesim.md §4, §9).</summary>
+    /// <summary>Rolls the behaviour stream once to pick an action from a softmax distribution.</summary>
     public static OrganismAction SelectAction(double[] probabilities, Prng behaviorStream)
     {
         ArgumentNullException.ThrowIfNull(probabilities);

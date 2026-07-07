@@ -140,7 +140,7 @@ public class PresentationTests
     public void NeatGraphLayout_placesChainedHiddenNodesInSeparateDepthColumns()
     {
         // input → h2 → h3 → output: the two hidden nodes are at different feed-forward depths, so the
-        // effective-network layout must put them in distinct columns and report depth 3 (lifesim.md §18).
+        // effective-network layout must put them in distinct columns and report depth 3.
         var brain = new NeatGenome
         {
             Nodes =

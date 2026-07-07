@@ -4,11 +4,11 @@ using LifeSim.Core.Snapshot;
 namespace LifeSim.Core.Editing;
 
 /// <summary>
-/// Applies explicit UI interventions to a snapshot (lifesim.md §16). Each edit returns a new
+/// Applies explicit UI interventions to a snapshot. Each edit returns a new
 /// snapshot with the field changed <em>and</em> an <see cref="EditLogEntry"/> appended, so the
 /// change is never silent. The result carries full organism/PRNG/config state, so loading it via
 /// <see cref="Simulation.SimulationWorld.FromSnapshot"/> is a new, replayable deterministic starting
-/// point (lifesim.md §16's determinism-after-edits rule).
+/// point.
 /// </summary>
 public static class SnapshotEditor
 {

@@ -5,17 +5,17 @@ using LifeSim.Core.World;
 namespace LifeSim.Core.Snapshot;
 
 /// <summary>
-/// Analytics as first-class output (lifesim.md §14), recorded in the Metrics &amp; Snapshot phase
-/// (lifesim.md §7) and carried in every snapshot's <c>metrics</c> block. Flow counters
+/// Analytics as first-class output, recorded in the Metrics &amp; Snapshot phase
+/// and carried in every snapshot's <c>metrics</c> block. Flow counters
 /// (<see cref="Births"/>…<see cref="FailedPredation"/>) describe the single tick that produced this
 /// snapshot; the remaining fields describe the population as it stands at snapshot time. All
-/// cross-organism reductions are computed in ascending organism-id order for determinism (lifesim.md §9).
+/// cross-organism reductions are computed in ascending organism-id order for determinism.
 /// </summary>
 public sealed record SimulationMetrics
 {
     public long Population { get; init; }
 
-    /// <summary>Set once population reaches zero; the engine halts and never auto-reseeds (lifesim.md §17).</summary>
+    /// <summary>Set once population reaches zero; the engine halts and never auto-reseeds.</summary>
     public bool Extinct { get; init; }
 
     // --- Per-tick flow counters (this tick's window). ---
@@ -26,7 +26,7 @@ public sealed record SimulationMetrics
     public long SuccessfulPredation { get; init; }
     public long FailedPredation { get; init; }
 
-    // --- Cooperation counters (lifesim.md §20). ---
+    // --- Cooperation counters. ---
     public long SuccessfulShare { get; init; }
     public long FailedShare { get; init; }
     public long KinPredation { get; init; }
@@ -37,19 +37,19 @@ public sealed record SimulationMetrics
     public double EnergyAverage { get; init; }
     public double EnergyMax { get; init; }
 
-    /// <summary>Mean of every genome trait across the live population (lifesim.md §14).</summary>
+    /// <summary>Mean of every genome trait across the live population.</summary>
     public TraitAverages TraitAverages { get; init; } = new();
 
-    /// <summary>One fixed-bin histogram per genome trait, binned across that trait's hard bounds (lifesim.md §14).</summary>
+    /// <summary>One fixed-bin histogram per genome trait, binned across that trait's hard bounds.</summary>
     public List<TraitHistogram> TraitHistograms { get; init; } = [];
 
-    /// <summary>Live population broken down by biome (lifesim.md §14).</summary>
+    /// <summary>Live population broken down by biome.</summary>
     public List<BiomePopulation> PopulationByBiome { get; init; } = [];
 
-    /// <summary>Births attributed to each currently-living lineage (lifesim.md §14).</summary>
+    /// <summary>Births attributed to each currently-living lineage.</summary>
     public List<LineageReproduction> ReproductionByLineage { get; init; } = [];
 
-    /// <summary>The event types active this tick (lifesim.md §6, §14).</summary>
+    /// <summary>The event types active this tick.</summary>
     public List<EventType> ActiveEvents { get; init; } = [];
 
     // Default record equality compares the List<> members by reference, so two structurally-equal
@@ -111,7 +111,7 @@ public sealed record SimulationMetrics
     }
 }
 
-/// <summary>Mean genome-trait values across the live population (lifesim.md §14).</summary>
+/// <summary>Mean genome-trait values across the live population.</summary>
 public sealed record TraitAverages
 {
     public double Size { get; init; }
@@ -122,15 +122,15 @@ public sealed record TraitAverages
     public double OrgRadius { get; init; }
     public double SensoryAcuity { get; init; }
 
-    /// <summary>Mean evolvable generosity (lifesim.md §20) — tracks whether the population drifts toward hoarding or over-sharing.</summary>
+    /// <summary>Mean evolvable generosity — tracks whether the population drifts toward hoarding or over-sharing.</summary>
     public double ShareFraction { get; init; }
 
-    /// <summary>Mean body size in cells (lifesim.md §21) — tracks the multicellular transition across the population.</summary>
+    /// <summary>Mean body size in cells — tracks the multicellular transition across the population.</summary>
     public double CellCount { get; init; } = 1.0;
 }
 
 /// <summary>
-/// A fixed-bin histogram of one trait across the live population (lifesim.md §14). Bins evenly
+/// A fixed-bin histogram of one trait across the live population. Bins evenly
 /// partition <c>[Min, Max]</c> (the trait's hard bounds); <see cref="Buckets"/> sums to the population.
 /// </summary>
 public sealed record TraitHistogram
@@ -162,14 +162,14 @@ public sealed record TraitHistogram
     }
 }
 
-/// <summary>Live population count in a single biome (lifesim.md §14).</summary>
+/// <summary>Live population count in a single biome.</summary>
 public sealed record BiomePopulation
 {
     public Biome Biome { get; init; }
     public long Count { get; init; }
 }
 
-/// <summary>Cumulative births attributed to a lineage that still has living members (lifesim.md §8, §14).</summary>
+/// <summary>Cumulative births attributed to a lineage that still has living members.</summary>
 public sealed record LineageReproduction
 {
     public long LineageId { get; init; }

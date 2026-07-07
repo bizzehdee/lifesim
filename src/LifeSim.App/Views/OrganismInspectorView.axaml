@@ -58,7 +58,7 @@
             </ItemsControl>
         </StackPanel>
 
-        <!-- Body plan (multicellularity, lifesim.md §21) -->
+        <!-- Body plan (multicellularity) -->
         <StackPanel Spacing="4" IsVisible="{Binding Multicellular}">
             <TextBlock Text="Body" FontWeight="SemiBold" />
             <StackPanel Orientation="Horizontal" Spacing="8">

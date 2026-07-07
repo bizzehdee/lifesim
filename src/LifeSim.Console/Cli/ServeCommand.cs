@@ -7,7 +7,7 @@ namespace LifeSim.Console.Cli;
 /// <summary>
 /// <c>sim serve --in state.json [--port P] [--tps R] [--max-ticks N]</c> — runs the engine and
 /// exposes it over HTTP/WebSocket so a UI (the Avalonia browser demo) can stream a live run and
-/// post edits back (lifesim.md §1). Advances on a background loop at <c>--tps</c> ticks per second;
+/// post edits back. Advances on a background loop at <c>--tps</c> ticks per second;
 /// blocks until Ctrl+C, extinction, or <c>--max-ticks</c>.
 /// </summary>
 public static class ServeCommand

@@ -6,7 +6,7 @@ using LifeSim.Core.Snapshot;
 namespace LifeSim.Console.Serve;
 
 /// <summary>
-/// A minimal <see cref="HttpListener"/> transport over a <see cref="SnapshotService"/> (lifesim.md §1),
+/// A minimal <see cref="HttpListener"/> transport over a <see cref="SnapshotService"/>,
 /// using only BCL types (no ASP.NET) so the console stays lightweight. Endpoints:
 /// <list type="bullet">
 /// <item><c>GET /snapshot</c> — the current world snapshot (JSON).</item>

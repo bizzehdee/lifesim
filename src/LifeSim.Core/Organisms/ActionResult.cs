@@ -1,6 +1,6 @@
 namespace LifeSim.Core.Organisms;
 
-/// <summary>The outcome of an organism's last action (lifesim.md §12, §13's "last action result").</summary>
+/// <summary>The outcome of an organism's last action.</summary>
 public enum ActionResult
 {
     /// <summary>No action has been recorded yet (before an organism's first decision).</summary>
@@ -9,7 +9,7 @@ public enum ActionResult
     /// <summary>The action achieved its purpose: moved, grazed (even zero energy), or gave birth.</summary>
     Success,
 
-    /// <summary>A Harvest that killed prey (successful predation). Distinguished from a graze so the UI can render predation (lifesim.md §18); to the brain it reads the same as <see cref="Success"/>.</summary>
+    /// <summary>A Harvest that killed prey (successful predation). Distinguished from a graze so the UI can render predation; to the brain it reads the same as <see cref="Success"/>.</summary>
     Killed,
 
     /// <summary>A Move that was blocked immediately (off-grid or occupied on the very first step).</summary>

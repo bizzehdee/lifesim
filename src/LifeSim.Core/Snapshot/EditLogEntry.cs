@@ -1,7 +1,7 @@
 namespace LifeSim.Core.Snapshot;
 
 /// <summary>
-/// One explicit UI intervention (lifesim.md §16). Every edit made in the Avalonia app appends an
+/// One explicit UI intervention. Every edit made in the Avalonia app appends an
 /// entry so a manually-changed world can never be mistaken for an untouched deterministic run.
 /// Values are stored as strings so any edited field (organism or world) serializes uniformly.
 /// </summary>

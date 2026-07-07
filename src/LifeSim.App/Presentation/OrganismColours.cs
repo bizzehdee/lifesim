@@ -6,7 +6,7 @@ using LifeSim.Core.Snapshot;
 namespace LifeSim.App.Presentation;
 
 /// <summary>
-/// Turns an organism's snapshot record into its two visual channels (lifesim.md §18): the
+/// Turns an organism's snapshot record into its two visual channels: the
 /// mode-dependent <b>fill</b> and the always-on last-action <b>outline</b>, plus marker radius and
 /// overlay flags. Pure functions of the snapshot fields, so live and loaded frames render identically.
 /// </summary>
@@ -38,7 +38,7 @@ public static class OrganismColours
     private static bool IsShare(OrganismAction? action) => action is OrganismAction.ShareNorth
         or OrganismAction.ShareSouth or OrganismAction.ShareEast or OrganismAction.ShareWest;
 
-    /// <summary>The outline colour, from the last action + its result (lifesim.md §18).</summary>
+    /// <summary>The outline colour, from the last action + its result.</summary>
     public static Color Outline(OrganismAction? lastAction, ActionResult lastResult)
     {
         if (lastAction is null)
@@ -68,7 +68,7 @@ public static class OrganismColours
         return MinRadius + ((MaxRadius - MinRadius) * t);
     }
 
-    /// <summary>Diet tendency from the current action (lifesim.md §18; see notes on history-vs-snapshot).</summary>
+    /// <summary>Diet tendency from the current action (see notes on history-vs-snapshot).</summary>
     private static Color DietColour(OrganismSnapshot organism)
     {
         if (organism.LastAction is not { } action)

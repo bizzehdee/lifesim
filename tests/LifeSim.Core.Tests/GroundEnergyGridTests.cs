@@ -36,7 +36,7 @@ public class GroundEnergyGridTests
     public void RegenerateTick_movesTowardCap_andStopsAtCap()
     {
         (TerrainSampler terrain, SimulationConfig config) = NewWorld();
-        // Grassland regenerates (lifesim.md §2); find a grassland tile.
+        // Grassland regenerates; find a grassland tile.
         int x = FindTileOfBiome(terrain, Biome.Grassland);
         int y = 0;
 

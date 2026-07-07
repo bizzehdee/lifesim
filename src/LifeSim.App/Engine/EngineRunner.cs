@@ -4,7 +4,7 @@ using LifeSim.Core.Snapshot;
 namespace LifeSim.App.Engine;
 
 /// <summary>
-/// Drives a live <see cref="SimulationWorld"/> on a background thread (lifesim.md §1): the UI thread
+/// Drives a live <see cref="SimulationWorld"/> on a background thread: the UI thread
 /// never blocks on ticks. Supports play / pause / frame-step / speed, and pushes a fresh snapshot to
 /// the <c>onFrame</c> sink after every advance. The sink is responsible for marshalling onto the UI
 /// thread (the desktop head wraps it in the Avalonia dispatcher). The Core stays authoritative — this
@@ -66,7 +66,7 @@ public sealed class EngineRunner : IDisposable
         _delayMs = Math.Max(1, (int)Math.Round(1000.0 / clamped));
     }
 
-    /// <summary>Live-adjust the brain-evaluation thread count (execution-only; results are unaffected, lifesim.md §7).</summary>
+    /// <summary>Live-adjust the brain-evaluation thread count (execution-only, results are unaffected).</summary>
     public void SetMaxDegreeOfParallelism(int threads)
     {
         lock (_gate)

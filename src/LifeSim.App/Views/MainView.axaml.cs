@@ -19,7 +19,7 @@ public partial class MainView : UserControl
         DataContextChanged += (_, _) => Resubscribe();
     }
 
-    // In-app toasts (lifesim.md §18): a WindowNotificationManager renders Fluent toast cards inside
+    // In-app toasts: a WindowNotificationManager renders Fluent toast cards inside
     // this window (not native OS notifications). Frames publish on the UI thread, so the World's
     // NotificationRaised fires here directly.
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -72,7 +72,7 @@ public partial class MainView : UserControl
     private void OnNotification(SimNotification notification)
     {
         // A notification about a specific organism is click-to-select: clicking the toast focuses
-        // that organism exactly like a map click (lifesim.md §18).
+        // that organism exactly like a map click.
         Action? onClick = notification.OrganismId is { } id
             ? () => _subscribedWorld?.FocusOrganism(id)
             : null;
@@ -88,7 +88,7 @@ public partial class MainView : UserControl
     };
 
     // Save/Load go through the picked file's stream (not a path) so they work on both the desktop
-    // and the browser (WASM) target, which has no local filesystem (lifesim.md §1, §12).
+    // and the browser (WASM) target, which has no local filesystem.
     private async void OnSaveClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not MainViewModel vm || TopLevel.GetTopLevel(this) is not { } top || vm.CurrentJson() is not { } json)

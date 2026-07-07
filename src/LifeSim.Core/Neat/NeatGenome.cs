@@ -1,10 +1,10 @@
 namespace LifeSim.Core.Neat;
 
 /// <summary>
-/// An organism's brain (lifesim.md §4, §12): a recurrent network of node and connection genes.
+/// An organism's brain: a recurrent network of node and connection genes.
 /// Immutable — a tick's evaluation produces a new <see cref="NeatGenome"/> with updated node
 /// <see cref="NodeGene.State"/> rather than mutating in place, mirroring the synchronous
-/// commit-together update rule (lifesim.md §4).
+/// commit-together update rule.
 /// </summary>
 public sealed record NeatGenome
 {

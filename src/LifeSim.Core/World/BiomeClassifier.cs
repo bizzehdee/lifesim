@@ -3,7 +3,7 @@ using LifeSim.Core.Configuration;
 namespace LifeSim.Core.World;
 
 /// <summary>
-/// Pure lookup for the biome matrix (lifesim.md §2): Moisture (Low/High) × Temperature
+/// Pure lookup for the biome matrix: Moisture (Low/High) × Temperature
 /// (Cold/Temperate/Hot). Kept independent of noise sampling so the matrix rules are testable
 /// without generating a noise field.
 /// </summary>

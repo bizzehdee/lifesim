@@ -11,7 +11,7 @@ public class SimulationConfigTests
         SimulationConfig config = SimulationConfig.Default;
 
         Assert.Equal(200, config.InitialPopulation);
-        Assert.True(config.Senescence); // aging on by default (lifesim.md §17)
+        Assert.True(config.Senescence); // aging on by default
         Assert.Equal(3, config.Reproduction.ReproductionCooldownTicks);
         Assert.Equal(20.0, config.Events.TemperatureAnomalyMagnitude);
     }
@@ -21,7 +21,7 @@ public class SimulationConfigTests
     {
         BiomesConfig biomes = SimulationConfig.Default.Biomes;
 
-        // Ice sheet has zero regeneration (lifesim.md §2).
+        // Ice sheet has zero regeneration.
         Assert.Equal(0.0, biomes.For(Biome.IceSheet).RegenRate);
         // Swamp is energy-dense but high friction.
         Assert.True(biomes.For(Biome.Swamp).RegenRate > biomes.For(Biome.Grassland).RegenRate);

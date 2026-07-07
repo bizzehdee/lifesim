@@ -1,7 +1,7 @@
 namespace LifeSim.Core.Organisms;
 
 /// <summary>
-/// The 15 action outputs the brain selects between (lifesim.md §4, §17, §20). Named
+/// The 15 action outputs the brain selects between. Named
 /// <c>OrganismAction</c> rather than <c>Action</c> to avoid colliding with <see cref="System.Action"/>,
 /// which is in scope everywhere via implicit usings. The underlying values are the output-node index
 /// order (matches <see cref="Neat.NeatTopology.OutputNodeIds"/> position-for-position), so new actions
@@ -21,7 +21,7 @@ public enum OrganismAction
     Idle = 9,
     Reproduce = 10,
 
-    // Cooperation (lifesim.md §20): donate energy to the adjacent organism in that direction.
+    // Cooperation: donate energy to the adjacent organism in that direction.
     ShareNorth = 11,
     ShareSouth = 12,
     ShareEast = 13,

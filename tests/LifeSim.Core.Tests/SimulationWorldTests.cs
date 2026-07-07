@@ -181,7 +181,7 @@ public class SimulationWorldTests
         // unchanged going into the Metabolism phase (speed 0 blocks Move; zero ground energy
         // nearby makes Harvest a no-gain graze; energy well under the reproduction cost fails
         // Reproduce) — so it starves by exactly the deterministic metabolism cost, and corpse
-        // deposit is exactly predictable (lifesim.md §11).
+        // deposit is exactly predictable.
         var worldState = new WorldState { Seed = 555, Width = 20, Height = 20 };
         SimulationConfig config = SimulationConfig.Default;
 
@@ -304,7 +304,7 @@ public class SimulationWorldTests
 
         Assert.True(world.LineageRecords.Count > config.InitialPopulation, "Expected at least one birth to have occurred.");
 
-        // The innovation counter only advances on a real structural mutation (lifesim.md §4, §8).
+        // The innovation counter only advances on a real structural mutation.
         Assert.True(
             world.ToSnapshot().EvolutionBookkeeping.NextInnovationId > NeatTopology.ReservedInnovationIdCount,
             "Expected at least one structural brain mutation to have advanced the innovation counter.");
@@ -324,7 +324,7 @@ public class SimulationWorldTests
     [Fact]
     public void Advance_organismsShareEnergy_overALongAbundantRun()
     {
-        // Cooperation (lifesim.md §20): once reproduction forms adjacent kin clusters, Share actions
+        // Cooperation: once reproduction forms adjacent kin clusters, Share actions
         // find neighbours and transfer energy. Statistical but deterministic for this fixed seed.
         var config = SimulationConfig.Default with { InitialPopulation = 40 };
         var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), config);
@@ -345,7 +345,7 @@ public class SimulationWorldTests
     [Fact]
     public void CreateGenesis_seedsFounderGenerosityFromConfig()
     {
-        // Founders start at the configured genesis generosity; the trait evolves from there (lifesim.md §20).
+        // Founders start at the configured genesis generosity; the trait evolves from there.
         var config = SimulationConfig.Default with
         {
             InitialPopulation = 20,
@@ -363,7 +363,7 @@ public class SimulationWorldTests
         // Same seed, same brains, same relatedness rolls — only genesis generosity differs, and trait
         // drift is frozen so every organism keeps its founder value forever. A selfish population (0)
         // transfers nothing; a generous one (0.5) transfers energy. Proves the donated amount is the
-        // donor's own evolvable trait, not a global constant (lifesim.md §20).
+        // donor's own evolvable trait, not a global constant.
         static double TotalSharedWith(double generosity)
         {
             var config = SimulationConfig.Default with
@@ -391,7 +391,7 @@ public class SimulationWorldTests
     [Fact]
     public void Advance_withCooperationDisabled_transfersNoEnergyAndFiresNoShares()
     {
-        // The genesis cooperation toggle (lifesim.md §20): with it off, Share actions are inert no-ops.
+        // The genesis cooperation toggle: with it off, Share actions are inert no-ops.
         var config = SimulationConfig.Default with
         {
             InitialPopulation = 40,
@@ -415,7 +415,7 @@ public class SimulationWorldTests
     [Fact]
     public void Advance_withSenescenceEnabled_capsOrganismLifespan()
     {
-        // The optional aging model (lifesim.md §17): once past the senescence onset the per-tick tax
+        // The optional aging model: once past the senescence onset the per-tick tax
         // climbs until it outruns any energy budget, so the oldest survivor of an aging world stays
         // far younger than in the immortal-until-starvation default. Multicellularity is disabled here
         // to isolate this §17 behaviour from the §21 body economy (whose tuning must not perturb it).
@@ -448,8 +448,7 @@ public class SimulationWorldTests
     public void Advance_multicellularBodiesEmergeButStayBounded_underTheSquareCubeLaw()
     {
         // With multicellularity on (default), founders start unicellular; cell count drifts under
-        // mutation but the square-cube economy (volume upkeep vs surface-limited intake, lifesim.md
-        // §21) keeps the mean body far below the hard bound — no runaway to giant bodies.
+        // mutation but the square-cube economy (volume upkeep vs surface-limited intake) keeps the mean body far below the hard bound — no runaway to giant bodies.
         var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), SimulationConfig.Default with { InitialPopulation = 80 });
 
         double maxMeanCells = 0.0;
@@ -468,7 +467,7 @@ public class SimulationWorldTests
     [Fact]
     public void Advance_favoursDivisionOfLabour_diverseSpecialistBodiesEmerge()
     {
-        // The division-of-labour discount (lifesim.md §21) makes well-differentiated multicellular
+        // The division-of-labour discount makes well-differentiated multicellular
         // bodies cheap to run, so under the default config the population evolves toward carrying
         // several distinct specialist cell types rather than staying generalist or single-specialist.
         var config = SimulationConfig.Default with { InitialPopulation = 80 };
@@ -498,7 +497,7 @@ public class SimulationWorldTests
     [Fact]
     public void Advance_offspringGrowthBias_raisesTypicalBodySize()
     {
-        // Offspring of multicellular parents lean multicellular (lifesim.md §21). Isolated in an
+        // Offspring of multicellular parents lean multicellular. Isolated in an
         // economy where multicellularity is viable (no per-cell coordination/upkeep, no surface cap),
         // so the heredity bias — not the square-cube selection — is the deciding factor: with the bias
         // on, mean body size climbs well above what symmetric drift alone produces.
@@ -534,7 +533,7 @@ public class SimulationWorldTests
     [Fact]
     public void Advance_grazingFootprint_changesDynamics_whenBodiesGrowLarge()
     {
-        // With a footprint (default), large bodies skim ground from surrounding tiles (lifesim.md §21),
+        // With a footprint (default), large bodies skim ground from surrounding tiles,
         // so their grazing — and the ecology it drives — diverges from a footprint-free run of the same
         // seed once multicellular bodies appear.
         static string Run(int maxReach)
@@ -579,7 +578,7 @@ public class SimulationWorldTests
         Assert.Equal(1.0, world.Metrics.TraitAverages.CellCount, precision: 10);
     }
 
-    // --- Phase 9: environmental stochasticity & events (lifesim.md §6) ---
+    // --- Phase 9: environmental stochasticity & events ---
 
     private static EventsConfig NoEvents() => new EventsConfig() with
     {

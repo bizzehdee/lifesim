@@ -4,7 +4,7 @@ using LifeSim.Core.Neat;
 
 namespace LifeSim.Core.Organisms;
 
-/// <summary>Constructs an <see cref="Organism"/> with its deterministic name resolved (lifesim.md §19).</summary>
+/// <summary>Constructs an <see cref="Organism"/> with its deterministic name resolved.</summary>
 public static class OrganismFactory
 {
     public static Organism Create(

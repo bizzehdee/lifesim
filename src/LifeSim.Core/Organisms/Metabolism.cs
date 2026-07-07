@@ -2,7 +2,7 @@ using LifeSim.Core.Configuration;
 
 namespace LifeSim.Core.Organisms;
 
-/// <summary>The energy transaction economy (lifesim.md §3): pure functions over genome + config, so they're testable without a live organism.</summary>
+/// <summary>The energy transaction economy: pure functions over genome + config, so they're testable without a live organism.</summary>
 public static class Metabolism
 {
     public static double BaseMetabolism(Genome genome, MetabolismConfig config) =>
@@ -23,7 +23,7 @@ public static class Metabolism
         + (genome.SensoryAcuity * config.SensoryTaxC3);
 
     /// <summary>
-    /// Density-dependent crowding cost (lifesim.md §3, §6): energy per neighbour beyond the free
+    /// Density-dependent crowding cost: energy per neighbour beyond the free
     /// allowance. A continuous carrying-capacity pressure that only bites in crowded areas.
     /// </summary>
     public static double CrowdingTax(int neighbours, MetabolismConfig config)
@@ -33,7 +33,7 @@ public static class Metabolism
     }
 
     /// <summary>
-    /// Optional senescence tax (lifesim.md §17): extra metabolism that grows linearly with age once an
+    /// Optional senescence tax: extra metabolism that grows linearly with age once an
     /// organism is older than <see cref="MetabolismConfig.SenescenceOnsetAge"/>. Zero for the young and
     /// zero entirely unless the aging model is enabled by the caller.
     /// </summary>
@@ -43,16 +43,16 @@ public static class Metabolism
         return agedTicks * config.SenescenceCostPerTick;
     }
 
-    /// <summary>The full base-metabolism equation: base + thermal stress + sensory tax (lifesim.md §3).</summary>
+    /// <summary>The full base-metabolism equation: base + thermal stress + sensory tax.</summary>
     public static double Total(Genome genome, double tileTemperature, MetabolismConfig config) =>
         BaseMetabolism(genome, config)
         + ThermalStress(genome, tileTemperature, config)
         + SensoryTax(genome, config);
 
     /// <summary>
-    /// Distance × velocity^exponent × biome friction (lifesim.md §3). NOTE: uses <see cref="Math.Pow"/>
+    /// Distance × velocity^exponent × biome friction. NOTE: uses <see cref="Math.Pow"/>
     /// for a general exponent; like <c>Prng.NextGaussian</c>, this is a transcendental-determinism
-    /// caveat (lifesim.md §9) rather than a guaranteed bit-identical cross-platform primitive.
+    /// caveat rather than a guaranteed bit-identical cross-platform primitive.
     /// </summary>
     public static double LocomotionTax(double distance, double velocity, double biomeFriction, MovementCombatConfig config) =>
         distance * Math.Pow(velocity, config.LocomotionVelocityExponent) * biomeFriction;

@@ -3,7 +3,7 @@ using LifeSim.Core.Configuration;
 namespace LifeSim.Core.Organisms;
 
 /// <summary>
-/// Phenotypic relatedness between two genomes (lifesim.md §20). Computed as 1 minus the mean
+/// Phenotypic relatedness between two genomes. Computed as 1 minus the mean
 /// per-trait difference normalized by each trait's bound span, clamped to [0, 1] — so identical
 /// genomes (clones/close kin) read ~1 and divergent ones read lower. This is a self-contained
 /// phenotype-matching proxy for kinship (no lineage bookkeeping needed), which suits an asexual

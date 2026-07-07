@@ -90,7 +90,7 @@ public class SimCliTests
         RunCli(out _, out _, "run", "--in", mid, "--out", resumed, "--ticks", "50");
 
         // The console is the determinism harness: a run split across CLI invocations must be
-        // byte-identical to one straight-through run (lifesim.md §15).
+        // byte-identical to one straight-through run.
         Assert.Equal(File.ReadAllText(straight), File.ReadAllText(resumed));
     }
 
@@ -106,7 +106,7 @@ public class SimCliTests
         RunCli(out _, out _, "run", "--in", genesis, "--out", serial, "--ticks", "100", "--threads", "1");
         int exit = RunCli(out _, out _, "run", "--in", genesis, "--out", threaded, "--ticks", "100", "--threads", "4");
 
-        // --threads is an execution knob only: the result must match a serial run (lifesim.md §7, §15).
+        // --threads is an execution knob only: the result must match a serial run.
         Assert.Equal(0, exit);
         Assert.Equal(File.ReadAllText(serial), File.ReadAllText(threaded));
     }

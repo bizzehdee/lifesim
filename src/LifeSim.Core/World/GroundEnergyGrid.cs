@@ -3,7 +3,7 @@ using LifeSim.Core.Configuration;
 namespace LifeSim.Core.World;
 
 /// <summary>
-/// The per-tile ambient energy buffer (lifesim.md §2, §11). Every tile starts full at its
+/// The per-tile ambient energy buffer. Every tile starts full at its
 /// biome's cap; only tiles that have been drained or topped up below cap need to be tracked, so
 /// state is a sparse override map rather than a dense grid — the vast majority of tiles are never
 /// visited and stay implicitly at their cap.
@@ -37,14 +37,14 @@ public sealed class GroundEnergyGrid
         return taken;
     }
 
-    /// <summary>Adds energy to a tile, clamped to its biome cap (e.g. corpse energy deposits — lifesim.md §11).</summary>
+    /// <summary>Adds energy to a tile, clamped to its biome cap (e.g. corpse energy deposits).</summary>
     public void Deposit(int x, int y, double amount)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(amount);
         SetEnergy(x, y, Math.Min(CapAt(x, y), EnergyAt(x, y) + amount));
     }
 
-    /// <summary>Regenerates every tracked tile toward its biome cap by one tick's regen rate (lifesim.md §2, §7).</summary>
+    /// <summary>Regenerates every tracked tile toward its biome cap by one tick's regen rate.</summary>
     public void RegenerateTick()
     {
         if (_overrides.Count == 0)
@@ -95,5 +95,5 @@ public sealed class GroundEnergyGrid
     }
 }
 
-/// <summary>One sparse ground-energy override, serialized as part of the snapshot (lifesim.md §12).</summary>
+/// <summary>One sparse ground-energy override, serialized as part of the snapshot.</summary>
 public sealed record GroundEnergyEntry(int X, int Y, double Energy);

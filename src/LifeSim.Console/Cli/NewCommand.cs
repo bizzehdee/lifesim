@@ -6,7 +6,7 @@ namespace LifeSim.Console.Cli;
 
 /// <summary>
 /// <c>sim new --out state.json [--seed S] [--width W] [--height H] [--population P] [--config file]</c>
-/// — creates an initial (tick 0) world from config + seed and writes it as a snapshot (lifesim.md §1, §17).
+/// — creates an initial (tick 0) world from config + seed and writes it as a snapshot.
 /// </summary>
 public static class NewCommand
 {

@@ -8,7 +8,7 @@ public class BiomeClassifierTests
     private static readonly BiomeThresholds Thresholds = new();
 
     [Theory]
-    // Low moisture (lifesim.md §2 matrix).
+    // Low moisture.
     [InlineData(-0.5, -0.9, Biome.IceSheet)]
     [InlineData(-0.5, 0.0, Biome.Grassland)]
     [InlineData(-0.5, 0.9, Biome.Desert)]

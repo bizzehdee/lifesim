@@ -2,7 +2,7 @@ namespace LifeSim.Core.Snapshot;
 
 /// <summary>
 /// The world descriptor. Terrain is implicit — reconstructed from <see cref="Seed"/> and the
-/// noise config, never stored (lifesim.md §2, §12).
+/// noise config, never stored.
 /// </summary>
 public sealed record WorldState
 {

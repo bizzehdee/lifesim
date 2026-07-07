@@ -3,7 +3,7 @@ using System.Globalization;
 namespace LifeSim.Console.Cli;
 
 /// <summary>
-/// A minimal <c>command --key value --flag</c> parser for the <c>sim</c> CLI (lifesim.md §1). The
+/// A minimal <c>command --key value --flag</c> parser for the <c>sim</c> CLI. The
 /// first non-option token is the command; <c>--key value</c> pairs become options; a <c>--key</c>
 /// with no following value (or followed by another option) is a boolean flag.
 /// </summary>

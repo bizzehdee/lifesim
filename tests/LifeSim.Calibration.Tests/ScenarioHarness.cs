@@ -11,7 +11,7 @@ using LifeSim.Core.World;
 namespace LifeSim.Calibration.Tests;
 
 /// <summary>
-/// Drives calibration scenarios through the <c>sim</c> CLI (lifesim.md §15) — the console is the
+/// Drives calibration scenarios through the <c>sim</c> CLI — the console is the
 /// harness the calibration suite runs the engine through (Phase 11). Builds worlds either from the
 /// genesis command or from a hand-constructed snapshot, advances them via <c>sim run</c>, and
 /// returns the resulting snapshot plus the per-tick population series (from the CSV metrics stream).

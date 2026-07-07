@@ -1,7 +1,7 @@
 namespace LifeSim.Core.Organisms;
 
 /// <summary>
-/// Ancestry record for one organism, opened at birth and closed at death (lifesim.md §8, §14).
+/// Ancestry record for one organism, opened at birth and closed at death.
 /// Unlike the live organism index, lineage records are never removed — they accumulate for the
 /// whole run so lineage trees stay reconstructable after death.
 /// </summary>
@@ -12,7 +12,7 @@ public sealed class LineageEntry
     /// <summary>Null for genesis organisms.</summary>
     public long? ParentId { get; }
 
-    /// <summary>The founding ancestor's <see cref="OrganismId"/> — genesis organisms found their own lineage; offspring inherit it unchanged (asexual reproduction, lifesim.md §8).</summary>
+    /// <summary>The founding ancestor's <see cref="OrganismId"/> — genesis organisms found their own lineage; offspring inherit it unchanged (asexual reproduction).</summary>
     public long LineageId { get; }
 
     public long BirthTick { get; }

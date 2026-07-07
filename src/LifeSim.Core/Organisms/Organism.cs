@@ -4,15 +4,15 @@ namespace LifeSim.Core.Organisms;
 
 /// <summary>
 /// An organism instance: a dynamic state machine over an immutable <see cref="Genome"/> and an
-/// evolvable <see cref="Brain"/>, occupying a single grid tile (lifesim.md §3, §4, §10, §11).
+/// evolvable <see cref="Brain"/>, occupying a single grid tile.
 /// Removed from the simulation once its energy hits zero.
 /// </summary>
 public sealed class Organism
 {
-    /// <summary>The default energy ceiling for a single-cell body (lifesim.md §3); multicellular bodies raise it via Store cells (§21).</summary>
+    /// <summary>The default energy ceiling for a single-cell body; multicellular bodies raise it via Store cells (§21).</summary>
     public const double EnergyCeiling = 100.0;
 
-    /// <summary>This body's actual energy ceiling — <see cref="EnergyCeiling"/> for a plain cell, higher for a Store-rich body (lifesim.md §21).</summary>
+    /// <summary>This body's actual energy ceiling — <see cref="EnergyCeiling"/> for a plain cell, higher for a Store-rich body.</summary>
     public double EnergyCapacity { get; }
 
     public long Id { get; }
@@ -31,13 +31,13 @@ public sealed class Organism
 
     public int Y { get; private set; }
 
-    /// <summary>The action selected last tick (lifesim.md §12); null before the organism's first decision.</summary>
+    /// <summary>The action selected last tick; null before the organism's first decision.</summary>
     public OrganismAction? LastAction { get; private set; }
 
-    /// <summary>The outcome of <see cref="LastAction"/> (lifesim.md §12, §13), fed back in as a sensory input.</summary>
+    /// <summary>The outcome of <see cref="LastAction"/>, fed back in as a sensory input.</summary>
     public ActionResult LastActionResult { get; private set; }
 
-    /// <summary>The tick of this organism's most recent successful birth; null if it has never reproduced (lifesim.md §8, §12, §17).</summary>
+    /// <summary>The tick of this organism's most recent successful birth; null if it has never reproduced.</summary>
     public long? LastBirthTick { get; private set; }
 
     public bool IsAlive => Energy > 0.0;

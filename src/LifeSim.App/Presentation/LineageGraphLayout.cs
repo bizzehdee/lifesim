@@ -14,7 +14,7 @@ public sealed record LineageGraphEdge(double FromX, double FromY, double ToX, do
 public sealed record LineageGraph(IReadOnlyList<LineageGraphNode> Nodes, IReadOnlyList<LineageGraphEdge> Edges, long FocusId, bool Truncated);
 
 /// <summary>
-/// Lays out a focus-centred slice of an organism's lineage (lifesim.md §8, §14, §18): its direct
+/// Lays out a focus-centred slice of an organism's lineage: its direct
 /// ancestor line up to <paramref name="maxParentGenerations"/> generations, and its descendant
 /// subtree down to <paramref name="maxChildGenerations"/> generations. Nodes are placed by generation
 /// (rows) with subtrees grouped via a depth-first ordering (columns); the focus is flagged. A hard

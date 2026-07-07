@@ -42,7 +42,7 @@ public class SnapshotSerializerTests
         Assert.Equal(original.Configuration, loaded.Configuration);
         Assert.Equal(original.EvolutionBookkeeping, loaded.EvolutionBookkeeping);
 
-        // PRNG stream state must round-trip exactly (lifesim.md §9, §12).
+        // PRNG stream state must round-trip exactly.
         Assert.Equal(original.PrngStreams.Count, loaded.PrngStreams.Count);
         foreach ((string name, ulong[] words) in original.PrngStreams)
         {

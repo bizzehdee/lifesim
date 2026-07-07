@@ -8,7 +8,7 @@ using LifeSim.App.Presentation;
 namespace LifeSim.App.Views;
 
 /// <summary>
-/// The full-bleed simulation map (lifesim.md §18) — the deliberate exception to the Fluent
+/// The full-bleed simulation map — the deliberate exception to the Fluent
 /// card/surface rules (see the project <c>lifesim-ui</c> skill). It custom-draws a
 /// <see cref="WorldScene"/> through a <see cref="Camera"/> that supports zoom (mouse wheel toward the
 /// cursor, or the on-screen buttons) and pan (drag). Biome tiles, organisms (fill = colour mode,

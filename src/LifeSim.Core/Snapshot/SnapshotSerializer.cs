@@ -4,7 +4,7 @@ using LifeSim.Core.Configuration;
 namespace LifeSim.Core.Snapshot;
 
 /// <summary>
-/// Reads and writes snapshots. Import is gated (lifesim.md §12): the file is parsed, validated
+/// Reads and writes snapshots. Import is gated: the file is parsed, validated
 /// against the embedded JSON Schema, version-gated (hard-reject on major mismatch of schema or
 /// config version), and only then deserialized into the typed model.
 /// </summary>
@@ -54,7 +54,7 @@ public static class SnapshotSerializer
         return snapshot ?? throw new SnapshotValidationException("Snapshot deserialized to null.");
     }
 
-    /// <summary>Serialize a standalone configuration block using the same encoding as the snapshot's (lifesim.md §12).</summary>
+    /// <summary>Serialize a standalone configuration block using the same encoding as the snapshot's.</summary>
     public static string SaveConfig(SimulationConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);

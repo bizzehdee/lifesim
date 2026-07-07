@@ -6,7 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace LifeSim.App.ViewModels;
 
 /// <summary>
-/// One editable leaf of the simulation config (lifesim.md §12, §18): a labelled number or boolean
+/// One editable leaf of the simulation config: a labelled number or boolean
 /// that writes straight back into the shared JSON tree, so <see cref="AdvancedConfigEditor.ToJson"/>
 /// always reflects the latest edits. Whole values are written as integers (so integer config fields
 /// round-trip); fractional values as doubles.
@@ -74,7 +74,7 @@ public sealed partial class ConfigField : ObservableObject
 public sealed record ConfigGroup(string Title, IReadOnlyList<ConfigField> Fields, IReadOnlyList<ConfigGroup> Groups);
 
 /// <summary>
-/// A structured editor over the entire simulation configuration (lifesim.md §12, §18). It parses the
+/// A structured editor over the entire simulation configuration. It parses the
 /// config JSON into a mutable tree and exposes every numeric/boolean leaf as an editable
 /// <see cref="ConfigField"/> grouped by config block, so the user can tweak any starting constant
 /// without hand-editing JSON. Edits write straight back into the tree; <see cref="ToJson"/> returns

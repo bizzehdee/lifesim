@@ -1,7 +1,7 @@
 namespace LifeSim.Core.Sensing;
 
 /// <summary>
-/// Named indices into the fixed sensory input vector (lifesim.md §13). The enum's underlying
+/// Named indices into the fixed sensory input vector. The enum's underlying
 /// values are the exact input-node index order fed to the brain — matches
 /// <see cref="Neat.NeatTopology.InputNodeIds"/> position-for-position.
 /// </summary>
@@ -25,6 +25,6 @@ public enum SensoryField
     ReproductiveReadiness = 15,
     GlobalStressLevel = 16,
 
-    /// <summary>Genome relatedness (0..1) to the closest organism — the kin-recognition signal (lifesim.md §20).</summary>
+    /// <summary>Genome relatedness (0..1) to the closest organism — the kin-recognition signal.</summary>
     ClosestOrganismRelatedness = 17,
 }

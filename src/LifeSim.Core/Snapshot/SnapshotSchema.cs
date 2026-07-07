@@ -6,7 +6,7 @@ namespace LifeSim.Core.Snapshot;
 
 /// <summary>
 /// Loads the embedded JSON Schema and validates snapshot JSON against it before import
-/// (lifesim.md §12). The schema is the envelope contract; deeper blocks are enforced by later phases.
+///. The schema is the envelope contract; deeper blocks are enforced by later phases.
 /// </summary>
 internal static class SnapshotSchema
 {

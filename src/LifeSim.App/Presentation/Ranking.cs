@@ -4,7 +4,7 @@ using LifeSim.Core.Snapshot;
 namespace LifeSim.App.Presentation;
 
 /// <summary>
-/// One row of the whole-simulation leaderboard (lifesim.md §14). "Success" is a weighted descendant
+/// One row of the whole-simulation leaderboard. "Success" is a weighted descendant
 /// score — <c>children + 0.5·grandchildren + 0.25·great-grandchildren</c> — tie-broken by lifespan
 /// then id. Covers every organism that ever lived, alive or dead; all are named via the deterministic
 /// <see cref="OrganismNamer"/> (names are a pure function of id, so dead organisms are named too).

@@ -5,9 +5,9 @@ using LifeSim.Core.Snapshot;
 namespace LifeSim.App.Engine;
 
 /// <summary>
-/// Reads snapshots from a running <c>sim serve</c> endpoint (lifesim.md §1) — the browser demo's
+/// Reads snapshots from a running <c>sim serve</c> endpoint — the browser demo's
 /// primary way to show large worlds it cannot itself simulate. In this mode the client does not
-/// advance canonical time (lifesim.md §9); it only fetches frames the server produces, and can post
+/// advance canonical time; it only fetches frames the server produces, and can post
 /// an edited snapshot back (the §16 write-back path).
 /// </summary>
 public sealed class SnapshotStreamClient : IDisposable
@@ -27,7 +27,7 @@ public sealed class SnapshotStreamClient : IDisposable
         return SnapshotSerializer.Load(json);
     }
 
-    /// <summary>Posts an edited snapshot back to the server as the new world state (lifesim.md §16).</summary>
+    /// <summary>Posts an edited snapshot back to the server as the new world state.</summary>
     public async Task PostAsync(WorldSnapshot snapshot, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(snapshot);

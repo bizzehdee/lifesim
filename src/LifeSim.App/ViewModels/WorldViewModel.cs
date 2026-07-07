@@ -7,7 +7,7 @@ using LifeSim.Core.Snapshot;
 namespace LifeSim.App.ViewModels;
 
 /// <summary>
-/// The shared world view-model (lifesim.md §18). It is agnostic to its data source: feed it a
+/// The shared world view-model. It is agnostic to its data source: feed it a
 /// snapshot from a live in-process Core (<c>world.ToSnapshot()</c>) or a deserialized file and it
 /// renders identically. Holds the active colour mode and selection, and rebuilds the render
 /// <see cref="Scene"/>, <see cref="Legend"/>, and <see cref="Inspector"/> as those change.
@@ -57,7 +57,7 @@ public partial class WorldViewModel : ViewModelBase
     [ObservableProperty]
     private string _lineageGraphTitle = "";
 
-    /// <summary>Whether the global-statistics panel is open (lifesim.md §18).</summary>
+    /// <summary>Whether the global-statistics panel is open.</summary>
     [ObservableProperty]
     private bool _isStatisticsVisible;
 
@@ -88,7 +88,7 @@ public partial class WorldViewModel : ViewModelBase
 
     private readonly EventWatcher _eventWatcher = new();
 
-    /// <summary>Raised (on the UI thread) when a frame reveals a notable event — blight, population explosion, a new multicellular milestone (lifesim.md §18).</summary>
+    /// <summary>Raised (on the UI thread) when a frame reveals a notable event — blight, population explosion, a new multicellular milestone.</summary>
     public event Action<SimNotification>? NotificationRaised;
 
     /// <summary>Forget notification history so the next frame re-seeds baselines silently (call when a new world is adopted).</summary>
@@ -100,7 +100,7 @@ public partial class WorldViewModel : ViewModelBase
     [RelayCommand]
     private void SelectOrganism(long? organismId) => SelectedOrganismId = organismId;
 
-    /// <summary>Select an organism as if it were clicked on the map — used by clickable notifications (lifesim.md §18). Switches to the Info tab so its inspector is visible.</summary>
+    /// <summary>Select an organism as if it were clicked on the map — used by clickable notifications. Switches to the Info tab so its inspector is visible.</summary>
     public void FocusOrganism(long organismId)
     {
         SidebarTabIndex = 0; // the Info tab hosts the inspector
@@ -132,7 +132,7 @@ public partial class WorldViewModel : ViewModelBase
     [RelayCommand]
     private void CloseLineageGraph() => IsLineageGraphVisible = false;
 
-    /// <summary>Open/close the global-statistics panel (lifesim.md §18); refreshes it from the current frame on open.</summary>
+    /// <summary>Open/close the global-statistics panel; refreshes it from the current frame on open.</summary>
     [RelayCommand]
     private void ToggleStatistics()
     {

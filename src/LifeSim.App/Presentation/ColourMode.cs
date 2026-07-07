@@ -1,7 +1,7 @@
 namespace LifeSim.App.Presentation;
 
 /// <summary>
-/// What the organism <b>fill</b> channel encodes (lifesim.md §18). The <b>outline</b> channel always
+/// What the organism <b>fill</b> channel encodes. The <b>outline</b> channel always
 /// shows the last action independently, so both state and action stay readable at once.
 /// </summary>
 public enum ColourMode
@@ -21,6 +21,6 @@ public enum ColourMode
     /// <summary>A stable hashed colour per <c>lineage_id</c>, so clonal clusters are visible.</summary>
     Lineage,
 
-    /// <summary>Teal if the organism's last action was to share energy, else neutral — a cooperation readout (lifesim.md §20).</summary>
+    /// <summary>Teal if the organism's last action was to share energy, else neutral — a cooperation readout.</summary>
     Cooperation,
 }

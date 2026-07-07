@@ -4,12 +4,12 @@ using LifeSim.Core.Determinism;
 namespace LifeSim.Core.Organisms;
 
 /// <summary>
-/// Applies bounded, inheritable trait drift to an offspring genome (lifesim.md §8). Each trait
+/// Applies bounded, inheritable trait drift to an offspring genome. Each trait
 /// mutates independently with probability <see cref="MutationConfig.TraitMutationRate"/>; the
 /// perturbation is a uniform delta scaled to a fraction (<see cref="MutationConfig.TraitMutationDelta"/>)
 /// of that trait's own bound span, so a single config value drifts every trait proportionally
-/// regardless of its absolute range. All draws come from the mutation PRNG stream (lifesim.md §9),
-/// in a fixed trait order, and the result is hard-clamped to <see cref="TraitBounds"/> (lifesim.md §3, §8).
+/// regardless of its absolute range. All draws come from the mutation PRNG stream,
+/// in a fixed trait order, and the result is hard-clamped to <see cref="TraitBounds"/>.
 /// </summary>
 public static class GenomeMutator
 {
@@ -21,7 +21,7 @@ public static class GenomeMutator
         ArgumentNullException.ThrowIfNull(mutationStream);
 
         // Object-initializer members are evaluated in source order, so the mutation-stream draws
-        // happen in a fixed, reproducible trait sequence (lifesim.md §9).
+        // happen in a fixed, reproducible trait sequence.
         return new Genome
         {
             Size = Drift(genome.Size, bounds.Size, config, mutationStream),

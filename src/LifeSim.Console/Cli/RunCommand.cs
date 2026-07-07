@@ -9,7 +9,7 @@ namespace LifeSim.Console.Cli;
 /// <c>sim run --in state.json --out state.json --ticks N [--out-dir ./frames --stream K]
 /// [--metrics file --metrics-format csv|ndjson]</c> — advances the world N ticks and writes the
 /// resulting snapshot, optionally emitting periodic frame snapshots and a per-tick metrics stream
-/// (lifesim.md §1, §14). A run halts early if the population goes extinct.
+///. A run halts early if the population goes extinct.
 /// </summary>
 public static class RunCommand
 {

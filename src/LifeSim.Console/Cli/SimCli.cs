@@ -4,7 +4,7 @@ using LifeSim.Core.Snapshot;
 namespace LifeSim.Console.Cli;
 
 /// <summary>
-/// The <c>sim</c> command dispatcher (lifesim.md §1). Kept separate from the process entry point so
+/// The <c>sim</c> command dispatcher. Kept separate from the process entry point so
 /// the whole CLI surface is directly unit-testable with in-memory writers and temp files — this is
 /// the harness the determinism and calibration suites drive the engine through.
 /// </summary>

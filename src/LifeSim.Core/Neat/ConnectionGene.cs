@@ -1,6 +1,6 @@
 namespace LifeSim.Core.Neat;
 
-/// <summary>A NEAT connection gene (lifesim.md §4, §12), keyed by a globally unique innovation id.</summary>
+/// <summary>A NEAT connection gene, keyed by a globally unique innovation id.</summary>
 public sealed record ConnectionGene
 {
     public long InnovationId { get; init; }

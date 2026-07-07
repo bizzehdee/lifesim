@@ -3,9 +3,9 @@ using LifeSim.Core.World;
 namespace LifeSim.Core.Configuration;
 
 /// <summary>
-/// The typed, versioned configuration block (lifesim.md §12, Appendix A). Every coupled constant
+/// The typed, versioned configuration block. Every coupled constant
 /// lives here rather than in source, so experiments tune behaviour without code changes. Defaults
-/// started from Appendix A's illustrative values; Phase 12 calibration (lifesim.md §15) then tuned a
+/// started from Appendix A's illustrative values; Phase 12 calibration then tuned a
 /// few (reproduction cost, org-radius sensory tax, grassland regen) so a grassland population is
 /// sustainable under random genesis brains without runaway growth.
 /// </summary>
@@ -22,17 +22,17 @@ public sealed record SimulationConfig
     public EventsConfig Events { get; init; } = new();
     public NamingConfig Naming { get; init; } = new();
 
-    /// <summary>Moisture noise layer (lifesim.md §2).</summary>
+    /// <summary>Moisture noise layer.</summary>
     public NoiseConfig MoistureNoise { get; init; } = NoiseConfig.Default;
 
-    /// <summary>Temperature noise layer (lifesim.md §2).</summary>
+    /// <summary>Temperature noise layer.</summary>
     public NoiseConfig TemperatureNoise { get; init; } = NoiseConfig.Default;
 
-    /// <summary>Genesis organism count (lifesim.md §17).</summary>
+    /// <summary>Genesis organism count.</summary>
     public int InitialPopulation { get; init; } = 200;
 
     /// <summary>
-    /// Aging model (lifesim.md §17), selectable per world at genesis. When enabled, organisms past
+    /// Aging model, selectable per world at genesis. When enabled, organisms past
     /// <see cref="MetabolismConfig.SenescenceOnsetAge"/> pay a growing metabolic tax so no lineage is
     /// immortal by hoarding energy; on by default. Disable it to leave turnover to famine and predation.
     /// </summary>
@@ -41,7 +41,7 @@ public sealed record SimulationConfig
     public static SimulationConfig Default => new();
 }
 
-/// <summary>Metabolism &amp; sensory-tax coefficients (lifesim.md §3, Appendix A).</summary>
+/// <summary>Metabolism &amp; sensory-tax coefficients.</summary>
 public sealed record MetabolismConfig
 {
     public double BaseMetabolismPerSize { get; init; } = 0.05;
@@ -51,7 +51,7 @@ public sealed record MetabolismConfig
     public double ThermalStressScale { get; init; } = 0.1;
 
     /// <summary>
-    /// Density-dependent crowding cost (lifesim.md §3, §6): extra metabolism per neighbouring organism
+    /// Density-dependent crowding cost: extra metabolism per neighbouring organism
     /// in the 3×3 block beyond <see cref="CrowdingFreeNeighbours"/>. A continuous carrying-capacity
     /// pressure — dense clusters starve faster, so overpopulation is self-limiting.
     /// </summary>
@@ -62,7 +62,7 @@ public sealed record MetabolismConfig
 
     /// <summary>
     /// Age (in ticks) at which senescence begins to add metabolic cost, when the optional aging model
-    /// is enabled (<see cref="SimulationConfig.Senescence"/>, lifesim.md §17). Below this age there is
+    /// is enabled (<see cref="SimulationConfig.Senescence"/>). Below this age there is
     /// no senescence tax at all.
     /// </summary>
     public long SenescenceOnsetAge { get; init; } = 400;
@@ -71,7 +71,7 @@ public sealed record MetabolismConfig
     public double SenescenceCostPerTick { get; init; } = 0.02;
 }
 
-/// <summary>Movement &amp; combat constants (lifesim.md §3, §5, Appendix A).</summary>
+/// <summary>Movement &amp; combat constants.</summary>
 public sealed record MovementCombatConfig
 {
     public double LocomotionVelocityExponent { get; init; } = 2.0;
@@ -79,11 +79,11 @@ public sealed record MovementCombatConfig
     public double FailedCombatPenalty { get; init; } = 5.0;
 }
 
-/// <summary>Cooperation controls (lifesim.md §20): energy sharing and optional kin-predation deterrence.</summary>
+/// <summary>Cooperation controls: energy sharing and optional kin-predation deterrence.</summary>
 public sealed record CooperationConfig
 {
     /// <summary>
-    /// Master switch for the whole cooperation feature set (lifesim.md §20), selectable per world at
+    /// Master switch for the whole cooperation feature set, selectable per world at
     /// genesis. When false, Share actions are inert no-ops and the kin-predation penalty is not charged,
     /// so a run can be observed with cooperation entirely absent. The kin-relatedness sensory input
     /// remains available either way — it is cheap information, not cooperation itself.
@@ -101,7 +101,7 @@ public sealed record CooperationConfig
     public double ShareEfficiency { get; init; } = 0.8;
 
     /// <summary>
-    /// Sharing is relatedness-scaled (lifesim.md §20): when an organism chooses to Share, it actually
+    /// Sharing is relatedness-scaled: when an organism chooses to Share, it actually
     /// donates with probability <c>floor + (ceiling − floor) · relatedness(donor, recipient)</c>. The
     /// ceiling &lt; 1 means even kin aren't certain; the floor &gt; 0 means strangers are unlikely but possible.
     /// </summary>
@@ -117,7 +117,7 @@ public sealed record CooperationConfig
 }
 
 /// <summary>
-/// Multicellularity controls (lifesim.md §21): a body is a single tile-occupant made of
+/// Multicellularity controls: a body is a single tile-occupant made of
 /// <c>cell_count</c> cells, each specialised toward one of six jobs. Bigger bodies pay more upkeep
 /// (volume, ∝ N) but exchange energy only through their surface (∝ N^⅔), so the square-cube law caps
 /// viable size. Every specialisation effect is a <em>bonus for emphasising a type above the ⅙
@@ -131,14 +131,14 @@ public sealed record MulticellularConfig
     /// <summary>Energy ceiling of a 1-cell / storage-free body (matches <see cref="Organisms.Organism.EnergyCeiling"/>).</summary>
     public double BaseCapacity { get; init; } = 100.0;
 
-    /// <summary>Extra energy ceiling per Store cell above the generalist baseline — how a body "stores more" (lifesim.md §21).</summary>
+    /// <summary>Extra energy ceiling per Store cell above the generalist baseline — how a body "stores more".</summary>
     public double StoreCapacityPerCell { get; init; } = 12.0;
 
     /// <summary>Coordination/upkeep energy each cell beyond the first costs per tick — the "requires more energy" term (volume, ∝ N).</summary>
     public double CoordinationCostPerCell { get; init; } = 0.15;
 
     /// <summary>
-    /// Division-of-labour efficiency (lifesim.md §21): a body drawing on several <em>distinct</em>
+    /// Division-of-labour efficiency: a body drawing on several <em>distinct</em>
     /// specialist cell types waives up to this fraction of its multicellular overhead (the extra-cell
     /// metabolism + coordination), so a well-differentiated body is far cheaper to run than a lopsided
     /// or generalist one of the same size — the selection pressure toward specialised multicellularity.
@@ -148,11 +148,11 @@ public sealed record MulticellularConfig
     /// <summary>Number of distinct specialist types (fractions above the ⅙ baseline) for the full <see cref="DivisionOfLabourDiscount"/>; fewer scales it down linearly.</summary>
     public int DivisionOfLabourTarget { get; init; } = 4;
 
-    /// <summary>Surface-exchange coefficient: max energy a body can absorb from grazing per tick is this × N^⅔ (lifesim.md §21).</summary>
+    /// <summary>Surface-exchange coefficient: max energy a body can absorb from grazing per tick is this × N^⅔.</summary>
     public double IntakeSurfaceCoeff { get; init; } = 20.0;
 
     /// <summary>
-    /// Grazing footprint (lifesim.md §21): a larger body physically covers more ground, so when it
+    /// Grazing footprint: a larger body physically covers more ground, so when it
     /// grazes it also skims tiles within a reach that grows with cell count (radius ≈ (√cells − 1) ×
     /// this scale, so footprint area ∝ cells) — pulling energy from more of the surface. Total intake
     /// is still capped by <see cref="IntakeSurfaceCoeff"/>×N^⅔, so the footprint mainly lets big bodies
@@ -178,22 +178,22 @@ public sealed record MulticellularConfig
     /// <summary>Sensor emphasis adds up to this to effective sensory acuity (less perception noise).</summary>
     public double SensorAcuityBonus { get; init; } = 0.6;
 
-    /// <summary>A body needs at least this germ fraction to reproduce; below it the body is sterile soma (lifesim.md §21).</summary>
+    /// <summary>A body needs at least this germ fraction to reproduce; below it the body is sterile soma.</summary>
     public double GermReproductionThreshold { get; init; } = 0.05;
 
     /// <summary>
-    /// Neural capacity from body size (lifesim.md §4, §21): a larger body devotes more cells to
+    /// Neural capacity from body size: a larger body devotes more cells to
     /// processing, so it runs extra recurrent brain-propagation steps per tick — this many per cell
     /// beyond the first — letting signals propagate deeper through the network before it acts (more
     /// efficient decision-making). A single cell always runs exactly one step (the base model).
     /// </summary>
     public double NeuralStepsPerCell { get; init; } = 0.5;
 
-    /// <summary>Hard cap on brain-propagation steps per tick, so a giant body's per-tick compute stays bounded (lifesim.md §21).</summary>
+    /// <summary>Hard cap on brain-propagation steps per tick, so a giant body's per-tick compute stays bounded.</summary>
     public int MaxNeuralSteps { get; init; } = 6;
 
     /// <summary>
-    /// Heredity bias toward multicellularity (lifesim.md §21): when a multicellular parent reproduces,
+    /// Heredity bias toward multicellularity: when a multicellular parent reproduces,
     /// its offspring's cell count is nudged upward by this fraction of the parent's extra cells
     /// (<c>parent_cells − 1</c>). Without it, symmetric trait drift near the unicellular floor erodes
     /// multicellularity back to single cells; with it, the trait is self-reinforcing and the square-cube
@@ -202,7 +202,7 @@ public sealed record MulticellularConfig
     public double OffspringGrowthBias { get; init; } = 0.5;
 }
 
-/// <summary>Per-biome physics/resource settings (lifesim.md §2, Appendix A).</summary>
+/// <summary>Per-biome physics/resource settings.</summary>
 public sealed record BiomesConfig
 {
     public BiomeSettings Grassland { get; init; } = new() { Friction = 1.0, RegenRate = 0.8, EnergyCap = 20.0, Temperature = 20.0 };
@@ -210,11 +210,11 @@ public sealed record BiomesConfig
     public BiomeSettings Swamp { get; init; } = new() { Friction = 3.0, RegenRate = 1.5, EnergyCap = 40.0, Temperature = 25.0 };
     public BiomeSettings IceSheet { get; init; } = new() { Friction = 1.2, RegenRate = 0.0, EnergyCap = 0.0, Temperature = -15.0 };
 
-    /// <summary>Moisture/temperature noise bands that select a biome from the matrix (lifesim.md §2).</summary>
+    /// <summary>Moisture/temperature noise bands that select a biome from the matrix.</summary>
     public BiomeThresholds Thresholds { get; init; } = new();
 
     /// <summary>
-    /// Within-biome temperature spread in °C (lifesim.md §2, §3): a tile's temperature is its
+    /// Within-biome temperature spread in °C: a tile's temperature is its
     /// biome's baseline <see cref="BiomeSettings.Temperature"/> plus the temperature-noise field
     /// scaled by this, so tiles vary around the biome norm rather than all reading identically.
     /// </summary>
@@ -240,7 +240,7 @@ public sealed record BiomeSettings
 
 /// <summary>
 /// Splits the moisture and temperature noise fields (each roughly [-1, 1]) into the bands used
-/// by the biome matrix (lifesim.md §2): Low/High moisture and Cold/Temperate/Hot temperature.
+/// by the biome matrix: Low/High moisture and Cold/Temperate/Hot temperature.
 /// </summary>
 public sealed record BiomeThresholds
 {
@@ -249,7 +249,7 @@ public sealed record BiomeThresholds
     public double TemperatureHotThreshold { get; init; } = 0.33;
 }
 
-/// <summary>Reproduction economy (lifesim.md §8, §11, §17, Appendix A).</summary>
+/// <summary>Reproduction economy.</summary>
 public sealed record ReproductionConfig
 {
     public double ReproductionBaseCost { get; init; } = 3.0;  // per unit Size (Phase 12 calibration; was 10.0)
@@ -257,7 +257,7 @@ public sealed record ReproductionConfig
     public int ReproductionCooldownTicks { get; init; } = 3;
 }
 
-/// <summary>Trait/topology mutation controls (lifesim.md §4, §8, Appendix A).</summary>
+/// <summary>Trait/topology mutation controls.</summary>
 public sealed record MutationConfig
 {
     public double TraitMutationRate { get; init; } = 0.1;
@@ -268,7 +268,7 @@ public sealed record MutationConfig
     public double NodeMutationRate { get; init; } = 0.03;
 }
 
-/// <summary>Hard min/max for every mutable trait (lifesim.md §3, §8, Appendix A).</summary>
+/// <summary>Hard min/max for every mutable trait.</summary>
 public sealed record TraitBounds
 {
     public Range Size { get; init; } = new(0.5, 10.0);
@@ -279,13 +279,13 @@ public sealed record TraitBounds
     public Range OrgRadius { get; init; } = new(0.0, 20.0);
     public Range SensoryAcuity { get; init; } = new(0.0, 1.0);
 
-    /// <summary>Generosity bounds (lifesim.md §20): 0 = never donates, 1 = donates all of its energy per Share.</summary>
+    /// <summary>Generosity bounds: 0 = never donates, 1 = donates all of its energy per Share.</summary>
     public Range ShareFraction { get; init; } = new(0.0, 1.0);
 
-    /// <summary>Body size in cells (lifesim.md §21): 1 = unicellular; the square-cube economy caps the viable maximum well below this hard bound.</summary>
+    /// <summary>Body size in cells: 1 = unicellular; the square-cube economy caps the viable maximum well below this hard bound.</summary>
     public Range CellCount { get; init; } = new(1.0, 32.0);
 
-    /// <summary>Specialisation weights (lifesim.md §21): raw propensities, normalised to fractions across the six cell types at use.</summary>
+    /// <summary>Specialisation weights: raw propensities, normalised to fractions across the six cell types at use.</summary>
     public Range GermWeight { get; init; } = new(0.0, 1.0);
     public Range FeederWeight { get; init; } = new(0.0, 1.0);
     public Range StoreWeight { get; init; } = new(0.0, 1.0);
@@ -296,7 +296,7 @@ public sealed record TraitBounds
     public sealed record Range(double Min, double Max);
 }
 
-/// <summary>Stochastic event tuning (lifesim.md §6, Appendix A).</summary>
+/// <summary>Stochastic event tuning.</summary>
 public sealed record EventsConfig
 {
     public double BlightProbability { get; init; } = 0.001;
@@ -308,13 +308,13 @@ public sealed record EventsConfig
     public double TemperatureAnomalyMagnitude { get; init; } = 20.0;
     public int PlagueDensityThreshold { get; init; } = 6;
 
-    /// <summary>Extra energy drained per tick from each organism in a crowded region during a plague (lifesim.md §6).</summary>
+    /// <summary>Extra energy drained per tick from each organism in a crowded region during a plague.</summary>
     public double PlagueEnergyDrainPerTick { get; init; } = 2.0;
 
     public double CorpseEnergyFraction { get; init; } = 0.25;
 }
 
-/// <summary>Organism naming (lifesim.md §19, Appendix A).</summary>
+/// <summary>Organism naming.</summary>
 public sealed record NamingConfig
 {
     public string AdjectiveListVersion { get; init; } = "adjectives-1";

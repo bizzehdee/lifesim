@@ -3,7 +3,7 @@ using LifeSim.Core.World;
 
 namespace LifeSim.App.Presentation;
 
-/// <summary>How a legend entry's colour is depicted, so the key never relies on colour alone (lifesim.md §18).</summary>
+/// <summary>How a legend entry's colour is depicted, so the key never relies on colour alone.</summary>
 public enum LegendGlyph
 {
     Swatch,
@@ -20,7 +20,7 @@ public sealed record LegendEntry(string Label, Color Colour, LegendGlyph Glyph =
 public sealed record LegendSection(string Title, IReadOnlyList<LegendEntry> Entries);
 
 /// <summary>
-/// Builds the always-visible colour key (lifesim.md §18). It reflects the active fill
+/// Builds the always-visible colour key. It reflects the active fill
 /// <see cref="ColourMode"/> plus the always-on channels: last-action outlines, overlay glyphs, and
 /// biome swatches (with the ground-energy brightness ramp). Nothing on the map is colour-coded
 /// without a corresponding entry here.

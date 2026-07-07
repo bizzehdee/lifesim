@@ -14,7 +14,7 @@ public sealed record NeatEdgeLayout(
 public sealed record NeatGraph(IReadOnlyList<NeatNodeLayout> Nodes, IReadOnlyList<NeatEdgeLayout> Edges, int Depth = 1);
 
 /// <summary>
-/// Lays out a NEAT genome for the inspector's brain view (lifesim.md §18) so the <em>effective</em>
+/// Lays out a NEAT genome for the inspector's brain view so the <em>effective</em>
 /// evolved network is visible: inputs on the left, outputs on the right, and hidden nodes placed by
 /// their true feed-forward depth (longest enabled path from any input) rather than one flat middle
 /// column — so accreted layers spread out and the network's depth reads at a glance. Live per-node

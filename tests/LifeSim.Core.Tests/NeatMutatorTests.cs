@@ -124,7 +124,7 @@ public class NeatMutatorTests
     {
         // A tiny 1-input / 1-output net with one spare hidden node, so connection candidates
         // include self-loops and back-edges — cycle-creating links must be allowed, not rejected
-        // (lifesim.md §4).
+        //.
         var genome = new NeatGenome
         {
             Nodes =

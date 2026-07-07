@@ -7,7 +7,7 @@ using LifeSim.Core.World;
 namespace LifeSim.Determinism.Tests;
 
 /// <summary>
-/// An edited world is a new deterministic starting point (lifesim.md §16): resuming from an edited,
+/// An edited world is a new deterministic starting point: resuming from an edited,
 /// branched snapshot is itself byte-identical on replay, and the branch stays traceable to its parent.
 /// </summary>
 public class EditedReplayTests

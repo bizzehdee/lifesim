@@ -4,8 +4,7 @@ using LifeSim.Core.Determinism;
 namespace LifeSim.Core.Naming;
 
 /// <summary>
-/// Deterministic organism naming: <c>name = f(organism_id, wordlist_version)</c> (lifesim.md
-/// §19). A pure hash of the id is split into two adjective indices and one noun index — no
+/// Deterministic organism naming: <c>name = f(organism_id, wordlist_version)</c>. A pure hash of the id is split into two adjective indices and one noun index — no
 /// registry, no per-tick state, and no PRNG draw, so it reproduces identically on replay.
 /// </summary>
 public static class OrganismNamer

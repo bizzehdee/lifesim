@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://lifesim.local/snapshot.schema.json",
   "title": "LifeSim Snapshot",
-  "description": "Envelope schema for a LifeSim world snapshot (lifesim.md §12). Nested configuration and the not-yet-modelled blocks are validated structurally; their internal shape is enforced by later phases.",
+  "description": "Envelope schema for a LifeSim world snapshot. Nested configuration and the not-yet-modelled blocks are validated structurally; their internal shape is enforced by later phases.",
   "type": "object",
   "required": [
     "schema_version",

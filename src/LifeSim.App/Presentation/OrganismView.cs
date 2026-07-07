@@ -4,7 +4,7 @@ namespace LifeSim.App.Presentation;
 
 /// <summary>
 /// A render-ready organism: everything the canvas needs to draw one marker, precomputed from that
-/// organism's snapshot record (lifesim.md §18). Position is in world-tile coordinates; radius is a
+/// organism's snapshot record. Position is in world-tile coordinates; radius is a
 /// fraction of a tile (the canvas scales both by the current zoom).
 /// </summary>
 public sealed record OrganismView
@@ -26,6 +26,6 @@ public sealed record OrganismView
     public bool ReproductiveReady { get; init; }
     public bool Stressed { get; init; }
 
-    /// <summary>Last action killed prey this tick — the canvas flashes the tile (lifesim.md §18).</summary>
+    /// <summary>Last action killed prey this tick — the canvas flashes the tile.</summary>
     public bool JustKilled { get; init; }
 }

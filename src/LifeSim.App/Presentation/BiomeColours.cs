@@ -5,11 +5,11 @@ using LifeSim.Core.World;
 namespace LifeSim.App.Presentation;
 
 /// <summary>
-/// Resolves a tile's on-screen colour (lifesim.md §18): the biome base colour, darkened by how
+/// Resolves a tile's on-screen colour: the biome base colour, darkened by how
 /// depleted the tile's ground-energy pool is, then tinted by any active environmental event —
 /// blight desaturates toward grey, a climatic anomaly applies a warm/cool overlay. (Plague zones
 /// are drawn as a hatch overlay by the canvas, not a colour shift.) Biomes are reconstructed from
-/// the world seed via the Core's Simplex, never read from the snapshot (lifesim.md §1, §2).
+/// the world seed via the Core's Simplex, never read from the snapshot.
 /// </summary>
 public static class BiomeColours
 {
@@ -43,6 +43,6 @@ public static class BiomeColours
         return colour;
     }
 
-    /// <summary>True when a plague is active — the canvas overlays a diagonal hatch on the whole map (lifesim.md §18).</summary>
+    /// <summary>True when a plague is active — the canvas overlays a diagonal hatch on the whole map.</summary>
     public static bool PlagueHatch(EnvironmentState environment) => environment.PlagueActive;
 }

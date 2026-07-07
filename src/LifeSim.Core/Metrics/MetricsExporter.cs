@@ -6,7 +6,7 @@ namespace LifeSim.Core.Metrics;
 
 /// <summary>
 /// Serializes per-tick <see cref="SimulationMetrics"/> for external plotting/batch analysis
-/// (lifesim.md §14). Two formats:
+///. Two formats:
 /// <list type="bullet">
 /// <item><b>NDJSON</b> — one full <see cref="MetricsSample"/> per line, including the nested
 /// histograms and per-lineage reproduction that don't fit a flat table.</item>

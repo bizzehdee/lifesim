@@ -3,7 +3,7 @@ namespace LifeSim.Core.Determinism;
 /// <summary>
 /// Deterministic pseudo-random generator (xoshiro256** with SplitMix64 seeding).
 /// State is four 64-bit words and is fully serializable, so a snapshot replays identically
-/// (lifesim.md §9). All draws are pure integer/double operations — no wall-clock or ambient
+///. All draws are pure integer/double operations — no wall-clock or ambient
 /// entropy — so the same state always yields the same sequence on any platform.
 /// </summary>
 public sealed class Prng
@@ -89,7 +89,7 @@ public sealed class Prng
     /// Standard-normal sample via the Marsaglia polar method.
     /// NOTE: uses Math.Log/Sqrt; sqrt is IEEE-deterministic but log is not guaranteed
     /// bit-identical across platforms. This is the transcendental-determinism caveat called
-    /// out in lifesim.md §9 (a candidate for the fixed-point migration). The cross-platform
+    /// out (a candidate for the fixed-point migration). The cross-platform
     /// parity guarantee in Phase 1 covers the integer PRNG and Simplex, not Gaussian draws.
     /// </summary>
     public double NextGaussian()

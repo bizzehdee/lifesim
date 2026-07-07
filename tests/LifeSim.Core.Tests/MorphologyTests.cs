@@ -70,7 +70,7 @@ public class MorphologyTests
     public void SquareCubeLaw_intakeGrowsSlowerThanUpkeep_soPerCellDeficitRisesWithSize()
     {
         // Maintenance ~ volume (∝ N); grazing intake caps at ~ surface (∝ N^2/3). The ratio of max
-        // sustainable intake to upkeep must fall as the body grows — the size limiter (lifesim.md §21).
+        // sustainable intake to upkeep must fall as the body grows — the size limiter.
         double RatioAt(double n)
         {
             Genome g = Cell(count: n);

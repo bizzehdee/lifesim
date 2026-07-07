@@ -3,7 +3,7 @@ using LifeSim.Core.Configuration;
 namespace LifeSim.Core.Organisms;
 
 /// <summary>
-/// Pure body-plan math for aggregate multicellularity (lifesim.md §21). A body is a single
+/// Pure body-plan math for aggregate multicellularity. A body is a single
 /// tile-occupant made of <c>cell_count</c> cells allocated across six jobs; these functions turn a
 /// <see cref="Genome"/> + <see cref="MulticellularConfig"/> into the derived quantities the tick loop
 /// needs. Every effect is expressed as a bonus for emphasising a type <em>above</em> the ⅙ generalist
@@ -54,7 +54,7 @@ public static class Morphology
     public static double Mass(Genome genome, MulticellularConfig config) =>
         CellCount(genome, config) * genome.Size;
 
-    /// <summary>Energy ceiling: a base capacity plus a bonus for every Store cell above the generalist baseline (lifesim.md §21).</summary>
+    /// <summary>Energy ceiling: a base capacity plus a bonus for every Store cell above the generalist baseline.</summary>
     public static double Capacity(Genome genome, MulticellularConfig config)
     {
         if (!config.Enabled)
@@ -66,11 +66,11 @@ public static class Morphology
         return config.BaseCapacity + (storeCells * config.StoreCapacityPerCell);
     }
 
-    /// <summary>Coordination energy per tick for every cell beyond the first (lifesim.md §21), before the division-of-labour discount.</summary>
+    /// <summary>Coordination energy per tick for every cell beyond the first, before the division-of-labour discount.</summary>
     public static double CoordinationCost(Genome genome, MulticellularConfig config) =>
         config.Enabled ? (CellCount(genome, config) - 1.0) * config.CoordinationCostPerCell : 0.0;
 
-    /// <summary>Number of distinct specialist cell types — those with a fraction above the ⅙ generalist baseline (lifesim.md §21).</summary>
+    /// <summary>Number of distinct specialist cell types — those with a fraction above the ⅙ generalist baseline.</summary>
     public static int SpecialistCount(Genome genome, MulticellularConfig config)
     {
         if (!config.Enabled)
@@ -92,7 +92,7 @@ public static class Morphology
     }
 
     /// <summary>
-    /// How fully a body has divided its labour, in <c>[0, 1]</c> (lifesim.md §21): 0 for a
+    /// How fully a body has divided its labour, in <c>[0, 1]</c>: 0 for a
     /// single-specialist or generalist body, 1 at <see cref="MulticellularConfig.DivisionOfLabourTarget"/>
     /// distinct specialist types. This single measure drives every division-of-labour advantage — the
     /// overhead discount, surface intake, and cheaper reproduction — so a well-differentiated body can
@@ -113,7 +113,7 @@ public static class Morphology
         config.DivisionOfLabourDiscount * LaborReach(genome, config);
 
     /// <summary>
-    /// A body's multicellular overhead per tick (lifesim.md §21): the extra-cell metabolic upkeep
+    /// A body's multicellular overhead per tick: the extra-cell metabolic upkeep
     /// (∝ N−1, given the caller's per-cell base metabolism) plus coordination, reduced by the
     /// division-of-labour efficiency. Zero for a single cell; cheapest for a well-differentiated body.
     /// </summary>
@@ -129,7 +129,7 @@ public static class Morphology
     }
 
     /// <summary>
-    /// Max energy absorbable from grazing per tick (lifesim.md §21). A generalist body is surface-
+    /// Max energy absorbable from grazing per tick. A generalist body is surface-
     /// limited (∝ N^⅔, the square-cube ceiling), but division of labour lets interior cells take part
     /// in exchange, raising the exponent toward 1 (∝ N, no penalty) at full <see cref="LaborReach"/>.
     /// </summary>
@@ -145,7 +145,7 @@ public static class Morphology
     }
 
     /// <summary>
-    /// Effective mass for reproduction cost (lifesim.md §21). Normally the whole-body mass (cells ×
+    /// Effective mass for reproduction cost. Normally the whole-body mass (cells ×
     /// size), so bigger bodies are dearer to bud — but division of labour sheds that size penalty in
     /// proportion to <see cref="LaborReach"/>, so a well-differentiated body reproduces almost as
     /// cheaply as a single cell. Equals <see cref="Mass"/> for a generalist or unicellular body.
@@ -163,7 +163,7 @@ public static class Morphology
     }
 
     /// <summary>
-    /// Grazing-footprint radius in tiles (lifesim.md §21): 0 for a single cell (it grazes only its
+    /// Grazing-footprint radius in tiles: 0 for a single cell (it grazes only its
     /// target tile), growing roughly as √cells so the footprint area scales with the body's cell
     /// count, capped by <see cref="MulticellularConfig.MaxGrazingReach"/>.
     /// </summary>
@@ -201,7 +201,7 @@ public static class Morphology
             : genome.SensoryAcuity;
 
     /// <summary>
-    /// Recurrent brain-propagation steps this body runs per tick (lifesim.md §4, §21): one for a
+    /// Recurrent brain-propagation steps this body runs per tick: one for a
     /// single cell, plus <see cref="MulticellularConfig.NeuralStepsPerCell"/> per extra cell (capped),
     /// so a larger body processes its network more deeply before acting. Always ≥ 1.
     /// </summary>
@@ -216,13 +216,12 @@ public static class Morphology
         return Math.Clamp(1 + extra, 1, Math.Max(1, config.MaxNeuralSteps));
     }
 
-    /// <summary>Whether the body carries enough germ cells to reproduce; below the threshold it is sterile soma (lifesim.md §21).</summary>
+    /// <summary>Whether the body carries enough germ cells to reproduce; below the threshold it is sterile soma.</summary>
     public static bool CanReproduce(Genome genome, MulticellularConfig config) =>
         !config.Enabled || Fractions(genome, config).Germ >= config.GermReproductionThreshold;
 
     /// <summary>
-    /// Nudges a mutated offspring's cell count upward when its parent was multicellular (lifesim.md
-    /// §21), so multicellularity is heritable rather than eroding back to unicellular under symmetric
+    /// Nudges a mutated offspring's cell count upward when its parent was multicellular, so multicellularity is heritable rather than eroding back to unicellular under symmetric
     /// drift. Returns the value unchanged for a unicellular parent or when multicellularity is off;
     /// the caller still clamps to the trait bounds.
     /// </summary>

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <!-- The Core is the authoritative engine (lifesim.md §1, §9). It must have no UI
+    <!-- The Core is the authoritative engine. It must have no UI
          dependency and stay trimming/AOT-friendly so it also runs under the WASM target.
          IsAotCompatible turns on trim/AOT analyzers to catch violations early. -->
     <IsAotCompatible>true</IsAotCompatible>

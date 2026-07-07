@@ -4,11 +4,10 @@ An emergent evolutionary ML life simulation: organisms with NEAT brains evolve u
 pressure in a procedurally generated world. The engine is deterministic and headless; the UI visualizes,
 inspects, and edits worlds.
 
-- **Spec (source of truth):** [`lifesim.md`](./lifesim.md)
-- **Build plan (phased tasks):** [`tasks.md`](./tasks.md)
+- **Rules (high-level):** [`rules.md`](./rules.md)
 - **UI guidelines:** the user-level `avalonia-ui` skill (general) + project `lifesim-ui` skill (`.claude/skills/lifesim-ui/`)
 
-## Architecture (lifesim.md §1)
+## Architecture
 
 A single deterministic **C# Simulation Core** consumed by two surfaces:
 
@@ -48,10 +47,9 @@ dotnet format LifeSim.slnx --verify-no-changes
 ## Conventions
 - **Central package management:** versions live in [`Directory.Packages.props`](./Directory.Packages.props).
 - **Solution-wide build settings & analyzers:** [`Directory.Build.props`](./Directory.Build.props); style in [`.editorconfig`](./.editorconfig).
-- **Determinism is a hard contract** (lifesim.md §9): named PRNG streams, sorted iteration with explicit
-  tie-breaking, and the flagship determinism tests must stay green from Phase 4 on.
+- **Determinism is a hard contract:** named PRNG streams, sorted iteration with explicit
+  tie-breaking, and the flagship determinism tests must stay green.
 
 ## Status
-Phase 0 (scaffolding) is complete; see [`tasks.md`](./tasks.md) for what's next. The Phase 0
-render-performance spike ([`spikes/render-perf`](./spikes/render-perf/)) is a manual decision gate that
-still needs to be run in a browser.
+The render-performance spike ([`spikes/render-perf`](./spikes/render-perf/)) is a manual decision gate for
+the browser demo that still needs to be run in a browser.

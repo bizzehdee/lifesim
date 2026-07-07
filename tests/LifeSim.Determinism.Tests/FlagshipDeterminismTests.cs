@@ -7,7 +7,7 @@ using LifeSim.Core.World;
 namespace LifeSim.Determinism.Tests;
 
 /// <summary>
-/// The two flagship regression tests the whole architecture rests on (lifesim.md §15). From
+/// The two flagship regression tests the whole architecture rests on. From
 /// Phase 4 onward, every merge is gated on these staying green.
 /// </summary>
 public class FlagshipDeterminismTests
@@ -46,7 +46,7 @@ public class FlagshipDeterminismTests
     }
 
     /// <summary>
-    /// Node <c>state</c> is dynamic organism state, not just weights (lifesim.md §4, §12) — the
+    /// Node <c>state</c> is dynamic organism state, not just weights — the
     /// save/reload test above already round-trips it implicitly, but this asserts it directly:
     /// after a few ticks, at least one brain has non-zero recurrent state, and it survives
     /// serialization exactly.
@@ -68,8 +68,7 @@ public class FlagshipDeterminismTests
     }
 
     /// <summary>
-    /// Both flagship guarantees must also hold while stochastic events fire frequently (lifesim.md
-    /// §6, §9). Default probabilities (0.001) rarely trigger inside a 100-tick run, so this pins
+    /// Both flagship guarantees must also hold while stochastic events fire frequently. Default probabilities (0.001) rarely trigger inside a 100-tick run, so this pins
     /// them high enough that blights, plagues, and anomalies are active throughout — the events
     /// stream, active modifiers, and their effects all have to round-trip exactly.
     /// </summary>
@@ -104,7 +103,7 @@ public class FlagshipDeterminismTests
     }
 
     /// <summary>
-    /// Multithreading is an execution knob, not a simulation input (lifesim.md §7): the parallelised
+    /// Multithreading is an execution knob, not a simulation input: the parallelised
     /// brain forward pass is a pure function and the softmax roll stays sequential, so a run must be
     /// byte-identical for any thread count. This is the safety net for the whole parallelisation.
     /// </summary>

@@ -8,16 +8,15 @@ using LifeSim.Core.World;
 namespace LifeSim.Core.Sensing;
 
 /// <summary>
-/// Builds the fixed, normalized sensory input vector (lifesim.md §13) from world state cached at
+/// Builds the fixed, normalized sensory input vector from world state cached at
 /// the start of the tick — callers must build every organism's vector before any organism's
-/// intent is resolved, so decisions never see same-tick movement (lifesim.md §7's Sensing phase).
+/// intent is resolved, so decisions never see same-tick movement.
 /// Gaussian noise scaled by <c>sensory_acuity</c> is injected last, from the dedicated
-/// sensory-noise PRNG stream (lifesim.md §4, §9, §13).
+/// sensory-noise PRNG stream.
 /// </summary>
 public sealed class SensoryInputBuilder
 {
-    // Judgment calls (no single normalization scheme is specified — lifesim.md §13 only requires
-    // "stable numeric ranges"): distance/size deltas normalize by the trait's own bound rather
+    // Judgment calls (no single normalization scheme is specified): distance/size deltas normalize by the trait's own bound rather
     // than a fixed constant, so behavior doesn't quietly change as trait_bounds are retuned.
     private const double MaxNoiseStdDev = 0.3;
     private const double NearbyCountSaturation = 5.0;
@@ -73,18 +72,18 @@ public sealed class SensoryInputBuilder
             _ => 0.0, // ActionResult.None
         };
 
-        // Reproduction cost (division-of-labour-discounted mass) and germ gate, matching ResolveReproduce (lifesim.md §21).
+        // Reproduction cost (division-of-labour-discounted mass) and germ gate, matching ResolveReproduce.
         double reproductionCost = _config.Reproduction.ReproductionBaseCost * Morphology.ReproductionMass(self.Genome, _config.Multicellular);
         bool offCooldown = self.LastBirthTick is null
             || currentTick - self.LastBirthTick.Value >= _config.Reproduction.ReproductionCooldownTicks;
         bool fertile = Morphology.CanReproduce(self.Genome, _config.Multicellular);
         values[(int)SensoryField.ReproductiveReadiness] = fertile && self.Energy >= reproductionCost && offCooldown ? 1.0 : 0.0;
 
-        // Global stress level reflects active environmental events (lifesim.md §6, §13), already
+        // Global stress level reflects active environmental events, already
         // normalized to [0, 1] by the environment state.
         values[(int)SensoryField.GlobalStressLevel] = globalStress;
 
-        // Sensor cells sharpen perception — a higher effective acuity means less injected noise (lifesim.md §21).
+        // Sensor cells sharpen perception — a higher effective acuity means less injected noise.
         InjectNoise(values, Morphology.EffectiveAcuity(self.Genome, _config.Multicellular), sensoryNoiseStream);
         return values;
     }
@@ -142,7 +141,7 @@ public sealed class SensoryInputBuilder
 
                 double energy = _groundEnergy.EnergyAt(x, y);
 
-                // Deterministic tie-break (lifesim.md §9): strictly richer wins; ties broken by
+                // Deterministic tie-break: strictly richer wins; ties broken by
                 // ascending distance, then ascending (y, x) — never left to iteration order alone.
                 bool better = energy > bestEnergy
                     || (energy == bestEnergy

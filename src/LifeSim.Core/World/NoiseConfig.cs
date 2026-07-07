@@ -1,9 +1,9 @@
 namespace LifeSim.Core.World;
 
 /// <summary>
-/// Fractal (fBm) parameters for terrain noise (lifesim.md §2, Appendix A). Shared by every
+/// Fractal (fBm) parameters for terrain noise. Shared by every
 /// surface — the same C# implementation runs on desktop and under the Avalonia WASM target,
-/// so no second-language port is needed (lifesim.md §1).
+/// so no second-language port is needed.
 /// </summary>
 public sealed record NoiseConfig
 {
@@ -19,6 +19,6 @@ public sealed record NoiseConfig
     /// <summary>Frequency growth per octave (>1).</summary>
     public double Lacunarity { get; init; } = 2.0;
 
-    /// <summary>The documented default (lifesim.md Appendix A).</summary>
+    /// <summary>The documented default.</summary>
     public static NoiseConfig Default => new();
 }

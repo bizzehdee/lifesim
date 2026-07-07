@@ -127,9 +127,9 @@ public class WorldViewTests
 
         Assert.NotNull(inspector);
         Assert.Equal(organism.Name, inspector.Name);
-        Assert.Equal(8, inspector.Traits.Count); // 7 physical/sensory traits + Generosity (lifesim.md §20)
+        Assert.Equal(8, inspector.Traits.Count); // 7 physical/sensory traits + Generosity
 
-        // Body composition stats (multicellularity, lifesim.md §21): cell count + one entry per cell type.
+        // Body composition stats (multicellularity): cell count + one entry per cell type.
         Assert.True(inspector.CellCount >= 1.0);
         Assert.Equal(6, inspector.CellComposition.Count);
         Assert.Equal(new[] { "Germ", "Feeder", "Store", "Defender", "Mover", "Sensor" }, inspector.CellComposition.Select(c => c.Type));

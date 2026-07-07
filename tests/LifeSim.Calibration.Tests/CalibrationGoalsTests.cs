@@ -4,7 +4,7 @@ using LifeSim.Core.Snapshot;
 namespace LifeSim.Calibration.Tests;
 
 /// <summary>
-/// The calibration goals the default configuration must satisfy (lifesim.md §15): the tuned
+/// The calibration goals the default configuration must satisfy: the tuned
 /// defaults avoid the failure modes that a badly-balanced coupled-constant set would exhibit.
 /// </summary>
 public class CalibrationGoalsTests

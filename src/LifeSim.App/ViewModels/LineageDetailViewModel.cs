@@ -4,7 +4,7 @@ using LifeSim.Core.Snapshot;
 namespace LifeSim.App.ViewModels;
 
 /// <summary>
-/// The stats available for any organism from the all-time lineage records (lifesim.md §8, §14) —
+/// The stats available for any organism from the all-time lineage records —
 /// used for the ranking detail of a <em>dead</em> organism, which has no live brain/energy but does
 /// have birth (and death) trait summaries. Living organisms use the full
 /// <see cref="OrganismInspectorViewModel"/> instead.

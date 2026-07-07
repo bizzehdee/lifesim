@@ -7,7 +7,7 @@ using LifeSim.App.Presentation;
 namespace LifeSim.App.Views;
 
 /// <summary>
-/// Renders a lineage/family tree (lifesim.md §18): founder at the top, generations descending,
+/// Renders a lineage/family tree: founder at the top, generations descending,
 /// parent→child edges, living organisms green and dead ones grey, with the focused organism enlarged
 /// and ringed. Pure render of a laid-out <see cref="LineageGraph"/>.
 /// </summary>

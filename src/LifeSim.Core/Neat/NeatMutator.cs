@@ -4,12 +4,12 @@ using LifeSim.Core.Determinism;
 namespace LifeSim.Core.Neat;
 
 /// <summary>
-/// Applies inheritable brain mutation to an offspring's NEAT genome (lifesim.md §4, §8) in a fixed
+/// Applies inheritable brain mutation to an offspring's NEAT genome in a fixed
 /// order: weight perturbation, then new-connection mutation, then node-split mutation. Structural
 /// mutations draw fresh innovation ids from the shared monotonic counter — advanced only here, in
-/// the Birth Commit phase, in ascending offspring-id order (lifesim.md §4, §9). All stochastic
+/// the Birth Commit phase, in ascending offspring-id order. All stochastic
 /// choices draw from the mutation PRNG stream. Recurrent (cycle-creating, including self-loop)
-/// connections are permitted, so no acyclicity check is performed (lifesim.md §4).
+/// connections are permitted, so no acyclicity check is performed.
 /// </summary>
 public static class NeatMutator
 {
@@ -29,9 +29,9 @@ public static class NeatMutator
 
     /// <summary>
     /// Perturbs each connection weight with probability <see cref="MutationConfig.WeightMutationRate"/>
-    /// by a Gaussian step scaled by <see cref="MutationConfig.WeightMutationPower"/> (lifesim.md §8).
+    /// by a Gaussian step scaled by <see cref="MutationConfig.WeightMutationPower"/>.
     /// Draws happen in ascending innovation-id order so the sequence is independent of list storage
-    /// order (lifesim.md §9).
+    /// order.
     /// </summary>
     private static NeatGenome MutateWeights(NeatGenome genome, MutationConfig config, Prng mutationStream)
     {
@@ -58,7 +58,7 @@ public static class NeatMutator
 
     /// <summary>
     /// With probability <see cref="MutationConfig.ConnectionMutationRate"/>, adds one connection
-    /// between a currently-unconnected (from, to) pair (lifesim.md §4, §8). Input nodes are never a
+    /// between a currently-unconnected (from, to) pair. Input nodes are never a
     /// target (they carry raw sensory readings and have no incoming edges); every other node is a
     /// valid source or target, and self-loops/cycles are allowed (recurrent net). Candidate pairs
     /// are enumerated in ascending (from, to) order and one is chosen by the mutation stream.
@@ -110,7 +110,7 @@ public static class NeatMutator
 
     /// <summary>
     /// With probability <see cref="MutationConfig.NodeMutationRate"/>, splits an enabled connection
-    /// by inserting a new hidden node (lifesim.md §4, §8): the original connection is disabled, a
+    /// by inserting a new hidden node: the original connection is disabled, a
     /// <c>from → new</c> link (weight 1.0) and a <c>new → to</c> link (the original weight) replace
     /// it, so the freshly-inserted node is behaviorally near-neutral at birth. The new node id and
     /// both replacement innovation ids draw from the shared counter, in that fixed order.

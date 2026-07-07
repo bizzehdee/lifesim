@@ -3,7 +3,7 @@ using Avalonia.Media;
 namespace LifeSim.App.Presentation;
 
 /// <summary>
-/// A stable, deterministic colour per <c>lineage_id</c> (lifesim.md §18) so clonal clusters and
+/// A stable, deterministic colour per <c>lineage_id</c> so clonal clusters and
 /// speciation read at a glance. The id is hashed to a hue at fixed saturation/lightness, so the
 /// same lineage always maps to the same colour across frames, runs, and targets.
 /// </summary>

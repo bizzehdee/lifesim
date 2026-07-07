@@ -1,6 +1,6 @@
 namespace LifeSim.Core.Organisms;
 
-/// <summary>Predatory combat math (lifesim.md §5): pure so it's testable without a live world.</summary>
+/// <summary>Predatory combat math: pure so it's testable without a live world.</summary>
 public static class Combat
 {
     /// <summary>

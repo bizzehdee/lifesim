@@ -6,7 +6,7 @@ namespace LifeSim.Core.World;
 /// Deterministic 2D simplex noise with a seed-shuffled permutation table.
 /// Uses only +, -, *, and floor — no transcendental functions — so results are bit-identical
 /// across platforms (desktop and the WASM target), satisfying the terrain-bridge guarantee
-/// (lifesim.md §1). Terrain is reconstructed from the seed and never stored (lifesim.md §2, §12).
+///. Terrain is reconstructed from the seed and never stored.
 /// </summary>
 public sealed class SimplexNoise
 {

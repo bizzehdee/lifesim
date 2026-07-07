@@ -121,6 +121,10 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         // Fresh random seed each launch so a new world is different by default (still deterministic
         // once chosen — the user can pin any seed for reproducible runs).
         Seed = Random.Shared.Next(0, 1_000_000_000);
+
+        // Default to half the machine's hardware threads (at least 1) — a balance between throughput
+        // and leaving headroom for the UI and the rest of the system.
+        ThreadCount = Math.Max(1, MaxThreads / 2);
     }
 
     [RelayCommand]

@@ -103,7 +103,7 @@ public class SimCliTests
 
         string serial = temp.File("serial.json");
         string threaded = temp.File("threaded.json");
-        RunCli(out _, out _, "run", "--in", genesis, "--out", serial, "--ticks", "100");
+        RunCli(out _, out _, "run", "--in", genesis, "--out", serial, "--ticks", "100", "--threads", "1");
         int exit = RunCli(out _, out _, "run", "--in", genesis, "--out", threaded, "--ticks", "100", "--threads", "4");
 
         // --threads is an execution knob only: the result must match a serial run (lifesim.md §7, §15).

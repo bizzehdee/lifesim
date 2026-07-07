@@ -83,8 +83,8 @@ public static class SimCli
         writer.WriteLine("  serve  --in FILE [--port P] [--tps R] [--max-ticks N] [--threads N]");
         writer.WriteLine("         Run the engine and expose snapshots over HTTP/WebSocket.");
         writer.WriteLine();
-        writer.WriteLine("  --threads N  brain evaluation threads, 1..hardware-threads (default 1;");
-        writer.WriteLine("               execution-only, results are identical for any value).");
+        writer.WriteLine("  --threads N  brain evaluation threads, 1..hardware-threads (default: half");
+        writer.WriteLine("               the hardware threads; execution-only, results are identical).");
         return exitCode;
     }
 }

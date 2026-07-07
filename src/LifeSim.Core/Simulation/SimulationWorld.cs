@@ -224,21 +224,23 @@ public sealed class SimulationWorld
         //    the shared behavior stream strictly in ascending organism-id order, so the stream is
         //    consumed identically regardless of the parallelism — results are byte-identical for any
         //    thread count (lifesim.md §9).
+        // A larger body runs more recurrent propagation steps per tick (lifesim.md §21), so it
+        // reasons more deeply before acting; a single cell runs one step (the base model).
         Prng behavior = _prngStreams[PrngStream.Behavior];
+        MulticellularConfig decisionMc = Config.Multicellular;
         long[] decisionIds = _organisms.Keys.ToArray();
         var propagations = new NeatPropagation[decisionIds.Length];
 
         if (_maxDegreeOfParallelism > 1 && decisionIds.Length > 1)
         {
             var options = new ParallelOptions { MaxDegreeOfParallelism = _maxDegreeOfParallelism };
-            Parallel.For(0, decisionIds.Length, options, i =>
-                propagations[i] = NeatBrain.Propagate(_organisms[decisionIds[i]].Brain, sensoryInputs[decisionIds[i]]));
+            Parallel.For(0, decisionIds.Length, options, i => propagations[i] = Decide(decisionIds[i], sensoryInputs, decisionMc));
         }
         else
         {
             for (int i = 0; i < decisionIds.Length; i++)
             {
-                propagations[i] = NeatBrain.Propagate(_organisms[decisionIds[i]].Brain, sensoryInputs[decisionIds[i]]);
+                propagations[i] = Decide(decisionIds[i], sensoryInputs, decisionMc);
             }
         }
 
@@ -655,6 +657,17 @@ public sealed class SimulationWorld
             freeTile.Value.X, freeTile.Value.Y, currentTick, parentLineage.LineageId, parentLineage.GenerationDepth + 1));
 
         return ActionResult.Success;
+    }
+
+    /// <summary>
+    /// The pure per-organism forward pass for the Decision phase (lifesim.md §7): runs the brain for
+    /// <see cref="Morphology.BrainSteps"/> recurrent steps (more for a larger body). Reads only its own
+    /// organism and cached inputs and writes no shared state, so it is safe to run concurrently.
+    /// </summary>
+    private NeatPropagation Decide(long id, IReadOnlyDictionary<long, double[]> sensoryInputs, MulticellularConfig mc)
+    {
+        Organism organism = _organisms[id];
+        return NeatBrain.Propagate(organism.Brain, sensoryInputs[id], Morphology.BrainSteps(organism.Genome, mc));
     }
 
     /// <summary>Node state is dynamic organism state, initialized to zero at birth (lifesim.md §4, §12) — topology/weights are inherited unchanged.</summary>

@@ -9,6 +9,21 @@ public class NeatBrainTests
     private static readonly double[] Inputs = Enumerable.Repeat(1.0, NeatTopology.InputCount).ToArray();
 
     [Fact]
+    public void Propagate_withSteps_chainsSingleStepsAndClampsToOne()
+    {
+        // A larger multicellular body runs several recurrent steps per tick (lifesim.md §4, §21):
+        // N steps must equal chaining the single-step forward pass N times, and steps <= 1 is the base.
+        NeatGenome brain = NeatGenomeFactory.CreateMinimalFullyConnected(new Prng(7));
+
+        Assert.Equal(NeatBrain.Propagate(brain, Inputs).Genome.Nodes, NeatBrain.Propagate(brain, Inputs, 1).Genome.Nodes);
+        Assert.Equal(NeatBrain.Propagate(brain, Inputs).Genome.Nodes, NeatBrain.Propagate(brain, Inputs, 0).Genome.Nodes);
+
+        NeatPropagation manual = NeatBrain.Propagate(
+            NeatBrain.Propagate(NeatBrain.Propagate(brain, Inputs).Genome, Inputs).Genome, Inputs);
+        Assert.Equal(manual.Genome.Nodes, NeatBrain.Propagate(brain, Inputs, 3).Genome.Nodes);
+    }
+
+    [Fact]
     public void Evaluate_firstTick_outputsIgnoreCurrentInputs_sinceAllStateStartsAtZero()
     {
         // One-tick propagation latency (lifesim.md §4): every node reads its inputs' *previous*

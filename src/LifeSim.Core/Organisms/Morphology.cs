@@ -184,6 +184,22 @@ public static class Morphology
             ? Math.Min(1.0, genome.SensoryAcuity + (Excess(Fractions(genome, config).Sensor) * config.SensorAcuityBonus))
             : genome.SensoryAcuity;
 
+    /// <summary>
+    /// Recurrent brain-propagation steps this body runs per tick (lifesim.md §4, §21): one for a
+    /// single cell, plus <see cref="MulticellularConfig.NeuralStepsPerCell"/> per extra cell (capped),
+    /// so a larger body processes its network more deeply before acting. Always ≥ 1.
+    /// </summary>
+    public static int BrainSteps(Genome genome, MulticellularConfig config)
+    {
+        if (!config.Enabled)
+        {
+            return 1;
+        }
+
+        int extra = (int)Math.Floor((CellCount(genome, config) - 1.0) * config.NeuralStepsPerCell);
+        return Math.Clamp(1 + extra, 1, Math.Max(1, config.MaxNeuralSteps));
+    }
+
     /// <summary>Whether the body carries enough germ cells to reproduce; below the threshold it is sterile soma (lifesim.md §21).</summary>
     public static bool CanReproduce(Genome genome, MulticellularConfig config) =>
         !config.Enabled || Fractions(genome, config).Germ >= config.GermReproductionThreshold;

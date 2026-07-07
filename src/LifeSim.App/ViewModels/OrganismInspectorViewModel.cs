@@ -74,6 +74,9 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
     public bool Multicellular { get; private init; }
     public double CellCount { get; private init; } = 1.0;
     public bool Fertile { get; private init; } = true;
+
+    /// <summary>Recurrent brain-propagation steps this body runs per tick (lifesim.md §21) — its neural depth.</summary>
+    public int BrainSteps { get; private init; } = 1;
     public IReadOnlyList<CellTypeReading> CellComposition { get; private init; } = [];
 
     // Per-tick economy.
@@ -138,6 +141,7 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
             Multicellular = mc.Enabled,
             CellCount = cells,
             Fertile = Morphology.CanReproduce(genome, mc),
+            BrainSteps = Morphology.BrainSteps(genome, mc),
             CellComposition =
             [
                 new CellTypeReading("Germ", fr.Germ * cells, fr.Germ),

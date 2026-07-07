@@ -154,7 +154,19 @@ public class MorphologyTests
         Assert.Equal(raw, Morphology.MulticellularOverhead(generalist, 0.1, Enabled), precision: 10);
     }
 
+    [Fact]
+    public void BrainSteps_growWithCellCount_upToTheCap()
+    {
+        Assert.Equal(1, Morphology.BrainSteps(Cell(count: 1), Enabled));   // single cell → base model
+        Assert.Equal(1, Morphology.BrainSteps(Cell(count: 20), Disabled)); // no bonus when disabled
 
+        // Default 0.5 per extra cell: 3 cells → 1 + floor(2*0.5) = 2 steps; 5 → 3.
+        Assert.Equal(2, Morphology.BrainSteps(Cell(count: 3), Enabled));
+        Assert.Equal(3, Morphology.BrainSteps(Cell(count: 5), Enabled));
+
+        // Capped at MaxNeuralSteps.
+        Assert.Equal(Enabled.MaxNeuralSteps, Morphology.BrainSteps(Cell(count: 32), Enabled));
+    }
 
     [Fact]
     public void GermCells_gateFertility_sterileSomaCannotReproduce()

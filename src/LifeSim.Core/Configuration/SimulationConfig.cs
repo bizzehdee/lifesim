@@ -170,6 +170,17 @@ public sealed record MulticellularConfig
     public double GermReproductionThreshold { get; init; } = 0.05;
 
     /// <summary>
+    /// Neural capacity from body size (lifesim.md §4, §21): a larger body devotes more cells to
+    /// processing, so it runs extra recurrent brain-propagation steps per tick — this many per cell
+    /// beyond the first — letting signals propagate deeper through the network before it acts (more
+    /// efficient decision-making). A single cell always runs exactly one step (the base model).
+    /// </summary>
+    public double NeuralStepsPerCell { get; init; } = 0.5;
+
+    /// <summary>Hard cap on brain-propagation steps per tick, so a giant body's per-tick compute stays bounded (lifesim.md §21).</summary>
+    public int MaxNeuralSteps { get; init; } = 6;
+
+    /// <summary>
     /// Heredity bias toward multicellularity (lifesim.md §21): when a multicellular parent reproduces,
     /// its offspring's cell count is nudged upward by this fraction of the parent's extra cells
     /// (<c>parent_cells − 1</c>). Without it, symmetric trait drift near the unicellular floor erodes

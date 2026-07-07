@@ -664,6 +664,8 @@ Six jobs, each a *bonus for emphasising that type above the ⅙ generalist basel
 
 A body of `N` cells has `fraction_type · N` cells of each type — many cells per job, not one-of-each — so specialisation is a matter of *how much* of the body is devoted to each.
 
+**Neural capacity scales with size.** A larger body devotes more cells to processing, so it runs extra recurrent brain-propagation steps per tick — `neural_steps_per_cell` per cell beyond the first, capped at `max_neural_steps`. Because evaluation is a single synchronous update (§4), each step advances the network one hop, so more steps let a signal propagate deeper through the evolved topology *within a single tick* rather than over successive ticks — bigger bodies literally think more before they act. A single cell always runs one step (the base model), and the steps are a pure, deterministic re-evaluation, so parallelism and replay are unaffected.
+
 **Division of labour outweighs the square-cube law.** How fully a body has divided its labour — its *labour reach*, 0→1, driven by the number of *distinct* specialist types (fractions above the ⅙ baseline), full at `division_of_labour_target` — is the master lever, and it lifts every square-cube limit in proportion:
 - **Overhead** (extra-cell upkeep + coordination) is waived by up to `division_of_labour_discount` of labour reach.
 - **Intake** stops being surface-bound: the grazing exponent rises from N^⅔ toward N^1 (linear) at full reach, so interior cells can feed too.

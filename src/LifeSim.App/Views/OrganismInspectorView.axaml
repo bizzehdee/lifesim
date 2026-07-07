@@ -63,6 +63,7 @@
             <TextBlock Text="Body" FontWeight="SemiBold" />
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBlock FontSize="12" Text="{Binding CellCount, StringFormat='cells {0:F1}'}" />
+                <TextBlock FontSize="12" Text="{Binding BrainSteps, StringFormat='· {0} brain steps'}" />
                 <TextBlock FontSize="12" Opacity="0.75" Text="fertile" IsVisible="{Binding Fertile}" />
                 <TextBlock FontSize="12" Opacity="0.6" Text="sterile soma" IsVisible="{Binding !Fertile}" />
             </StackPanel>

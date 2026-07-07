@@ -39,6 +39,22 @@ public static class NeatBrain
     }
 
     /// <summary>
+    /// Runs the forward pass <paramref name="steps"/> times over the same held inputs (lifesim.md §4,
+    /// §21): a larger multicellular body propagates its recurrent network more deeply per tick before
+    /// acting. <paramref name="steps"/> is clamped to ≥ 1, so a single step is the base model. Pure.
+    /// </summary>
+    public static NeatPropagation Propagate(NeatGenome genome, IReadOnlyList<double> inputs, int steps)
+    {
+        NeatPropagation propagation = Propagate(genome, inputs);
+        for (int step = 1; step < steps; step++)
+        {
+            propagation = Propagate(propagation.Genome, inputs);
+        }
+
+        return propagation;
+    }
+
+    /// <summary>
     /// The randomness-free forward pass: advances node state and returns the softmax action
     /// distribution (lifesim.md §4). Pure and free of shared state, so it is safe to run for many
     /// organisms concurrently; the ensuing <see cref="SelectAction"/> roll must stay sequential.

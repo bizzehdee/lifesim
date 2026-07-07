@@ -44,6 +44,13 @@ public sealed class SimulationWorld
     /// <summary>Ancestry records for every organism that has ever lived — never removed, unlike <see cref="_organisms"/>.</summary>
     private readonly SortedDictionary<long, LineageEntry> _lineageRecords = new();
 
+    /// <summary>
+    /// Running count of births (offspring records, i.e. lineage entries with a parent) per lineage id,
+    /// maintained incrementally at birth commit. Births only ever accumulate, so this avoids rescanning
+    /// the entire (unbounded) <see cref="_lineageRecords"/> history every tick in <see cref="BuildMetrics"/>.
+    /// </summary>
+    private readonly Dictionary<long, long> _birthsByLineage = new();
+
     public WorldState World { get; }
 
     public SimulationConfig Config { get; }
@@ -157,6 +164,12 @@ public sealed class SimulationWorld
         {
             LineageEntry lineage = entry.ToEntry();
             simWorld._lineageRecords[lineage.OrganismId] = lineage;
+
+            // Rebuild the running births-per-lineage tally from history: an entry with a parent is a birth.
+            if (lineage.ParentId is not null)
+            {
+                simWorld._birthsByLineage[lineage.LineageId] = simWorld._birthsByLineage.GetValueOrDefault(lineage.LineageId) + 1;
+            }
         }
 
         // Restore the saved metrics so an immediate re-snapshot round-trips exactly; the per-tick
@@ -404,6 +417,7 @@ public sealed class SimulationWorld
             _organisms[offspring.Id] = offspring;
             _lineageRecords[offspring.Id] = new LineageEntry(
                 offspring.Id, birth.ParentId, birth.LineageId, birth.BirthTick, birth.GenerationDepth, offspring.Genome);
+            _birthsByLineage[birth.LineageId] = _birthsByLineage.GetValueOrDefault(birth.LineageId) + 1;
         }
 
         counters.Births = pendingBirths.Count;
@@ -923,17 +937,9 @@ public sealed class SimulationWorld
 
         double Average(double sum) => population > 0 ? sum / population : 0.0;
 
-        // Reproduction by lineage: births (records that have a parent) grouped by lineage, then
-        // restricted to lineages that still have living members, in ascending lineage-id order.
-        var birthsByLineage = new Dictionary<long, long>();
-        foreach (LineageEntry entry in _lineageRecords.Values)
-        {
-            if (entry.ParentId is not null)
-            {
-                birthsByLineage[entry.LineageId] = birthsByLineage.GetValueOrDefault(entry.LineageId) + 1;
-            }
-        }
-
+        // Reproduction by lineage: the running births-per-lineage tally (maintained incrementally at
+        // birth commit, so no rescan of the unbounded lineage history here) restricted to lineages that
+        // still have living members, in ascending lineage-id order.
         var livingLineageIds = new SortedSet<long>();
         foreach (long id in _organisms.Keys)
         {
@@ -941,7 +947,7 @@ public sealed class SimulationWorld
         }
 
         var reproductionByLineage = livingLineageIds
-            .Select(lineageId => new LineageReproduction { LineageId = lineageId, Births = birthsByLineage.GetValueOrDefault(lineageId) })
+            .Select(lineageId => new LineageReproduction { LineageId = lineageId, Births = _birthsByLineage.GetValueOrDefault(lineageId) })
             .ToList();
 
         return new SimulationMetrics

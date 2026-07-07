@@ -25,7 +25,7 @@ public sealed class SimulationWorld
     private readonly EnvironmentState _environment;
     private readonly SensoryInputBuilder _sensoryInputBuilder;
     private readonly SortedDictionary<long, Organism> _organisms = new();
-    private readonly Dictionary<(int X, int Y), long> _occupancy = new();
+    private readonly OccupancyGrid _occupancy;
 
     /// <summary>Number of bins in each per-trait distribution histogram.</summary>
     private const int HistogramBucketCount = 10;
@@ -90,6 +90,7 @@ public sealed class SimulationWorld
     {
         World = world;
         Config = config;
+        _occupancy = new OccupancyGrid(world.Width, world.Height);
         _terrain = terrain;
         _groundEnergy = groundEnergy;
         _prngStreams = prngStreams;
@@ -157,7 +158,7 @@ public sealed class SimulationWorld
             // load rather than stored — so save/reload stays byte-identical.
             Organism organism = entry.ToOrganism(Morphology.Capacity(entry.Genome.ToGenome(), snapshot.Configuration.Multicellular));
             simWorld._organisms[organism.Id] = organism;
-            simWorld._occupancy[(organism.X, organism.Y)] = organism.Id;
+            simWorld._occupancy.Set(organism.X, organism.Y, organism.Id);
         }
 
         foreach (LineageSnapshot entry in snapshot.Lineages)
@@ -382,7 +383,7 @@ public sealed class SimulationWorld
 
             _lineageRecords[id].RecordDeath(currentTick, organism.Genome);
             _organisms.Remove(id);
-            _occupancy.Remove((organism.X, organism.Y));
+            _occupancy.Clear(organism.X, organism.Y);
             counters.Deaths++;
         }
 
@@ -500,7 +501,7 @@ public sealed class SimulationWorld
                 break;
             }
 
-            if (_occupancy.ContainsKey((nextX, nextY)))
+            if (_occupancy.IsOccupied(nextX, nextY))
             {
                 break;
             }
@@ -512,9 +513,9 @@ public sealed class SimulationWorld
 
         if (traveled > 0)
         {
-            _occupancy.Remove((organism.X, organism.Y));
+            _occupancy.Clear(organism.X, organism.Y);
             organism.MoveTo(x, y);
-            _occupancy[(x, y)] = organism.Id;
+            _occupancy.Set(x, y, organism.Id);
         }
 
         return traveled;
@@ -542,7 +543,7 @@ public sealed class SimulationWorld
         // offspring reserved earlier this same tick that hasn't been materialized into the organism
         // index until Birth Commit — there's no one physically there to fight yet,
         // so that falls through to ambient grazing rather than a phantom combat.
-        if (_occupancy.TryGetValue((x, y), out long targetId) && targetId != organism.Id
+        if (_occupancy.TryGet(x, y, out long targetId) && targetId != organism.Id
             && _organisms.TryGetValue(targetId, out Organism? victim))
         {
             // Combat scales with effective body mass (cells × size), boosted by Defender cells.
@@ -662,7 +663,7 @@ public sealed class SimulationWorld
         int y = organism.Y + dy;
 
         if (x < 0 || x >= World.Width || y < 0 || y >= World.Height
-            || !_occupancy.TryGetValue((x, y), out long targetId) || targetId == organism.Id
+            || !_occupancy.TryGet(x, y, out long targetId) || targetId == organism.Id
             || !_organisms.TryGetValue(targetId, out Organism? recipient))
         {
             counters.FailedShare++;
@@ -715,7 +716,7 @@ public sealed class SimulationWorld
         {
             int x = organism.X + ddx;
             int y = organism.Y + ddy;
-            if (x < 0 || x >= World.Width || y < 0 || y >= World.Height || _occupancy.ContainsKey((x, y)))
+            if (x < 0 || x >= World.Width || y < 0 || y >= World.Height || _occupancy.IsOccupied(x, y))
             {
                 continue;
             }
@@ -736,7 +737,7 @@ public sealed class SimulationWorld
         LineageEntry parentLineage = _lineageRecords[organism.Id];
         long offspringId = _idAllocator.Allocate();
 
-        _occupancy[freeTile.Value] = offspringId;
+        _occupancy.Set(freeTile.Value.X, freeTile.Value.Y, offspringId);
         pendingBirths.Add(new PendingBirth(
             offspringId, organism.Id, organism.Genome, ResetBrainState(organism.Brain), offspringEnergy,
             freeTile.Value.X, freeTile.Value.Y, currentTick, parentLineage.LineageId, parentLineage.GenerationDepth + 1));
@@ -797,7 +798,7 @@ public sealed class SimulationWorld
                 int x = genesis.NextInt(World.Width);
                 int y = genesis.NextInt(World.Height);
 
-                if (_occupancy.ContainsKey((x, y)) || _terrain.BiomeAt(x, y) != Biome.Grassland)
+                if (_occupancy.IsOccupied(x, y) || _terrain.BiomeAt(x, y) != Biome.Grassland)
                 {
                     continue;
                 }
@@ -819,7 +820,7 @@ public sealed class SimulationWorld
                     id, genome, Config.Naming, Organism.EnergyCeiling, x, y, brain,
                     Morphology.Capacity(genome, Config.Multicellular));
                 _organisms[id] = organism;
-                _occupancy[(x, y)] = id;
+                _occupancy.Set(x, y, id);
                 _lineageRecords[id] = new LineageEntry(id, parentId: null, lineageId: id, birthTick: 0, generationDepth: 0, birthTraits: genome);
                 placed = true;
             }
@@ -844,7 +845,7 @@ public sealed class SimulationWorld
         {
             for (int dx = -1; dx <= 1; dx++)
             {
-                if (_occupancy.ContainsKey((organism.X + dx, organism.Y + dy)))
+                if (_occupancy.IsOccupied(organism.X + dx, organism.Y + dy))
                 {
                     count++;
                 }

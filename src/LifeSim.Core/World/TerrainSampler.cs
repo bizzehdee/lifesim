@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using LifeSim.Core.Configuration;
 using LifeSim.Core.Determinism;
 
@@ -14,6 +15,12 @@ public sealed class TerrainSampler
     private readonly SimplexNoise _moistureNoise;
     private readonly SimplexNoise _temperatureNoise;
     private readonly SimulationConfig _config;
+
+    // Terrain is static, so biome and physical temperature are pure functions of (x, y). They are read
+    // per-organism every tick (metabolism + sensing) and per-tile every render — and the temperature
+    // gradient blurs 25 tiles per query — so memoize them. Thread-safe for the engine + UI threads.
+    private readonly ConcurrentDictionary<(int X, int Y), Biome> _biomeCache = new();
+    private readonly ConcurrentDictionary<(int X, int Y), double> _temperatureCelsiusCache = new();
 
     public TerrainSampler(ulong worldSeed, SimulationConfig config)
     {
@@ -33,7 +40,7 @@ public sealed class TerrainSampler
     public double TemperatureAt(int x, int y) => _temperatureNoise.SampleFractal(x, y, _config.TemperatureNoise);
 
     public Biome BiomeAt(int x, int y) =>
-        BiomeClassifier.Classify(MoistureAt(x, y), TemperatureAt(x, y), _config.Biomes.Thresholds);
+        _biomeCache.GetOrAdd((x, y), k => BiomeClassifier.Classify(MoistureAt(k.X, k.Y), TemperatureAt(k.X, k.Y), _config.Biomes.Thresholds));
 
     /// <summary>
     /// The tile's physical temperature in °C: its biome's baseline temperature
@@ -43,7 +50,7 @@ public sealed class TerrainSampler
     /// stresses cold-adapted organisms, an Ice Sheet (cold) stresses warm-adapted ones.
     /// </summary>
     public double TemperatureCelsiusAt(int x, int y) =>
-        SmoothedBiomeTemperature(x, y) + (TemperatureAt(x, y) * _config.Biomes.TemperatureVariation);
+        _temperatureCelsiusCache.GetOrAdd((x, y), k => SmoothedBiomeTemperature(k.X, k.Y) + (TemperatureAt(k.X, k.Y) * _config.Biomes.TemperatureVariation));
 
     /// <summary>
     /// The biome baseline temperature at (x,y), box-blurred over

@@ -21,7 +21,8 @@
                 <Button Content="⟳ New…" Command="{Binding ShowSetupCommand}" />
 
                 <TextBlock Text="Speed" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding LiveCapable}" />
-                <Slider Width="120" Minimum="1" Maximum="60" Value="{Binding TicksPerSecond}" VerticalAlignment="Center" IsVisible="{Binding LiveCapable}" />
+                <Slider Width="120" Minimum="1" Maximum="1000" Value="{Binding TicksPerSecond}" VerticalAlignment="Center" IsVisible="{Binding LiveCapable}"
+                        ToolTip.Tip="Ticks per second (drag to the far right for unthrottled max speed)" />
 
                 <Border Width="1" Background="{DynamicResource SystemChromeHighColor}" Margin="6,2" />
 

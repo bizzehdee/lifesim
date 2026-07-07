@@ -4,8 +4,10 @@ namespace LifeSim.Core.Configuration;
 
 /// <summary>
 /// The typed, versioned configuration block (lifesim.md §12, Appendix A). Every coupled constant
-/// lives here rather than in source, so experiments tune behaviour without code changes. The
-/// default values are illustrative (lifesim.md Appendix A), not final calibration.
+/// lives here rather than in source, so experiments tune behaviour without code changes. Defaults
+/// started from Appendix A's illustrative values; Phase 12 calibration (lifesim.md §15) then tuned a
+/// few (reproduction cost, org-radius sensory tax, grassland regen) so a grassland population is
+/// sustainable under random genesis brains without runaway growth.
 /// </summary>
 public sealed record SimulationConfig
 {
@@ -38,7 +40,7 @@ public sealed record MetabolismConfig
 {
     public double BaseMetabolismPerSize { get; init; } = 0.05;
     public double SensoryTaxC1 { get; init; } = 0.02;   // linear on env_radius
-    public double SensoryTaxC2 { get; init; } = 0.01;   // quadratic on org_radius
+    public double SensoryTaxC2 { get; init; } = 0.002;  // quadratic on org_radius (Phase 12 calibration; was 0.01)
     public double SensoryTaxC3 { get; init; } = 0.05;   // on sensory_acuity
     public double ThermalStressScale { get; init; } = 0.1;
 }
@@ -54,13 +56,20 @@ public sealed record MovementCombatConfig
 /// <summary>Per-biome physics/resource settings (lifesim.md §2, Appendix A).</summary>
 public sealed record BiomesConfig
 {
-    public BiomeSettings Grassland { get; init; } = new() { Friction = 1.0, RegenRate = 0.5, EnergyCap = 20.0, Temperature = 20.0 };
+    public BiomeSettings Grassland { get; init; } = new() { Friction = 1.0, RegenRate = 0.8, EnergyCap = 20.0, Temperature = 20.0 };
     public BiomeSettings Desert { get; init; } = new() { Friction = 0.8, RegenRate = 0.05, EnergyCap = 5.0, Temperature = 45.0 };
     public BiomeSettings Swamp { get; init; } = new() { Friction = 3.0, RegenRate = 1.5, EnergyCap = 40.0, Temperature = 25.0 };
     public BiomeSettings IceSheet { get; init; } = new() { Friction = 1.2, RegenRate = 0.0, EnergyCap = 0.0, Temperature = -15.0 };
 
     /// <summary>Moisture/temperature noise bands that select a biome from the matrix (lifesim.md §2).</summary>
     public BiomeThresholds Thresholds { get; init; } = new();
+
+    /// <summary>
+    /// Within-biome temperature spread in °C (lifesim.md §2, §3): a tile's temperature is its
+    /// biome's baseline <see cref="BiomeSettings.Temperature"/> plus the temperature-noise field
+    /// scaled by this, so tiles vary around the biome norm rather than all reading identically.
+    /// </summary>
+    public double TemperatureVariation { get; init; } = 5.0;
 
     public BiomeSettings For(Biome biome) => biome switch
     {
@@ -94,7 +103,7 @@ public sealed record BiomeThresholds
 /// <summary>Reproduction economy (lifesim.md §8, §11, §17, Appendix A).</summary>
 public sealed record ReproductionConfig
 {
-    public double ReproductionBaseCost { get; init; } = 10.0;
+    public double ReproductionBaseCost { get; init; } = 3.0;  // per unit Size (Phase 12 calibration; was 10.0)
     public double OffspringEnergyFraction { get; init; } = 0.5;
     public int ReproductionCooldownTicks { get; init; } = 3;
 }
@@ -135,6 +144,10 @@ public sealed record EventsConfig
     public int TemperatureAnomalyDurationTicks { get; init; } = 60;
     public double TemperatureAnomalyMagnitude { get; init; } = 20.0;
     public int PlagueDensityThreshold { get; init; } = 6;
+
+    /// <summary>Extra energy drained per tick from each organism in a crowded region during a plague (lifesim.md §6).</summary>
+    public double PlagueEnergyDrainPerTick { get; init; } = 2.0;
+
     public double CorpseEnergyFraction { get; init; } = 0.25;
 }
 

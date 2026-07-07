@@ -1,20 +1,31 @@
 using System.Collections.Generic;
-using System.Text.Json;
 using LifeSim.Core.Configuration;
+using LifeSim.Core.Events;
 using LifeSim.Core.World;
 
 namespace LifeSim.Core.Snapshot;
 
 /// <summary>
-/// A self-describing, validated, replayable world state file (lifesim.md §12). Blocks that are
-/// modelled in later phases (events, edit log) are carried as raw JSON for now so files
-/// round-trip losslessly before those types exist.
+/// A self-describing, validated, replayable world state file (lifesim.md §12). The edit-log block
+/// is carried as raw JSON until Phase 15 gives it a type, so files still round-trip losslessly.
 /// </summary>
 public sealed record WorldSnapshot
 {
     public string SchemaVersion { get; init; } = BuildInfo.SchemaVersion;
     public string ConfigVersion { get; init; } = BuildInfo.ConfigVersion;
     public string SimulationVersion { get; init; } = BuildInfo.SimulationVersion;
+
+    // --- Branch provenance (lifesim.md §16); null for an untouched deterministic run. Set only by
+    // explicit UI branch actions, never by the engine, so genesis/replay stays byte-identical. ---
+
+    /// <summary>Identifier of this snapshot, so a branch can point back at the snapshot it forked from.</summary>
+    public string? SnapshotId { get; init; }
+
+    /// <summary>The snapshot this branch was forked from, forming a traceable timeline.</summary>
+    public string? ParentSnapshotId { get; init; }
+
+    /// <summary>The timeline this world belongs to; interventions fork a new branch rather than overwriting the original.</summary>
+    public string? BranchId { get; init; }
 
     public long Tick { get; init; }
 
@@ -34,12 +45,14 @@ public sealed record WorldSnapshot
 
     public List<OrganismSnapshot> Organisms { get; init; } = [];
 
-    /// <summary>Population and the extinction flag for now; the full §14 metrics set arrives in Phase 10.</summary>
+    /// <summary>The tick's analytics — population, flow counters, distributions, active events (lifesim.md §14).</summary>
     public SimulationMetrics? Metrics { get; init; }
 
     public List<LineageSnapshot> Lineages { get; init; } = [];
 
-    // --- Blocks fleshed out in later phases; raw JSON keeps files round-trippable now. ---
-    public List<JsonElement> EnvironmentModifiers { get; init; } = [];
-    public List<JsonElement> EditLog { get; init; } = [];
+    /// <summary>Active stochastic event modifiers (lifesim.md §6, §12); empty when the world is under standard physics.</summary>
+    public List<EnvironmentModifier> EnvironmentModifiers { get; init; } = [];
+
+    /// <summary>Explicit UI interventions applied to this world (lifesim.md §16); empty for an untouched run.</summary>
+    public List<EditLogEntry> EditLog { get; init; } = [];
 }

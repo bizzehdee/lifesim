@@ -7,6 +7,9 @@
     <Project Path="src/LifeSim.Core/LifeSim.Core.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/LifeSim.App.Tests/LifeSim.App.Tests.csproj" />
+    <Project Path="tests/LifeSim.Calibration.Tests/LifeSim.Calibration.Tests.csproj" />
+    <Project Path="tests/LifeSim.Console.Tests/LifeSim.Console.Tests.csproj" />
     <Project Path="tests/LifeSim.Core.Tests/LifeSim.Core.Tests.csproj" />
     <Project Path="tests/LifeSim.Determinism.Tests/LifeSim.Determinism.Tests.csproj" />
   </Folder>

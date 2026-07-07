@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:LifeSim.App.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="340" d:DesignHeight="600"
+             x:Class="LifeSim.App.Views.LineageDetailView"
+             x:DataType="vm:LineageDetailViewModel">
+
+    <StackPanel Spacing="12">
+        <StackPanel Spacing="2">
+            <TextBlock Text="{Binding OrganismId, StringFormat='Organism #{0}'}" FontWeight="Bold" FontSize="16" />
+            <TextBlock FontSize="12" Opacity="0.75" Text="{Binding IsAlive, StringFormat='alive: {0}'}" />
+            <TextBlock FontSize="12" Opacity="0.75" Text="{Binding LineageId, StringFormat='lineage {0}'}" />
+            <TextBlock FontSize="12" Opacity="0.75" Text="{Binding ParentId, StringFormat='parent {0}'}" />
+            <TextBlock FontSize="12" Opacity="0.75" Text="{Binding ChildCount, StringFormat='children: {0}'}" />
+            <TextBlock FontSize="12" Opacity="0.75" Text="{Binding GenerationDepth, StringFormat='generation {0}'}" />
+            <TextBlock FontSize="12" Opacity="0.75" Text="{Binding BirthTick, StringFormat='born tick {0}'}" />
+            <TextBlock FontSize="12" Opacity="0.75" Text="{Binding DeathTick, StringFormat='died tick {0}'}" />
+            <TextBlock FontSize="12" Opacity="0.75" Text="{Binding Lifespan, StringFormat='lifespan {0} ticks'}" />
+        </StackPanel>
+
+        <StackPanel Spacing="4">
+            <TextBlock Text="Traits at birth" FontWeight="SemiBold" />
+            <ItemsControl ItemsSource="{Binding BirthTraits}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TraitReading">
+                        <Grid ColumnDefinitions="120,*,44" Margin="0,2">
+                            <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="12" />
+                            <ProgressBar Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Fraction}" VerticalAlignment="Center" Margin="4,0" />
+                            <TextBlock Grid.Column="2" Text="{Binding Value, StringFormat='{}{0:F1}'}" FontSize="12" HorizontalAlignment="Right" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <StackPanel Spacing="4" IsVisible="{Binding HasDeathTraits}">
+            <TextBlock Text="Traits at death" FontWeight="SemiBold" />
+            <ItemsControl ItemsSource="{Binding DeathTraits}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TraitReading">
+                        <Grid ColumnDefinitions="120,*,44" Margin="0,2">
+                            <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="12" />
+                            <ProgressBar Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Fraction}" VerticalAlignment="Center" Margin="4,0" />
+                            <TextBlock Grid.Column="2" Text="{Binding Value, StringFormat='{}{0:F1}'}" FontSize="12" HorizontalAlignment="Right" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

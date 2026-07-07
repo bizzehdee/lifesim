@@ -1,0 +1,101 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:LifeSim.App.ViewModels"
+             xmlns:views="using:LifeSim.App.Views"
+             mc:Ignorable="d" d:DesignWidth="340" d:DesignHeight="900"
+             x:Class="LifeSim.App.Views.OrganismInspectorView"
+             x:DataType="vm:OrganismInspectorViewModel">
+
+    <StackPanel Spacing="12">
+
+        <!-- Identity & lineage -->
+        <StackPanel Spacing="2">
+            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="16" />
+            <TextBlock FontSize="12" Opacity="0.75"
+                       Text="{Binding OrganismId, StringFormat='id {0}'}" />
+            <TextBlock FontSize="12" Opacity="0.75"
+                       Text="{Binding LineageId, StringFormat='lineage {0}'}" />
+            <TextBlock FontSize="12" Opacity="0.75"
+                       Text="{Binding ParentId, StringFormat='parent {0}'}" />
+            <TextBlock FontSize="12" Opacity="0.75" IsVisible="{Binding ParentName, Converter={x:Static ObjectConverters.IsNotNull}}"
+                       Text="{Binding ParentName, StringFormat='parent name: {0} (alive)'}" />
+            <TextBlock FontSize="12" Opacity="0.75"
+                       Text="{Binding ChildCount, StringFormat='children: {0}'}" />
+            <TextBlock FontSize="12" Opacity="0.75"
+                       Text="{Binding GenerationDepth, StringFormat='generation {0}'}" />
+            <TextBlock FontSize="12" Opacity="0.75"
+                       Text="{Binding BirthTick, StringFormat='born tick {0}'}" />
+            <TextBlock FontSize="12" Opacity="0.75"
+                       Text="{Binding Age, StringFormat='age {0}'}" />
+        </StackPanel>
+
+        <!-- Physical state -->
+        <StackPanel Spacing="4">
+            <TextBlock Text="Physical" FontWeight="SemiBold" />
+            <TextBlock FontSize="12" Text="{Binding X, StringFormat='position ({0},'}" />
+            <TextBlock FontSize="12" Text="{Binding Biome, StringFormat='biome {0}'}" />
+            <TextBlock FontSize="12" Text="{Binding Energy, StringFormat='energy {0:F1}'}" />
+            <ProgressBar Minimum="0" Maximum="{Binding EnergyCeiling}" Value="{Binding Energy}" />
+            <TextBlock FontSize="12" Text="{Binding ReproductiveReady, StringFormat='reproductive-ready: {0}'}" />
+            <TextBlock FontSize="12" Text="{Binding CooldownRemaining, StringFormat='cooldown {0} ticks'}" />
+        </StackPanel>
+
+        <!-- Genome vs bounds -->
+        <StackPanel Spacing="4">
+            <TextBlock Text="Genome" FontWeight="SemiBold" />
+            <ItemsControl ItemsSource="{Binding Traits}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TraitReading">
+                        <Grid ColumnDefinitions="120,*,44" Margin="0,2">
+                            <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="12" />
+                            <ProgressBar Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Fraction}" VerticalAlignment="Center" Margin="4,0" />
+                            <TextBlock Grid.Column="2" Text="{Binding Value, StringFormat='{}{0:F1}'}" FontSize="12" HorizontalAlignment="Right" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <!-- Per-tick economy -->
+        <StackPanel Spacing="2">
+            <TextBlock Text="Per-tick economy" FontWeight="SemiBold" />
+            <TextBlock FontSize="12" Text="{Binding Economy.Base, StringFormat='base {0:F3}'}" />
+            <TextBlock FontSize="12" Text="{Binding Economy.ThermalStress, StringFormat='thermal stress {0:F3}'}" />
+            <TextBlock FontSize="12" Text="{Binding Economy.SensoryTax, StringFormat='sensory tax {0:F3}'}" />
+            <TextBlock FontSize="12" Text="{Binding Economy.LastMovementCost, StringFormat='movement (last) {0:F3}'}" />
+            <TextBlock FontSize="12" FontWeight="SemiBold" Text="{Binding Economy.Total, StringFormat='total {0:F3}'}" />
+        </StackPanel>
+
+        <!-- Behaviour -->
+        <StackPanel Spacing="4">
+            <TextBlock Text="Behaviour" FontWeight="SemiBold" />
+            <TextBlock FontSize="12" Text="{Binding LastAction, StringFormat='last action: {0}'}" />
+            <TextBlock FontSize="12" Text="{Binding LastActionResult, StringFormat='result: {0}'}" />
+            <ItemsControl ItemsSource="{Binding ActionProbabilities}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ActionProbability">
+                        <Grid ColumnDefinitions="110,*,44" Margin="0,1">
+                            <TextBlock Grid.Column="0" Text="{Binding Action}" FontSize="11" />
+                            <ProgressBar Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Probability}" VerticalAlignment="Center" Margin="4,0" />
+                            <TextBlock Grid.Column="2" Text="{Binding Probability, StringFormat='{}{0:P0}'}" FontSize="11" HorizontalAlignment="Right" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <!-- Brain -->
+        <StackPanel Spacing="4">
+            <TextBlock Text="Brain" FontWeight="SemiBold" />
+            <TextBlock FontSize="12" Text="{Binding NetworkType, StringFormat='network: {0}'}" />
+            <TextBlock FontSize="12" Text="{Binding NodeCount, StringFormat='nodes: {0}'}" />
+            <TextBlock FontSize="12" Text="{Binding EnabledConnectionCount, StringFormat='connections (enabled): {0}'}" />
+            <Border Height="200" CornerRadius="4" Background="#12141A">
+                <views:NeatGraphControl Graph="{Binding BrainGraph}" />
+            </Border>
+        </StackPanel>
+
+    </StackPanel>
+</UserControl>

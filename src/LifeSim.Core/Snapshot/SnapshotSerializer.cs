@@ -1,4 +1,5 @@
 using System.Text.Json;
+using LifeSim.Core.Configuration;
 
 namespace LifeSim.Core.Snapshot;
 
@@ -51,5 +52,27 @@ public static class SnapshotSerializer
         // 3. Typed deserialization.
         WorldSnapshot? snapshot = JsonSerializer.Deserialize(json, SnapshotJsonContext.Default.WorldSnapshot);
         return snapshot ?? throw new SnapshotValidationException("Snapshot deserialized to null.");
+    }
+
+    /// <summary>Serialize a standalone configuration block using the same encoding as the snapshot's (lifesim.md §12).</summary>
+    public static string SaveConfig(SimulationConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        return JsonSerializer.Serialize(config, SnapshotJsonContext.Default.SimulationConfig);
+    }
+
+    /// <summary>Deserialize a standalone configuration block (e.g. <c>sim new --config</c>); throws on malformed JSON.</summary>
+    public static SimulationConfig LoadConfig(string json)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
+        try
+        {
+            return JsonSerializer.Deserialize(json, SnapshotJsonContext.Default.SimulationConfig)
+                ?? throw new SnapshotValidationException("Configuration deserialized to null.");
+        }
+        catch (JsonException ex)
+        {
+            throw new SnapshotValidationException($"Malformed configuration JSON: {ex.Message}");
+        }
     }
 }

@@ -83,6 +83,31 @@ public static class NeatBrain
         return new NeatEvaluationResult(updatedGenome, action);
     }
 
+    /// <summary>
+    /// The action-probability distribution implied by the brain's *current* committed output-node
+    /// states — the same softmax the next <see cref="Evaluate"/> would roll against, computed without
+    /// advancing or mutating anything. Pure read for inspection/rendering (lifesim.md §18); indices
+    /// match <see cref="OrganismAction"/> / <see cref="NeatTopology.OutputNodeIds"/> order.
+    /// </summary>
+    public static double[] ActionProbabilities(NeatGenome genome)
+    {
+        ArgumentNullException.ThrowIfNull(genome);
+
+        var stateById = new Dictionary<long, double>(genome.Nodes.Count);
+        foreach (NodeGene node in genome.Nodes)
+        {
+            stateById[node.Id] = node.State;
+        }
+
+        var logits = new double[NeatTopology.OutputCount];
+        for (int i = 0; i < NeatTopology.OutputCount; i++)
+        {
+            logits[i] = stateById.GetValueOrDefault(NeatTopology.OutputNodeIds[i], 0.0);
+        }
+
+        return Softmax(logits);
+    }
+
     private static double[] Softmax(double[] logits)
     {
         double max = logits[0];

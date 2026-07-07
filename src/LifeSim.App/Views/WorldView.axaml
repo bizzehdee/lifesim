@@ -1,0 +1,155 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:LifeSim.App.ViewModels"
+             xmlns:views="using:LifeSim.App.Views"
+             xmlns:pres="using:LifeSim.App.Presentation"
+             xmlns:conv="using:LifeSim.App.Converters"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
+             x:Class="LifeSim.App.Views.WorldView"
+             x:DataType="vm:WorldViewModel">
+
+    <UserControl.Resources>
+        <conv:ColourToBrushConverter x:Key="ColourToBrush" />
+    </UserControl.Resources>
+
+    <Grid ColumnDefinitions="*,360" RowDefinitions="Auto,*">
+
+        <!-- Status bar -->
+        <Border Grid.Row="0" Grid.ColumnSpan="2" Padding="12,8" Background="{DynamicResource SystemChromeMediumColor}">
+            <StackPanel Orientation="Horizontal" Spacing="20">
+                <TextBlock Text="{Binding Tick, StringFormat='Tick {0}'}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Population, StringFormat='Population {0}'}" />
+                <TextBlock Text="EXTINCT" Foreground="#E5484D" FontWeight="Bold" IsVisible="{Binding Extinct}" />
+            </StackPanel>
+        </Border>
+
+        <!-- The map (the Fluent exception: full-bleed custom rendering) + zoom overlay -->
+        <Panel Grid.Row="1" Grid.Column="0">
+            <views:SimulationCanvas x:Name="MapCanvas"
+                                    Scene="{Binding Scene}"
+                                    SelectedOrganismId="{Binding SelectedOrganismId, Mode=TwoWay}" />
+            <StackPanel Orientation="Horizontal" Spacing="4" Margin="10"
+                        HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                <Button Content="−" Width="34" Click="OnZoomOutClick" ToolTip.Tip="Zoom out" />
+                <Button Content="+" Width="34" Click="OnZoomInClick" ToolTip.Tip="Zoom in" />
+                <Button Content="⤢" Width="34" Click="OnResetViewClick" ToolTip.Tip="Fit to view (or double-click the map)" />
+            </StackPanel>
+        </Panel>
+
+        <!-- Chrome: Info / Ranking tabs -->
+        <TabControl Grid.Row="1" Grid.Column="1" SelectedIndex="{Binding SidebarTabIndex}">
+
+            <!-- Info: colour mode + legend + inspector -->
+            <TabItem Header="Info">
+                <ScrollViewer Padding="12">
+                    <StackPanel Spacing="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Colour mode" FontWeight="SemiBold" />
+                            <ComboBox ItemsSource="{Binding ColourModes}" SelectedItem="{Binding ColourMode}" HorizontalAlignment="Stretch" />
+                        </StackPanel>
+
+                        <ItemsControl ItemsSource="{Binding Legend}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="pres:LegendSection">
+                                    <StackPanel Margin="0,0,0,8" Spacing="4">
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12" Opacity="0.8" />
+                                        <ItemsControl ItemsSource="{Binding Entries}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="pres:LegendEntry">
+                                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,1">
+                                                        <Border Width="16" Height="16" CornerRadius="3"
+                                                                Background="{Binding Colour, Converter={StaticResource ColourToBrush}}" />
+                                                        <TextBlock Text="{Binding Label}" VerticalAlignment="Center" FontSize="12" />
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Border IsVisible="{Binding HasSelection}" BorderThickness="0,1,0,0"
+                                BorderBrush="{DynamicResource SystemChromeMediumColor}" Padding="0,12,0,0">
+                            <StackPanel Spacing="10">
+                                <Button Content="🌳 View lineage graph" HorizontalAlignment="Stretch"
+                                        Command="{Binding ViewLineageGraphCommand}" IsEnabled="{Binding CanViewLineageGraph}" />
+                                <ContentControl Content="{Binding Inspector}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Ranking: whole-simulation leaderboard (alive or dead), most → least successful -->
+            <TabItem Header="Ranking">
+                <Grid RowDefinitions="Auto,*,*" Margin="8">
+                    <StackPanel Grid.Row="0" Spacing="2" Margin="4,4,4,8">
+                        <TextBlock Text="Descendant score" FontWeight="SemiBold" />
+                        <TextBlock FontSize="11" Opacity="0.65" TextWrapping="Wrap"
+                                   Text="children + ½ grandchildren + ¼ great-grandchildren · auto-updates" />
+                    </StackPanel>
+
+                    <ListBox Grid.Row="1" ItemsSource="{Binding Ranking}"
+                             SelectedItem="{Binding SelectedRankingEntry, Mode=TwoWay}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="pres:RankingEntry">
+                                <Grid ColumnDefinitions="30,*,Auto" ColumnSpacing="6">
+                                    <TextBlock Grid.Column="0" Text="{Binding Rank}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock FontSize="11" Opacity="0.7" Text="{Binding Score, StringFormat='score {0:F2}'}" />
+                                            <TextBlock FontSize="11" Opacity="0.7" Text="{Binding Children, StringFormat='· children {0}'}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"
+                                               Foreground="#3FB950" Text="alive" IsVisible="{Binding IsAlive}" />
+                                    <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="11"
+                                               Opacity="0.6" Text="dead" IsVisible="{Binding !IsAlive}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <Grid Grid.Row="2" RowDefinitions="Auto,*">
+                        <Button Grid.Row="0" Content="🌳 View lineage graph" Margin="4,6" HorizontalAlignment="Left"
+                                Command="{Binding ViewLineageGraphCommand}" IsEnabled="{Binding CanViewLineageGraph}" />
+                        <ScrollViewer Grid.Row="1" Padding="4,4">
+                            <ContentControl Content="{Binding RankingDetail}" />
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+
+        <!-- Lineage graph overlay (over the whole view) -->
+        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Grid.ColumnSpan="2"
+                IsVisible="{Binding IsLineageGraphVisible}" Background="#CC0E1013">
+            <Border Margin="40" Padding="16" CornerRadius="8" Background="{DynamicResource SystemChromeMediumColor}">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                        <TextBlock Text="{Binding LineageGraphTitle}" FontWeight="Bold" FontSize="16" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="Parent gens" VerticalAlignment="Center" FontSize="12" />
+                            <NumericUpDown Width="110" Value="{Binding MaxParentGens}"
+                                           Minimum="0" Maximum="100" Increment="1" FormatString="0" ParsingNumberStyle="Integer" />
+                            <TextBlock Text="Child gens" VerticalAlignment="Center" FontSize="12" Margin="6,0,0,0" />
+                            <NumericUpDown Width="110" Value="{Binding MaxChildGens}"
+                                           Minimum="0" Maximum="100" Increment="1" FormatString="0" ParsingNumberStyle="Integer" />
+                            <Button Content="Close" Command="{Binding CloseLineageGraphCommand}" Margin="6,0,0,0" />
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock DockPanel.Dock="Bottom" Margin="0,8,0,0" FontSize="11" Opacity="0.65"
+                               Text="founder at top · generations descend · green = alive, grey = dead, amber = selected" />
+                    <Border Background="#12141A" CornerRadius="4">
+                        <views:LineageGraphControl Graph="{Binding LineageGraph}" />
+                    </Border>
+                </DockPanel>
+            </Border>
+        </Border>
+    </Grid>
+</UserControl>

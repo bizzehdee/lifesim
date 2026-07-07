@@ -1,8 +1,5 @@
-using LifeSim.Core;
+using LifeSim.Console.Cli;
 
-// Phase 0 scaffold: the `sim` CLI. Real subcommands (run / serve / new) arrive in Phase 11.
-// Proves the Console -> Core reference is wired end to end.
-Console.WriteLine($"LifeSim engine {BuildInfo.SimulationVersion} " +
-    $"(schema {BuildInfo.SchemaVersion}, config {BuildInfo.ConfigVersion})");
-Console.WriteLine("CLI subcommands (run/serve/new) not implemented yet — see tasks.md Phase 11.");
-return 0;
+// The `sim` CLI entry point (lifesim.md §1). All real logic lives in SimCli/commands so the surface
+// is unit-testable; this just forwards the process argv and standard streams.
+return SimCli.Run(args, System.Console.Out, System.Console.Error);

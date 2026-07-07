@@ -6,8 +6,11 @@ public enum ActionResult
     /// <summary>No action has been recorded yet (before an organism's first decision).</summary>
     None,
 
-    /// <summary>The action achieved its purpose: moved, grazed (even zero energy), killed prey, or gave birth.</summary>
+    /// <summary>The action achieved its purpose: moved, grazed (even zero energy), or gave birth.</summary>
     Success,
+
+    /// <summary>A Harvest that killed prey (successful predation). Distinguished from a graze so the UI can render predation (lifesim.md §18); to the brain it reads the same as <see cref="Success"/>.</summary>
+    Killed,
 
     /// <summary>A Move that was blocked immediately (off-grid or occupied on the very first step).</summary>
     Blocked,

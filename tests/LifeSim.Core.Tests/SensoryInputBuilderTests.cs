@@ -36,7 +36,7 @@ public class SensoryInputBuilderTests
         Organism self = NewOrganism(1, 20, 20);
         var organisms = new Dictionary<long, Organism> { [self.Id] = self };
 
-        double[] values = builder.Build(self, organisms, 1, new Prng(1));
+        double[] values = builder.Build(self, organisms, 1, new Prng(1), 0.0, 0.0);
 
         Assert.Equal(Enum.GetValues<SensoryField>().Length, values.Length);
         Assert.Equal(NeatTopology.InputCount, values.Length);
@@ -53,7 +53,7 @@ public class SensoryInputBuilderTests
         }
 
         var organisms = new Dictionary<long, Organism> { [self.Id] = self };
-        double[] values = builder.Build(self, organisms, 1, new Prng(1));
+        double[] values = builder.Build(self, organisms, 1, new Prng(1), 0.0, 0.0);
 
         Assert.Equal(0.4, values[(int)SensoryField.Energy]);
         Assert.Equal(Math.Tanh(7.0 / 100.0), values[(int)SensoryField.Age]);
@@ -66,9 +66,9 @@ public class SensoryInputBuilderTests
         Organism self = NewOrganism(1, 5, 5);
         var organisms = new Dictionary<long, Organism> { [self.Id] = self };
 
-        double[] values = builder.Build(self, organisms, 1, new Prng(1));
+        double[] values = builder.Build(self, organisms, 1, new Prng(1), 0.0, 0.0);
 
-        double expectedTemp = terrain.TemperatureAt(5, 5) / 50.0;
+        double expectedTemp = terrain.TemperatureCelsiusAt(5, 5) / 50.0;
         double expectedFriction = Config.Biomes.For(terrain.BiomeAt(5, 5)).Friction / 5.0;
         Assert.Equal(expectedTemp, values[(int)SensoryField.TileTemperature]);
         Assert.Equal(expectedFriction, values[(int)SensoryField.BiomeFriction]);
@@ -93,7 +93,7 @@ public class SensoryInputBuilderTests
         ground.Deposit(23, 20, 50.0); // 3 tiles east
 
         var organisms = new Dictionary<long, Organism> { [self.Id] = self };
-        double[] values = builder.Build(self, organisms, 1, new Prng(1));
+        double[] values = builder.Build(self, organisms, 1, new Prng(1), 0.0, 0.0);
 
         Assert.True(values[(int)SensoryField.RichestTileDirectionX] > 0.9);
         Assert.Equal(0.0, values[(int)SensoryField.RichestTileDirectionY], precision: 6);
@@ -119,7 +119,7 @@ public class SensoryInputBuilderTests
         }
 
         var organisms = new Dictionary<long, Organism> { [self.Id] = self };
-        double[] values = builder.Build(self, organisms, 1, new Prng(1));
+        double[] values = builder.Build(self, organisms, 1, new Prng(1), 0.0, 0.0);
 
         Assert.Equal(0.0, values[(int)SensoryField.RichestTileDistance]);
         Assert.Equal(0.0, values[(int)SensoryField.RichestTileDirectionX]);
@@ -137,7 +137,7 @@ public class SensoryInputBuilderTests
         Organism other = NewOrganism(2, 20, 24, genome: otherGenome); // 4 tiles south
 
         var organisms = new Dictionary<long, Organism> { [self.Id] = self, [other.Id] = other };
-        double[] values = builder.Build(self, organisms, 1, new Prng(1));
+        double[] values = builder.Build(self, organisms, 1, new Prng(1), 0.0, 0.0);
 
         Assert.Equal(4.0 / 10.0, values[(int)SensoryField.ClosestOrganismDistance], precision: 6);
         Assert.Equal(0.0, values[(int)SensoryField.ClosestOrganismDirectionX], precision: 6);
@@ -156,7 +156,7 @@ public class SensoryInputBuilderTests
         Organism other = NewOrganism(2, 20, 30); // far outside radius
 
         var organisms = new Dictionary<long, Organism> { [self.Id] = self, [other.Id] = other };
-        double[] values = builder.Build(self, organisms, 1, new Prng(1));
+        double[] values = builder.Build(self, organisms, 1, new Prng(1), 0.0, 0.0);
 
         Assert.Equal(0.0, values[(int)SensoryField.ClosestOrganismDistance]);
         Assert.Equal(0.0, values[(int)SensoryField.ClosestOrganismSizeDelta]);
@@ -173,7 +173,7 @@ public class SensoryInputBuilderTests
         Organism larger = NewOrganism(3, 20, 21, genome: PristineGenome() with { Size = 9.0 });
 
         var organisms = new Dictionary<long, Organism> { [self.Id] = self, [smaller.Id] = smaller, [larger.Id] = larger };
-        double[] values = builder.Build(self, organisms, 1, new Prng(1));
+        double[] values = builder.Build(self, organisms, 1, new Prng(1), 0.0, 0.0);
 
         Assert.Equal(Math.Tanh(1.0 / 5.0), values[(int)SensoryField.NearbySmallerCount], precision: 6);
         Assert.Equal(Math.Tanh(1.0 / 5.0), values[(int)SensoryField.NearbyLargerCount], precision: 6);
@@ -183,6 +183,7 @@ public class SensoryInputBuilderTests
     [Theory]
     [InlineData(ActionResult.None, 0.0)]
     [InlineData(ActionResult.Success, 1.0)]
+    [InlineData(ActionResult.Killed, 1.0)]
     [InlineData(ActionResult.Blocked, -1.0)]
     [InlineData(ActionResult.NoOp, 0.5)]
     public void Build_lastActionResult_mapsToFixedNumericValue(ActionResult result, double expected)
@@ -192,7 +193,7 @@ public class SensoryInputBuilderTests
         self.RecordActionResult(result);
 
         var organisms = new Dictionary<long, Organism> { [self.Id] = self };
-        double[] values = builder.Build(self, organisms, 1, new Prng(1));
+        double[] values = builder.Build(self, organisms, 1, new Prng(1), 0.0, 0.0);
 
         Assert.Equal(expected, values[(int)SensoryField.LastActionResult]);
     }
@@ -209,18 +210,32 @@ public class SensoryInputBuilderTests
 
         var organisms = new Dictionary<long, Organism> { [ready.Id] = ready, [notReady.Id] = notReady };
 
-        Assert.Equal(1.0, builder.Build(ready, organisms, 1, new Prng(1))[(int)SensoryField.ReproductiveReadiness]);
-        Assert.Equal(0.0, builder.Build(notReady, organisms, 1, new Prng(1))[(int)SensoryField.ReproductiveReadiness]);
+        Assert.Equal(1.0, builder.Build(ready, organisms, 1, new Prng(1), 0.0, 0.0)[(int)SensoryField.ReproductiveReadiness]);
+        Assert.Equal(0.0, builder.Build(notReady, organisms, 1, new Prng(1), 0.0, 0.0)[(int)SensoryField.ReproductiveReadiness]);
     }
 
     [Fact]
-    public void Build_globalStressLevel_isZero_untilPhase9Events()
+    public void Build_globalStressLevel_reflectsThePassedEnvironmentStress()
     {
         (SensoryInputBuilder builder, _, _) = NewBuilder();
-        Organism self = NewOrganism(1, 20, 20);
+        Organism self = NewOrganism(1, 20, 20); // pristine genome → acuity 1 → no noise
         var organisms = new Dictionary<long, Organism> { [self.Id] = self };
 
-        Assert.Equal(0.0, builder.Build(self, organisms, 1, new Prng(1))[(int)SensoryField.GlobalStressLevel]);
+        Assert.Equal(0.0, builder.Build(self, organisms, 1, new Prng(1), 0.0, 0.0)[(int)SensoryField.GlobalStressLevel]);
+        Assert.Equal(0.66, builder.Build(self, organisms, 1, new Prng(1), 0.66, 0.0)[(int)SensoryField.GlobalStressLevel], precision: 10);
+    }
+
+    [Fact]
+    public void Build_tileTemperature_shiftsWithTheClimaticAnomalyOffset()
+    {
+        (SensoryInputBuilder builder, _, _) = NewBuilder();
+        Organism self = NewOrganism(1, 20, 20); // pristine genome → acuity 1 → no noise
+        var organisms = new Dictionary<long, Organism> { [self.Id] = self };
+
+        double baseline = builder.Build(self, organisms, 1, new Prng(1), 0.0, 0.0)[(int)SensoryField.TileTemperature];
+        double shifted = builder.Build(self, organisms, 1, new Prng(1), 0.0, 20.0)[(int)SensoryField.TileTemperature];
+
+        Assert.Equal(baseline + (20.0 / 50.0), shifted, precision: 10);
     }
 
     [Fact]
@@ -231,8 +246,8 @@ public class SensoryInputBuilderTests
         Organism self = NewOrganism(1, 20, 20, genome: genome);
         var organisms = new Dictionary<long, Organism> { [self.Id] = self };
 
-        double[] a = builder.Build(self, organisms, 1, new Prng(111));
-        double[] b = builder.Build(self, organisms, 1, new Prng(999));
+        double[] a = builder.Build(self, organisms, 1, new Prng(111), 0.0, 0.0);
+        double[] b = builder.Build(self, organisms, 1, new Prng(999), 0.0, 0.0);
 
         Assert.Equal(a, b);
     }
@@ -245,8 +260,8 @@ public class SensoryInputBuilderTests
         Organism self = NewOrganism(1, 20, 20, genome: genome);
         var organisms = new Dictionary<long, Organism> { [self.Id] = self };
 
-        double[] a = builder.Build(self, organisms, 1, new Prng(111));
-        double[] b = builder.Build(self, organisms, 1, new Prng(999));
+        double[] a = builder.Build(self, organisms, 1, new Prng(111), 0.0, 0.0);
+        double[] b = builder.Build(self, organisms, 1, new Prng(999), 0.0, 0.0);
 
         Assert.NotEqual(a, b);
     }
@@ -258,8 +273,8 @@ public class SensoryInputBuilderTests
         Organism self = NewOrganism(1, 20, 20);
         var organisms = new Dictionary<long, Organism> { [self.Id] = self };
 
-        double[] a = builder.Build(self, organisms, 1, new Prng(555));
-        double[] b = builder.Build(self, organisms, 1, new Prng(555));
+        double[] a = builder.Build(self, organisms, 1, new Prng(555), 0.0, 0.0);
+        double[] b = builder.Build(self, organisms, 1, new Prng(555), 0.0, 0.0);
 
         Assert.Equal(a, b);
     }

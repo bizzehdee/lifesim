@@ -1,0 +1,290 @@
+using LifeSim.App.Presentation;
+using LifeSim.App.ViewModels;
+using LifeSim.Core.Configuration;
+using LifeSim.Core.Simulation;
+using LifeSim.Core.Snapshot;
+using LifeSim.Core.World;
+
+namespace LifeSim.App.Tests;
+
+public class WorldViewTests
+{
+    private static WorldSnapshot BuildSnapshot(int ticks = 8, ulong seed = 42)
+    {
+        var config = SimulationConfig.Default with { InitialPopulation = 30 };
+        var world = SimulationWorld.CreateGenesis(new WorldState { Seed = seed, Width = 48, Height = 48 }, config);
+        for (int i = 0; i < ticks && !world.Extinct; i++)
+        {
+            world.Advance();
+        }
+
+        return world.ToSnapshot();
+    }
+
+    [Fact]
+    public void WorldScene_buildsOneViewPerOrganism_andReturnsTileColours()
+    {
+        WorldSnapshot snapshot = BuildSnapshot();
+        WorldScene scene = WorldScene.FromSnapshot(snapshot, ColourMode.Energy, selectedId: null);
+
+        Assert.Equal(snapshot.Organisms.Count, scene.Organisms.Count);
+        Assert.Equal(snapshot.World.Width, scene.Width);
+        _ = scene.TileColour(0, 0); // does not throw; a colour is produced for any in-world tile
+        Assert.Null(scene.SelectedFootprint);
+    }
+
+    [Fact]
+    public void WorldScene_isIdenticalFromALiveSnapshotAndAReloadedOne()
+    {
+        // The Phase 13 exit criterion: the shared views render identically whether fed a live Core
+        // frame or a deserialized snapshot. Both go through the same WorldScene producer.
+        WorldSnapshot live = BuildSnapshot();
+        WorldSnapshot reloaded = SnapshotSerializer.Load(SnapshotSerializer.Save(live));
+        long selected = live.Organisms[0].OrganismId;
+
+        foreach (ColourMode mode in Enum.GetValues<ColourMode>())
+        {
+            WorldScene fromLive = WorldScene.FromSnapshot(live, mode, selected);
+            WorldScene fromReloaded = WorldScene.FromSnapshot(reloaded, mode, selected);
+
+            Assert.Equal(fromLive.Organisms, fromReloaded.Organisms); // OrganismView is a record → value equality
+            Assert.Equal(fromLive.SelectedFootprint, fromReloaded.SelectedFootprint);
+            for (int y = 0; y < fromLive.Height; y += 7)
+            {
+                for (int x = 0; x < fromLive.Width; x += 7)
+                {
+                    Assert.Equal(fromLive.TileColour(x, y), fromReloaded.TileColour(x, y));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void WorldScene_setsTheSelectedOrganismFootprint()
+    {
+        WorldSnapshot snapshot = BuildSnapshot();
+        long id = snapshot.Organisms[0].OrganismId;
+
+        WorldScene scene = WorldScene.FromSnapshot(snapshot, ColourMode.Energy, id);
+        Assert.NotNull(scene.SelectedFootprint);
+    }
+
+    [Fact]
+    public void Inspector_populatesEveryStatBlockForARealOrganism()
+    {
+        WorldSnapshot snapshot = BuildSnapshot();
+        OrganismSnapshot organism = snapshot.Organisms[0];
+
+        OrganismInspectorViewModel? inspector = OrganismInspectorViewModel.Create(snapshot, organism.OrganismId);
+
+        Assert.NotNull(inspector);
+        Assert.Equal(organism.Name, inspector.Name);
+        Assert.Equal(7, inspector.Traits.Count);
+        Assert.Equal(11, inspector.ActionProbabilities.Count);
+        Assert.Equal(1.0, inspector.ActionProbabilities.Sum(p => p.Probability), precision: 6);
+        Assert.Equal(organism.Brain.Nodes.Count, inspector.BrainGraph.Nodes.Count);
+        Assert.Equal(
+            inspector.Economy.Base + inspector.Economy.ThermalStress + inspector.Economy.SensoryTax + inspector.Economy.LastMovementCost,
+            inspector.Economy.Total,
+            precision: 9);
+    }
+
+    [Fact]
+    public void Inspector_reportsChildCountAndLivingParentName()
+    {
+        // Run long enough that reproduction produces living parents and living children.
+        WorldSnapshot snapshot = BuildSnapshot(ticks: 60, seed: 909090);
+
+        var livingIds = snapshot.Organisms.Select(o => o.OrganismId).ToHashSet();
+        LifeSim.Core.Snapshot.LineageSnapshot? pair = snapshot.Lineages.FirstOrDefault(
+            l => l.ParentId is { } p && livingIds.Contains(p) && livingIds.Contains(l.OrganismId));
+        Assert.NotNull(pair); // a living child of a living parent should exist after 60 ticks
+
+        long parentId = pair.ParentId!.Value;
+        string parentName = snapshot.Organisms.Single(o => o.OrganismId == parentId).Name;
+
+        // From the child: its parent is identified, named, and alive.
+        OrganismInspectorViewModel child = OrganismInspectorViewModel.Create(snapshot, pair.OrganismId)!;
+        Assert.Equal(parentId, child.ParentId);
+        Assert.Equal(parentName, child.ParentName);
+        Assert.True(child.ParentAlive);
+
+        // From the parent: the child count matches the lineage records naming it as parent.
+        OrganismInspectorViewModel parent = OrganismInspectorViewModel.Create(snapshot, parentId)!;
+        Assert.Equal(snapshot.Lineages.Count(l => l.ParentId == parentId), parent.ChildCount);
+        Assert.True(parent.ChildCount >= 1);
+    }
+
+    [Fact]
+    public void Inspector_returnsNullForAnUnknownOrganism()
+    {
+        WorldSnapshot snapshot = BuildSnapshot();
+        Assert.Null(OrganismInspectorViewModel.Create(snapshot, organismId: -1));
+    }
+
+    [Fact]
+    public void Ranking_isOrderedByDescendantScore_namesEveryone_andCoversTheWholeSimulation()
+    {
+        WorldSnapshot snapshot = BuildSnapshot(ticks: 60, seed: 909090);
+        IReadOnlyList<RankingEntry> ranking = RankingBuilder.Build(snapshot);
+
+        Assert.NotEmpty(ranking);
+        Assert.Equal(1, ranking[0].Rank);
+        for (int i = 1; i < ranking.Count; i++)
+        {
+            Assert.True(ranking[i].Score <= ranking[i - 1].Score); // most → least successful
+        }
+
+        Assert.Contains(ranking, r => !r.IsAlive);            // includes dead organisms
+        Assert.All(ranking, r => Assert.False(string.IsNullOrEmpty(r.Name))); // everyone is named (alive or dead)
+
+        // Living entries' names match the name stored on the live organism (both from OrganismNamer).
+        var livingNames = snapshot.Organisms.ToDictionary(o => o.OrganismId, o => o.Name);
+        foreach (RankingEntry entry in ranking.Where(r => r.IsAlive))
+        {
+            Assert.Equal(livingNames[entry.OrganismId], entry.Name);
+        }
+    }
+
+    [Fact]
+    public void Ranking_scoreWeightsDescendantsByGeneration()
+    {
+        // Hand-built lineage: root → child → grandchild → great-grandchild (single chain), plus a
+        // second direct child of root. Root score = 2 children*1 + 1 grandchild*0.5 + 1 gg*0.25 = 2.75.
+        var lineages = new List<LifeSim.Core.Snapshot.LineageSnapshot>
+        {
+            new() { OrganismId = 1, ParentId = null, LineageId = 1 },
+            new() { OrganismId = 2, ParentId = 1, LineageId = 1 },
+            new() { OrganismId = 3, ParentId = 1, LineageId = 1 },
+            new() { OrganismId = 4, ParentId = 2, LineageId = 1 },
+            new() { OrganismId = 5, ParentId = 4, LineageId = 1 },
+        };
+        var snapshot = new WorldSnapshot { Lineages = lineages };
+
+        IReadOnlyList<RankingEntry> ranking = RankingBuilder.Build(snapshot);
+        RankingEntry root = ranking.Single(r => r.OrganismId == 1);
+        Assert.Equal(2.75, root.Score, precision: 6);
+        Assert.Equal(2, root.Children);
+        Assert.Equal(1, ranking[0].OrganismId); // root ranks first
+    }
+
+    [Fact]
+    public void WorldViewModel_rankingTab_populatesAndSelectionShowsTheRightDetail()
+    {
+        WorldSnapshot snapshot = BuildSnapshot(ticks: 60, seed: 909090);
+        var vm = new WorldViewModel();
+        vm.LoadSnapshot(snapshot);
+
+        Assert.Empty(vm.Ranking);   // not computed until the Ranking tab opens
+        vm.SidebarTabIndex = 1;
+        Assert.NotEmpty(vm.Ranking);
+
+        RankingEntry living = vm.Ranking.First(r => r.IsAlive);
+        vm.SelectedRankingEntry = living;
+        Assert.IsType<OrganismInspectorViewModel>(vm.RankingDetail); // full stats for a living one
+        Assert.Equal(living.OrganismId, vm.SelectedOrganismId);      // and it's selected on the map
+
+        RankingEntry? dead = vm.Ranking.FirstOrDefault(r => !r.IsAlive);
+        Assert.NotNull(dead);
+        vm.SelectedRankingEntry = dead;
+        Assert.IsType<LineageDetailViewModel>(vm.RankingDetail);     // lineage stats for a dead one
+    }
+
+    [Fact]
+    public void WorldViewModel_ranking_autoRefreshesOnNewFrames_andPreservesSelection()
+    {
+        // Same run at two points in time (seed fixed): the later snapshot is the earlier advanced on.
+        WorldSnapshot early = BuildSnapshot(ticks: 30, seed: 909090);
+        WorldSnapshot later = BuildSnapshot(ticks: 60, seed: 909090);
+
+        var vm = new WorldViewModel();
+        vm.LoadSnapshot(early);
+        vm.SidebarTabIndex = 1;
+        RankingEntry pick = vm.Ranking[0];
+        vm.SelectedRankingEntry = pick;
+
+        vm.LoadSnapshot(later); // a new frame arrives while the Ranking tab is open
+
+        Assert.Equal(Math.Min(500, later.Lineages.Count), vm.Ranking.Count); // auto-refreshed to the new frame
+        Assert.Equal(pick.OrganismId, vm.SelectedRankingEntry!.OrganismId);  // selection preserved by id
+    }
+
+    [Fact]
+    public void LineageDetail_forADeadOrganism_carriesBirthAndDeathTraits()
+    {
+        WorldSnapshot snapshot = BuildSnapshot(ticks: 60, seed: 909090);
+        var livingIds = snapshot.Organisms.Select(o => o.OrganismId).ToHashSet();
+        LifeSim.Core.Snapshot.LineageSnapshot? dead = snapshot.Lineages.FirstOrDefault(
+            l => l.DeathTick is not null && !livingIds.Contains(l.OrganismId));
+        Assert.NotNull(dead);
+
+        LineageDetailViewModel detail = LineageDetailViewModel.Create(snapshot, dead.OrganismId)!;
+        Assert.False(detail.IsAlive);
+        Assert.NotNull(detail.DeathTick);
+        Assert.Equal(7, detail.BirthTraits.Count);
+        Assert.True(detail.HasDeathTraits);
+        Assert.Equal(7, detail.DeathTraits.Count);
+    }
+
+    [Fact]
+    public void WorldViewModel_viewLineageGraph_opensForTheSelectedOrganism()
+    {
+        WorldSnapshot snapshot = BuildSnapshot(ticks: 40, seed: 909090);
+        var vm = new WorldViewModel();
+        vm.LoadSnapshot(snapshot);
+
+        Assert.False(vm.CanViewLineageGraph);            // nothing selected yet
+        Assert.False(vm.IsLineageGraphVisible);
+
+        long id = snapshot.Organisms[0].OrganismId;
+        vm.SelectedOrganismId = id;
+        Assert.True(vm.CanViewLineageGraph);
+
+        vm.ViewLineageGraphCommand.Execute(null);
+        Assert.True(vm.IsLineageGraphVisible);
+        Assert.NotNull(vm.LineageGraph);
+        Assert.Contains(vm.LineageGraph!.Nodes, n => n.IsFocus && n.OrganismId == id);
+        Assert.Contains("Lineage of", vm.LineageGraphTitle, StringComparison.Ordinal);
+
+        vm.CloseLineageGraphCommand.Execute(null);
+        Assert.False(vm.IsLineageGraphVisible);
+    }
+
+    [Fact]
+    public void WorldViewModel_currentOrganism_followsTheRankingSelectionOnTheRankingTab()
+    {
+        WorldSnapshot snapshot = BuildSnapshot(ticks: 40, seed: 909090);
+        var vm = new WorldViewModel();
+        vm.LoadSnapshot(snapshot);
+        vm.SidebarTabIndex = 1;
+
+        RankingEntry entry = vm.Ranking[0];
+        vm.SelectedRankingEntry = entry;
+
+        Assert.Equal(entry.OrganismId, vm.CurrentOrganismId);
+        Assert.True(vm.CanViewLineageGraph);
+    }
+
+    [Fact]
+    public void WorldViewModel_reactsToSnapshotModeAndSelection()
+    {
+        WorldSnapshot snapshot = BuildSnapshot();
+        var vm = new WorldViewModel();
+
+        vm.LoadSnapshot(snapshot);
+        Assert.NotNull(vm.Scene);
+        Assert.Equal(snapshot.Tick, vm.Tick);
+        Assert.Equal(snapshot.Organisms.Count, vm.Population);
+
+        vm.ColourMode = ColourMode.Lineage;
+        Assert.Contains(vm.Legend, s => s.Title.Contains("Lineage", StringComparison.Ordinal));
+
+        vm.SelectedOrganismId = snapshot.Organisms[0].OrganismId;
+        Assert.True(vm.HasSelection);
+        Assert.NotNull(vm.Inspector);
+
+        vm.SelectedOrganismId = null;
+        Assert.False(vm.HasSelection);
+        Assert.Null(vm.Inspector);
+    }
+}

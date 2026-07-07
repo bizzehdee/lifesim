@@ -23,6 +23,9 @@
     "schema_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+" },
     "config_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+" },
     "simulation_version": { "type": "string", "minLength": 1 },
+    "snapshot_id": { "type": ["string", "null"] },
+    "parent_snapshot_id": { "type": ["string", "null"] },
+    "branch_id": { "type": ["string", "null"] },
     "tick": { "type": "integer", "minimum": 0 },
     "world": {
       "type": "object",
@@ -78,7 +81,19 @@
         }
       }
     },
-    "environment_modifiers": { "type": "array" },
+    "environment_modifiers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "start_tick", "remaining_ticks", "magnitude"],
+        "properties": {
+          "type": { "type": "string" },
+          "start_tick": { "type": "integer", "minimum": 0 },
+          "remaining_ticks": { "type": "integer", "minimum": 0 },
+          "magnitude": { "type": "number" }
+        }
+      }
+    },
     "organisms": {
       "type": "array",
       "items": {
@@ -165,9 +180,69 @@
       "type": ["object", "null"],
       "properties": {
         "population": { "type": "integer", "minimum": 0 },
-        "extinct": { "type": "boolean" }
+        "extinct": { "type": "boolean" },
+        "births": { "type": "integer", "minimum": 0 },
+        "deaths": { "type": "integer", "minimum": 0 },
+        "successful_grazing": { "type": "integer", "minimum": 0 },
+        "failed_grazing": { "type": "integer", "minimum": 0 },
+        "successful_predation": { "type": "integer", "minimum": 0 },
+        "failed_predation": { "type": "integer", "minimum": 0 },
+        "energy_min": { "type": "number" },
+        "energy_average": { "type": "number" },
+        "energy_max": { "type": "number" },
+        "trait_averages": { "type": "object" },
+        "trait_histograms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["trait", "min", "max", "buckets"],
+            "properties": {
+              "trait": { "type": "string" },
+              "min": { "type": "number" },
+              "max": { "type": "number" },
+              "buckets": { "type": "array", "items": { "type": "integer", "minimum": 0 } }
+            }
+          }
+        },
+        "population_by_biome": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["biome", "count"],
+            "properties": {
+              "biome": { "type": "string" },
+              "count": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "reproduction_by_lineage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["lineage_id", "births"],
+            "properties": {
+              "lineage_id": { "type": "integer", "minimum": 0 },
+              "births": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "active_events": { "type": "array", "items": { "type": "string" } }
       }
     },
-    "edit_log": { "type": "array" }
+    "edit_log": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tick", "target", "field", "previous_value", "new_value"],
+        "properties": {
+          "tick": { "type": "integer", "minimum": 0 },
+          "target": { "type": "string" },
+          "field": { "type": "string" },
+          "previous_value": { "type": "string" },
+          "new_value": { "type": "string" },
+          "reason": { "type": ["string", "null"] }
+        }
+      }
+    }
   }
 }

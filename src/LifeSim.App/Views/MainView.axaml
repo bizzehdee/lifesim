@@ -3,14 +3,96 @@
                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                 xmlns:vm="using:LifeSim.App.ViewModels"
-                mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+                xmlns:views="using:LifeSim.App.Views"
+                mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
                 x:Class="LifeSim.App.Views.MainView"
                 x:DataType="vm:MainViewModel">
     <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainViewModel />
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <DockPanel>
+        <!-- Control deck (chrome — follows the Fluent house rules) -->
+        <Border DockPanel.Dock="Top" Padding="10,8" Background="{DynamicResource SystemChromeMediumColor}">
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Content="▶ Play" Command="{Binding PlayCommand}" IsEnabled="{Binding HasWorld}" IsVisible="{Binding LiveCapable}" />
+                <Button Content="⏸ Pause" Command="{Binding PauseCommand}" IsEnabled="{Binding HasWorld}" IsVisible="{Binding LiveCapable}" />
+                <Button Content="⏭ Step" Command="{Binding StepCommand}" IsEnabled="{Binding HasWorld}" IsVisible="{Binding LiveCapable}" />
+                <Button Content="⟳ New…" Command="{Binding ShowSetupCommand}" />
+
+                <TextBlock Text="Speed" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding LiveCapable}" />
+                <Slider Width="120" Minimum="1" Maximum="60" Value="{Binding TicksPerSecond}" VerticalAlignment="Center" IsVisible="{Binding LiveCapable}" />
+
+                <Border Width="1" Background="{DynamicResource SystemChromeHighColor}" Margin="6,2" />
+
+                <Button Content="Save…" Click="OnSaveClick" IsEnabled="{Binding HasWorld}" />
+                <Button Content="Load…" Click="OnLoadClick" />
+
+                <TextBox Width="200" PlaceholderText="sim serve URL" Text="{Binding StreamUrl}" VerticalAlignment="Center" />
+                <Button Content="Connect stream" Command="{Binding ConnectCommand}" />
+
+                <Border Width="1" Background="{DynamicResource SystemChromeHighColor}" Margin="6,2" />
+
+                <TextBlock Text="Edit energy" VerticalAlignment="Center" />
+                <Slider Width="100" Minimum="0" Maximum="100" Value="{Binding EditEnergy}" VerticalAlignment="Center" />
+                <Button Content="Apply" Command="{Binding ApplyEditCommand}" IsEnabled="{Binding World.HasSelection}" />
+
+                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" Opacity="0.75" Margin="8,0,0,0" />
+            </StackPanel>
+        </Border>
+
+        <Panel>
+            <!-- The shared world view (once a world exists). The wrapper keeps the MainViewModel
+                 context for IsVisible; the inner view switches DataContext to the WorldViewModel. -->
+            <Panel IsVisible="{Binding HasWorld}">
+                <views:WorldView DataContext="{Binding World}" />
+            </Panel>
+
+            <!-- New-world setup (before the simulation starts) -->
+            <ScrollViewer IsVisible="{Binding !HasWorld}" HorizontalScrollBarVisibility="Disabled">
+                <Border MaxWidth="560" Margin="24" Padding="24" CornerRadius="8"
+                        HorizontalAlignment="Center" VerticalAlignment="Top"
+                        Background="{DynamicResource SystemChromeLowColor}">
+                    <StackPanel Spacing="14">
+                        <TextBlock Text="New World" FontSize="22" FontWeight="Bold" />
+                        <TextBlock Opacity="0.75" TextWrapping="Wrap"
+                                   Text="Set the starting parameters, then create the world. The engine stays paused until you press Play." />
+
+                        <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="10">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Seed" VerticalAlignment="Center" />
+                            <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding Seed}"
+                                           Minimum="0" Maximum="999999999" Increment="1" FormatString="0" ParsingNumberStyle="Integer" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Width (tiles)" VerticalAlignment="Center" />
+                            <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Width}"
+                                           Minimum="4" Maximum="1024" Increment="1" FormatString="0" ParsingNumberStyle="Integer" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Height (tiles)" VerticalAlignment="Center" />
+                            <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding Height}"
+                                           Minimum="4" Maximum="1024" Increment="1" FormatString="0" ParsingNumberStyle="Integer" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Population" VerticalAlignment="Center" />
+                            <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Population}"
+                                           Minimum="1" Maximum="1000000" Increment="1" FormatString="0" ParsingNumberStyle="Integer" />
+                        </Grid>
+
+                        <Expander Header="Advanced: full configuration (JSON)">
+                            <StackPanel Spacing="6">
+                                <TextBlock Opacity="0.7" FontSize="12" TextWrapping="Wrap"
+                                           Text="Every simulation constant (Appendix A defaults shown). Edit any value to change the starting conditions. The Population field above overrides initial_population." />
+                                <TextBox Text="{Binding ConfigJson}" AcceptsReturn="True" TextWrapping="NoWrap"
+                                         FontFamily="Cascadia Code,Consolas,monospace" Height="260"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                            </StackPanel>
+                        </Expander>
+
+                        <Button Content="Create World" Command="{Binding CreateWorldCommand}"
+                                HorizontalAlignment="Left" Classes="accent" />
+                        <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Opacity="0.85" />
+                    </StackPanel>
+                </Border>
+            </ScrollViewer>
+        </Panel>
+    </DockPanel>
 </UserControl>

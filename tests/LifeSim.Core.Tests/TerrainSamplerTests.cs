@@ -62,6 +62,39 @@ public class TerrainSamplerTests
     }
 
     [Fact]
+    public void TemperatureCelsiusAt_tracksTheBiomeBaselineWithinItsVariationBand()
+    {
+        var config = SimulationConfig.Default;
+        var sampler = new TerrainSampler(2024, config);
+        double variation = config.Biomes.TemperatureVariation;
+
+        for (int y = 0; y < 32; y++)
+        {
+            for (int x = 0; x < 32; x++)
+            {
+                double baseline = config.Biomes.For(sampler.BiomeAt(x, y)).Temperature;
+                double celsius = sampler.TemperatureCelsiusAt(x, y);
+
+                // Temperature-noise field is ~[-1, 1], so a tile stays within ±(variation·~1) of its
+                // biome baseline — i.e. biomes are genuinely thermally distinct, not one flat field.
+                Assert.True(Math.Abs(celsius - baseline) <= (variation * 2.0) + 1e-9);
+            }
+        }
+    }
+
+    [Fact]
+    public void TemperatureCelsiusAt_isColderOnIceThanDesert_soThermalPressureIsBiomeSpecific()
+    {
+        var config = SimulationConfig.Default;
+        var sampler = new TerrainSampler(2024, config);
+
+        // Desert is the hottest biome baseline (45°C), Ice Sheet the coldest (−15°C); with a small
+        // within-biome variation band they can never cross, so a desert tile is always hotter.
+        double variation = config.Biomes.TemperatureVariation;
+        Assert.True(config.Biomes.Desert.Temperature - variation > config.Biomes.IceSheet.Temperature + variation);
+    }
+
+    [Fact]
     public void CaptureDebugGrid_matchesPerTileSamples()
     {
         var sampler = new TerrainSampler(7, SimulationConfig.Default);

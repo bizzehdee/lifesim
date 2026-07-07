@@ -1,4 +1,5 @@
 using LifeSim.Core.Configuration;
+using LifeSim.Core.Events;
 using LifeSim.Core.Simulation;
 using LifeSim.Core.Snapshot;
 using LifeSim.Core.World;
@@ -64,6 +65,42 @@ public class FlagshipDeterminismTests
 
         WorldSnapshot reloaded = SnapshotSerializer.Load(SnapshotSerializer.Save(snapshot));
         Assert.Equal(snapshot.Organisms, reloaded.Organisms);
+    }
+
+    /// <summary>
+    /// Both flagship guarantees must also hold while stochastic events fire frequently (lifesim.md
+    /// §6, §9). Default probabilities (0.001) rarely trigger inside a 100-tick run, so this pins
+    /// them high enough that blights, plagues, and anomalies are active throughout — the events
+    /// stream, active modifiers, and their effects all have to round-trip exactly.
+    /// </summary>
+    [Fact]
+    public void Determinism_holds_whileEventsFireFrequently()
+    {
+        static SimulationConfig EventfulConfig() => NewConfig() with
+        {
+            Events = new EventsConfig() with
+            {
+                BlightProbability = 0.1,
+                PlagueProbability = 0.1,
+                TemperatureAnomalyProbability = 0.1,
+                PlagueDensityThreshold = 2,
+            },
+        };
+
+        // Seed replay.
+        WorldSnapshot a = RunTicks(SimulationWorld.CreateGenesis(NewWorldState(), EventfulConfig()), Ticks);
+        WorldSnapshot b = RunTicks(SimulationWorld.CreateGenesis(NewWorldState(), EventfulConfig()), Ticks);
+        Assert.Equal(SnapshotSerializer.Save(a), SnapshotSerializer.Save(b));
+
+        // At least one event actually fired during the run, so this really exercises the machinery.
+        Assert.NotEmpty(a.EnvironmentModifiers);
+
+        // Save/reload equivalence.
+        SimulationWorld halfway = SimulationWorld.CreateGenesis(NewWorldState(), EventfulConfig());
+        RunTicks(halfway, Ticks / 2);
+        SimulationWorld resumed = SimulationWorld.FromSnapshot(halfway.ToSnapshot());
+        WorldSnapshot resumedResult = RunTicks(resumed, Ticks / 2);
+        Assert.Equal(SnapshotSerializer.Save(a), SnapshotSerializer.Save(resumedResult));
     }
 
     private static WorldSnapshot RunTicks(SimulationWorld world, int ticks)

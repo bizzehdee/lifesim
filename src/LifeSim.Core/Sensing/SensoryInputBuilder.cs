@@ -35,13 +35,15 @@ public sealed class SensoryInputBuilder
         _world = world;
     }
 
-    public double[] Build(Organism self, IReadOnlyDictionary<long, Organism> allOrganisms, long currentTick, Prng sensoryNoiseStream)
+    public double[] Build(
+        Organism self, IReadOnlyDictionary<long, Organism> allOrganisms, long currentTick,
+        Prng sensoryNoiseStream, double globalStress, double temperatureOffset)
     {
         var values = new double[NeatTopology.InputCount];
 
         values[(int)SensoryField.Energy] = self.Energy / Organism.EnergyCeiling;
         values[(int)SensoryField.Age] = Math.Tanh(self.Age / 100.0);
-        values[(int)SensoryField.TileTemperature] = _terrain.TemperatureAt(self.X, self.Y) / 50.0;
+        values[(int)SensoryField.TileTemperature] = (_terrain.TemperatureCelsiusAt(self.X, self.Y) + temperatureOffset) / 50.0;
 
         Biome biome = _terrain.BiomeAt(self.X, self.Y);
         values[(int)SensoryField.BiomeFriction] = _config.Biomes.For(biome).Friction / 5.0;
@@ -64,7 +66,7 @@ public sealed class SensoryInputBuilder
 
         values[(int)SensoryField.LastActionResult] = self.LastActionResult switch
         {
-            ActionResult.Success => 1.0,
+            ActionResult.Success or ActionResult.Killed => 1.0,
             ActionResult.Blocked or ActionResult.Failed => -1.0,
             ActionResult.NoOp => 0.5,
             _ => 0.0, // ActionResult.None
@@ -75,9 +77,9 @@ public sealed class SensoryInputBuilder
             || currentTick - self.LastBirthTick.Value >= _config.Reproduction.ReproductionCooldownTicks;
         values[(int)SensoryField.ReproductiveReadiness] = self.Energy >= reproductionCost && offCooldown ? 1.0 : 0.0;
 
-        // Global stress level reflects active environmental events (lifesim.md §6, §13);
-        // there are none until Phase 9, so this is a fixed placeholder for now.
-        values[(int)SensoryField.GlobalStressLevel] = 0.0;
+        // Global stress level reflects active environmental events (lifesim.md §6, §13), already
+        // normalized to [0, 1] by the environment state.
+        values[(int)SensoryField.GlobalStressLevel] = globalStress;
 
         InjectNoise(values, self.Genome.SensoryAcuity, sensoryNoiseStream);
         return values;

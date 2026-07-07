@@ -25,10 +25,25 @@ public sealed class TerrainSampler
 
     public double MoistureAt(int x, int y) => _moistureNoise.SampleFractal(x, y, _config.MoistureNoise);
 
+    /// <summary>
+    /// The raw temperature-noise field (~[-1, 1]) that drives biome *classification* against the
+    /// cold/hot thresholds (lifesim.md §2). This is the climate axis of the biome matrix, not a
+    /// physical temperature — for that, see <see cref="TemperatureCelsiusAt"/>.
+    /// </summary>
     public double TemperatureAt(int x, int y) => _temperatureNoise.SampleFractal(x, y, _config.TemperatureNoise);
 
     public Biome BiomeAt(int x, int y) =>
         BiomeClassifier.Classify(MoistureAt(x, y), TemperatureAt(x, y), _config.Biomes.Thresholds);
+
+    /// <summary>
+    /// The tile's physical temperature in °C (lifesim.md §2, §3): its biome's baseline temperature
+    /// plus the temperature-noise field scaled by <see cref="BiomesConfig.TemperatureVariation"/>.
+    /// This is what thermal-stress metabolism and the temperature sensor read, so an organism's °C
+    /// <c>thermal_center</c> is compared against a °C tile temperature — a Desert tile (hot) genuinely
+    /// stresses cold-adapted organisms, an Ice Sheet (cold) stresses warm-adapted ones.
+    /// </summary>
+    public double TemperatureCelsiusAt(int x, int y) =>
+        _config.Biomes.For(BiomeAt(x, y)).Temperature + (TemperatureAt(x, y) * _config.Biomes.TemperatureVariation);
 
     /// <summary>
     /// Samples a rectangular window of tiles for inspection (lifesim.md §12's debug snapshot

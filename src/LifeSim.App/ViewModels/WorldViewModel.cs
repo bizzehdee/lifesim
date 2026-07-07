@@ -57,6 +57,14 @@ public partial class WorldViewModel : ViewModelBase
     [ObservableProperty]
     private string _lineageGraphTitle = "";
 
+    /// <summary>Whether the global-statistics panel is open (lifesim.md §18).</summary>
+    [ObservableProperty]
+    private bool _isStatisticsVisible;
+
+    /// <summary>World-level statistics for the open panel, rebuilt from each frame.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<StatSection> _statistics = [];
+
     /// <summary>How many ancestor generations to show above the focus organism (default 3).</summary>
     [ObservableProperty]
     private decimal _maxParentGens = 3;
@@ -124,6 +132,22 @@ public partial class WorldViewModel : ViewModelBase
     [RelayCommand]
     private void CloseLineageGraph() => IsLineageGraphVisible = false;
 
+    /// <summary>Open/close the global-statistics panel (lifesim.md §18); refreshes it from the current frame on open.</summary>
+    [RelayCommand]
+    private void ToggleStatistics()
+    {
+        IsStatisticsVisible = !IsStatisticsVisible;
+        if (IsStatisticsVisible)
+        {
+            RebuildStatistics();
+        }
+    }
+
+    [RelayCommand]
+    private void CloseStatistics() => IsStatisticsVisible = false;
+
+    private void RebuildStatistics() => Statistics = Snapshot is null ? [] : GlobalStatistics.Build(Snapshot);
+
     private void RebuildLineageGraph()
     {
         LineageGraph = Snapshot is null || _lineageFocusId is not { } id
@@ -163,6 +187,11 @@ public partial class WorldViewModel : ViewModelBase
         if (IsLineageGraphVisible)
         {
             RebuildLineageGraph(); // keep the open lineage graph live as the sim advances
+        }
+
+        if (IsStatisticsVisible)
+        {
+            RebuildStatistics(); // keep the open statistics panel live as the sim advances
         }
 
         OnPropertyChanged(nameof(Tick));

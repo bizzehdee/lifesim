@@ -22,6 +22,37 @@ public class WorldViewTests
     }
 
     [Fact]
+    public void GlobalStatistics_summarisesTheSnapshotIntoSections()
+    {
+        WorldSnapshot snapshot = BuildSnapshot();
+        IReadOnlyList<StatSection> sections = GlobalStatistics.Build(snapshot);
+
+        Assert.Contains(sections, s => s.Title == "Overview");
+        Assert.Contains(sections, s => s.Title == "Multicellularity");   // on by default
+        Assert.Contains(sections, s => s.Title == "Population by biome");
+
+        StatSection overview = sections.First(s => s.Title == "Overview");
+        StatRow population = overview.Rows.First(r => r.Label == "Population");
+        Assert.Equal(snapshot.Organisms.Count.ToString(), population.Value);
+    }
+
+    [Fact]
+    public void ToggleStatistics_opensAndPopulatesThePanel()
+    {
+        var vm = new WorldViewModel();
+        vm.LoadSnapshot(BuildSnapshot());
+
+        Assert.False(vm.IsStatisticsVisible);
+        vm.ToggleStatisticsCommand.Execute(null);
+
+        Assert.True(vm.IsStatisticsVisible);
+        Assert.NotEmpty(vm.Statistics);
+
+        vm.ToggleStatisticsCommand.Execute(null);
+        Assert.False(vm.IsStatisticsVisible);
+    }
+
+    [Fact]
     public void FocusOrganism_selectsItAndSwitchesToTheInfoTab()
     {
         WorldSnapshot snapshot = BuildSnapshot();

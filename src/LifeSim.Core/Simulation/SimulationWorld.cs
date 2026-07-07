@@ -294,15 +294,18 @@ public sealed class SimulationWorld
             double friction = Config.Biomes.For(_terrain.BiomeAt(organism.X, organism.Y)).Friction;
             int localDensity = LocalOrganismDensity(organism); // 3×3 including self
 
-            // Body economy (lifesim.md §21): cell maintenance scales with volume (∝ N); Defender cells
-            // insulate against thermal stress; Mover cells cut locomotion tax; extra cells add a
-            // coordination cost. A generalist 1-cell body reduces to the plain per-organism cost.
+            // Body economy (lifesim.md §21): one cell's base metabolism plus the multicellular overhead
+            // for the rest — extra-cell upkeep (volume, ∝ N) + coordination, discounted by division of
+            // labour so a well-differentiated body is far cheaper than a lopsided one. Defender cells
+            // insulate against thermal stress and Mover cells cut locomotion tax. A generalist 1-cell
+            // body reduces to the plain per-organism cost.
             Genome g = organism.Genome;
             MulticellularConfig mc = Config.Multicellular;
-            double cost = (Metabolism.BaseMetabolism(g, Config.Metabolism) * Morphology.CellCount(g, mc))
+            double perCellBase = Metabolism.BaseMetabolism(g, Config.Metabolism);
+            double cost = perCellBase
+                + Morphology.MulticellularOverhead(g, perCellBase, mc)
                 + (Metabolism.ThermalStress(g, tileTemperature, Config.Metabolism) * Morphology.ThermalStressFactor(g, mc))
                 + Metabolism.SensoryTax(g, Config.Metabolism)
-                + Morphology.CoordinationCost(g, mc)
                 + (Metabolism.LocomotionTax(distanceTraveled[id], g.SpeedCapacity, friction, Config.MovementCombat) * Morphology.LocomotionFactor(g, mc))
                 + Metabolism.CrowdingTax(localDensity - 1, Config.Metabolism); // density-dependent overpopulation cost (lifesim.md §3, §6)
 

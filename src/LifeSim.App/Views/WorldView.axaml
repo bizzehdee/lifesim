@@ -18,11 +18,14 @@
 
         <!-- Status bar -->
         <Border Grid.Row="0" Grid.ColumnSpan="2" Padding="12,8" Background="{DynamicResource SystemChromeMediumColor}">
-            <StackPanel Orientation="Horizontal" Spacing="20">
-                <TextBlock Text="{Binding Tick, StringFormat='Tick {0}'}" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding Population, StringFormat='Population {0}'}" />
-                <TextBlock Text="EXTINCT" Foreground="#E5484D" FontWeight="Bold" IsVisible="{Binding Extinct}" />
-            </StackPanel>
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="20">
+                    <TextBlock Text="{Binding Tick, StringFormat='Tick {0}'}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Population, StringFormat='Population {0}'}" VerticalAlignment="Center" />
+                    <TextBlock Text="EXTINCT" Foreground="#E5484D" FontWeight="Bold" VerticalAlignment="Center" IsVisible="{Binding Extinct}" />
+                </StackPanel>
+                <Button Grid.Column="2" Content="📊 Statistics" Command="{Binding ToggleStatisticsCommand}" Padding="10,3" />
+            </Grid>
         </Border>
 
         <!-- The map (the Fluent exception: full-bleed custom rendering) + zoom overlay -->
@@ -150,6 +153,41 @@
                     <Border Background="#12141A" CornerRadius="4">
                         <views:LineageGraphControl Graph="{Binding LineageGraph}" />
                     </Border>
+                </DockPanel>
+            </Border>
+        </Border>
+
+        <!-- Global statistics overlay -->
+        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Grid.ColumnSpan="2"
+                IsVisible="{Binding IsStatisticsVisible}" Background="#CC0E1013">
+            <Border Margin="60,40" Padding="16" CornerRadius="8" MaxWidth="640"
+                    Background="{DynamicResource SystemChromeMediumColor}">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                        <TextBlock Text="Global statistics" FontWeight="Bold" FontSize="16" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Content="Close" Command="{Binding CloseStatisticsCommand}" />
+                    </Grid>
+                    <ScrollViewer Padding="0">
+                        <ItemsControl ItemsSource="{Binding Statistics}" Margin="0,0,16,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="pres:StatSection">
+                                    <StackPanel Margin="0,0,0,14" Spacing="3">
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" Opacity="0.85" />
+                                        <ItemsControl ItemsSource="{Binding Rows}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="pres:StatRow">
+                                                    <Grid ColumnDefinitions="*,Auto" Margin="0,1">
+                                                        <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="12" Opacity="0.75" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="12" FontWeight="SemiBold" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </DockPanel>
             </Border>
         </Border>

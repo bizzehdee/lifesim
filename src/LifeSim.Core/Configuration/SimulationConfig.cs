@@ -137,6 +137,17 @@ public sealed record MulticellularConfig
     /// <summary>Coordination/upkeep energy each cell beyond the first costs per tick — the "requires more energy" term (volume, ∝ N).</summary>
     public double CoordinationCostPerCell { get; init; } = 0.15;
 
+    /// <summary>
+    /// Division-of-labour efficiency (lifesim.md §21): a body drawing on several <em>distinct</em>
+    /// specialist cell types waives up to this fraction of its multicellular overhead (the extra-cell
+    /// metabolism + coordination), so a well-differentiated body is far cheaper to run than a lopsided
+    /// or generalist one of the same size — the selection pressure toward specialised multicellularity.
+    /// </summary>
+    public double DivisionOfLabourDiscount { get; init; } = 0.7;
+
+    /// <summary>Number of distinct specialist types (fractions above the ⅙ baseline) for the full <see cref="DivisionOfLabourDiscount"/>; fewer scales it down linearly.</summary>
+    public int DivisionOfLabourTarget { get; init; } = 4;
+
     /// <summary>Surface-exchange coefficient: max energy a body can absorb from grazing per tick is this × N^⅔ (lifesim.md §21).</summary>
     public double IntakeSurfaceCoeff { get; init; } = 20.0;
 

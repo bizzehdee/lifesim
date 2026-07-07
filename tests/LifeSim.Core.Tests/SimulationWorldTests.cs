@@ -464,6 +464,36 @@ public class SimulationWorldTests
     }
 
     [Fact]
+    public void Advance_favoursDivisionOfLabour_diverseSpecialistBodiesEmerge()
+    {
+        // The division-of-labour discount (lifesim.md §21) makes well-differentiated multicellular
+        // bodies cheap to run, so under the default config the population evolves toward carrying
+        // several distinct specialist cell types rather than staying generalist or single-specialist.
+        var config = SimulationConfig.Default with { InitialPopulation = 80 };
+        var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), config);
+
+        double peakMeanSpecialists = 0.0;
+        for (int i = 0; i < 300 && !world.Extinct; i++)
+        {
+            world.Advance();
+            double sum = 0.0;
+            foreach (Organism o in world.Organisms.Values)
+            {
+                sum += Morphology.SpecialistCount(o.Genome, config.Multicellular);
+            }
+
+            if (world.Organisms.Count > 0)
+            {
+                peakMeanSpecialists = Math.Max(peakMeanSpecialists, sum / world.Organisms.Count);
+            }
+        }
+
+        Assert.False(world.Extinct);
+        Assert.True(peakMeanSpecialists > 2.0,
+            $"Division of labour should push bodies toward several distinct specialist types (peak mean {peakMeanSpecialists:F2}).");
+    }
+
+    [Fact]
     public void Advance_offspringGrowthBias_raisesTypicalBodySize()
     {
         // Offspring of multicellular parents lean multicellular (lifesim.md §21). Isolated in an

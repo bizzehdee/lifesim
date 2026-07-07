@@ -123,6 +123,39 @@ public class MorphologyTests
     }
 
     [Fact]
+    public void SpecialistCount_countsTypesAboveTheGeneralistBaseline()
+    {
+        Assert.Equal(0, Morphology.SpecialistCount(Cell(count: 6), Enabled));                       // generalist
+        Assert.Equal(1, Morphology.SpecialistCount(Cell(count: 6, feeder: 1.0), Enabled));          // all feeder
+        Assert.Equal(3, Morphology.SpecialistCount(Cell(count: 6, germ: 1.0, feeder: 1.0, store: 1.0), Enabled));
+    }
+
+    [Fact]
+    public void DivisionOfLabour_makesDiverseBodiesCheaperThanLopsidedOnesOfTheSameSize()
+    {
+        const double perCellBase = 0.1;
+        Genome lopsided = Cell(count: 8, feeder: 1.0);                                              // 1 specialist
+        Genome diverse = Cell(count: 8, germ: 1.0, feeder: 1.0, store: 1.0, defender: 1.0);         // 4 specialists
+
+        Assert.Equal(0.0, Morphology.LaborEfficiency(lopsided, Enabled), precision: 10);
+        Assert.Equal(Enabled.DivisionOfLabourDiscount, Morphology.LaborEfficiency(diverse, Enabled), precision: 10);
+        Assert.True(Morphology.MulticellularOverhead(diverse, perCellBase, Enabled)
+            < Morphology.MulticellularOverhead(lopsided, perCellBase, Enabled));
+    }
+
+    [Fact]
+    public void MulticellularOverhead_isZeroForASingleCell_andUndiscountedWithoutSpecialists()
+    {
+        Assert.Equal(0.0, Morphology.MulticellularOverhead(Cell(count: 1), 0.1, Enabled), precision: 10);
+
+        // A generalist multicellular body (no specialists) gets no discount: raw (N-1)*(base+coord).
+        Genome generalist = Cell(count: 5);
+        double raw = (5 - 1) * (0.1 + Enabled.CoordinationCostPerCell);
+        Assert.Equal(raw, Morphology.MulticellularOverhead(generalist, 0.1, Enabled), precision: 10);
+    }
+
+
+    [Fact]
     public void GermCells_gateFertility_sterileSomaCannotReproduce()
     {
         // A body that invests everything except germ (germ fraction below the threshold) is sterile.

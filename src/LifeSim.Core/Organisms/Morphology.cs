@@ -66,14 +66,63 @@ public static class Morphology
         return config.BaseCapacity + (storeCells * config.StoreCapacityPerCell);
     }
 
-    /// <summary>
-    /// Coordination energy per tick for every cell beyond the first (lifesim.md §21). This is the
-    /// multicellular-specific overhead; the raw per-cell metabolic upkeep (∝ N) is applied at the
-    /// metabolism call site by scaling base metabolism by <see cref="CellCount"/>. Together they are
-    /// the volume cost that — against surface-limited intake — makes the square-cube law bite.
-    /// </summary>
+    /// <summary>Coordination energy per tick for every cell beyond the first (lifesim.md §21), before the division-of-labour discount.</summary>
     public static double CoordinationCost(Genome genome, MulticellularConfig config) =>
         config.Enabled ? (CellCount(genome, config) - 1.0) * config.CoordinationCostPerCell : 0.0;
+
+    /// <summary>Number of distinct specialist cell types — those with a fraction above the ⅙ generalist baseline (lifesim.md §21).</summary>
+    public static int SpecialistCount(Genome genome, MulticellularConfig config)
+    {
+        if (!config.Enabled)
+        {
+            return 0;
+        }
+
+        CellFractions f = Fractions(genome, config);
+        int count = 0;
+        foreach (double fraction in new[] { f.Germ, f.Feeder, f.Store, f.Defender, f.Mover, f.Sensor })
+        {
+            if (fraction > GeneralistShare + 1e-9)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    /// <summary>
+    /// Division-of-labour efficiency in <c>[0, DivisionOfLabourDiscount]</c> (lifesim.md §21): the
+    /// fraction of a body's multicellular overhead waived because its work is split across several
+    /// distinct specialist types. Zero for a single-specialist or generalist body; full at
+    /// <see cref="MulticellularConfig.DivisionOfLabourTarget"/> distinct specialists.
+    /// </summary>
+    public static double LaborEfficiency(Genome genome, MulticellularConfig config)
+    {
+        if (!config.Enabled || config.DivisionOfLabourTarget <= 1)
+        {
+            return 0.0;
+        }
+
+        double reach = Math.Clamp((SpecialistCount(genome, config) - 1.0) / (config.DivisionOfLabourTarget - 1.0), 0.0, 1.0);
+        return config.DivisionOfLabourDiscount * reach;
+    }
+
+    /// <summary>
+    /// A body's multicellular overhead per tick (lifesim.md §21): the extra-cell metabolic upkeep
+    /// (∝ N−1, given the caller's per-cell base metabolism) plus coordination, reduced by the
+    /// division-of-labour efficiency. Zero for a single cell; cheapest for a well-differentiated body.
+    /// </summary>
+    public static double MulticellularOverhead(Genome genome, double perCellBaseMetabolism, MulticellularConfig config)
+    {
+        if (!config.Enabled)
+        {
+            return 0.0;
+        }
+
+        double raw = ((CellCount(genome, config) - 1.0) * perCellBaseMetabolism) + CoordinationCost(genome, config);
+        return raw * (1.0 - LaborEfficiency(genome, config));
+    }
 
     /// <summary>Max energy absorbable from grazing per tick — surface exchange, ∝ N^⅔ (the square-cube ceiling on intake).</summary>
     public static double MaxGrazingIntake(Genome genome, MulticellularConfig config) =>

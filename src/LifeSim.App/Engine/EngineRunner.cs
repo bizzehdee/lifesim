@@ -72,7 +72,7 @@ public sealed class EngineRunner : IDisposable
         _delayMs = clamped >= 1000.0 ? 0 : (int)Math.Round(1000.0 / clamped);
     }
 
-    /// <summary>Live-adjust the brain-evaluation thread count (execution-only, results are unaffected).</summary>
+    /// <summary>Live-adjust the per-tick worker thread count for the parallel phases (execution-only, results are unaffected).</summary>
     public void SetMaxDegreeOfParallelism(int threads)
     {
         lock (_gate)

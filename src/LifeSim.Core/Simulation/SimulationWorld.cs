@@ -215,14 +215,29 @@ public sealed class SimulationWorld
         //    at the start of the tick — positions/energy are still whatever the previous tick's
         //    Intent Resolution left them, since this phase runs in full before any organism's
         //    decision is even made, let alone resolved.
-        Prng sensoryNoise = _prngStreams[PrngStream.SensoryNoise];
+        //    Sensory noise is the only randomness in this phase. Rather than draw every organism's noise
+        //    from one shared stream in id order — which a parallel build would consume out of order — we
+        //    draw a single per-tick seed from the stream, then derive each organism's own noise PRNG from
+        //    that seed and its organism id (SplitMix64). The derivation is order-independent and
+        //    reproducible, so the input build runs across up to MaxDegreeOfParallelism threads with
+        //    byte-identical results for any thread count (and across save/reload, since the seed comes
+        //    from the restored stream).
         double globalStress = _environment.GlobalStress;
         double temperatureOffset = _environment.TemperatureOffset;
-        var sensoryInputs = new Dictionary<long, double[]>(_organisms.Count);
-        foreach (long id in _organisms.Keys)
+        ulong sensoryNoiseSeed = _prngStreams[PrngStream.SensoryNoise].NextULong();
+        long[] sensingIds = _organisms.Keys.ToArray();
+        var sensedInputs = new double[sensingIds.Length][];
+        RunPhase(sensingIds.Length, i =>
         {
-            sensoryInputs[id] = _sensoryInputBuilder.Build(
-                _organisms[id], _organisms, currentTick, sensoryNoise, globalStress, temperatureOffset);
+            long id = sensingIds[i];
+            var noise = new Prng(SplitMix64.Finalize(sensoryNoiseSeed + (ulong)id));
+            sensedInputs[i] = _sensoryInputBuilder.Build(
+                _organisms[id], _organisms, currentTick, noise, globalStress, temperatureOffset);
+        });
+        var sensoryInputs = new Dictionary<long, double[]>(sensingIds.Length);
+        for (int i = 0; i < sensingIds.Length; i++)
+        {
+            sensoryInputs[sensingIds[i]] = sensedInputs[i];
         }
 
         // 3. Decision Phase. Per-organism NEAT evaluation is independent of every other organism
@@ -238,19 +253,7 @@ public sealed class SimulationWorld
         MulticellularConfig decisionMc = Config.Multicellular;
         long[] decisionIds = _organisms.Keys.ToArray();
         var propagations = new NeatPropagation[decisionIds.Length];
-
-        if (_maxDegreeOfParallelism > 1 && decisionIds.Length > 1)
-        {
-            var options = new ParallelOptions { MaxDegreeOfParallelism = _maxDegreeOfParallelism };
-            Parallel.For(0, decisionIds.Length, options, i => propagations[i] = Decide(decisionIds[i], sensoryInputs, decisionMc));
-        }
-        else
-        {
-            for (int i = 0; i < decisionIds.Length; i++)
-            {
-                propagations[i] = Decide(decisionIds[i], sensoryInputs, decisionMc);
-            }
-        }
+        RunPhase(decisionIds.Length, i => propagations[i] = Decide(decisionIds[i], sensoryInputs, decisionMc));
 
         var actions = new Dictionary<long, OrganismAction>(_organisms.Count);
         for (int i = 0; i < decisionIds.Length; i++)
@@ -292,13 +295,25 @@ public sealed class SimulationWorld
         //    any active-event drains: a climatic anomaly shifts the effective tile temperature that
         //    thermal stress is measured against, and a density plague drains organisms crowded
         //    above the configured threshold.
+        //    Each organism's cost is a pure function of read-only state (terrain, occupancy, its own
+        //    genome/age, its own movement) and it writes only its own energy/age — no PRNG, no shared
+        //    writes — so the body runs across up to MaxDegreeOfParallelism threads with byte-identical
+        //    results for any thread count. The pre-metabolism energy is captured in a cheap serial pass
+        //    first (the Death & Transfer phase reads it for corpse energy) so the parallel body writes no
+        //    shared collection.
         double temperatureShift = _environment.TemperatureOffset;
         bool plagueActive = _environment.PlagueActive;
-        var energyBeforeMetabolism = new Dictionary<long, double>(_organisms.Count);
-        foreach (long id in _organisms.Keys)
+        long[] metabolismIds = _organisms.Keys.ToArray();
+        var energyBeforeMetabolism = new Dictionary<long, double>(metabolismIds.Length);
+        foreach (long id in metabolismIds)
         {
+            energyBeforeMetabolism[id] = _organisms[id].Energy;
+        }
+
+        RunPhase(metabolismIds.Length, index =>
+        {
+            long id = metabolismIds[index];
             Organism organism = _organisms[id];
-            energyBeforeMetabolism[id] = organism.Energy;
 
             double tileTemperature = _terrain.TemperatureCelsiusAt(organism.X, organism.Y) + temperatureShift;
             double friction = Config.Biomes.For(_terrain.BiomeAt(organism.X, organism.Y)).Friction;
@@ -331,7 +346,7 @@ public sealed class SimulationWorld
 
             organism.SpendEnergy(cost);
             organism.Tick();
-        }
+        });
 
         // 6. Death & Transfer Phase. Predation transfer already happened in Intent Resolution;
         //    non-predation deaths (starvation/thermal stress) deposit corpse energy here, based on
@@ -724,6 +739,31 @@ public sealed class SimulationWorld
     {
         Organism organism = _organisms[id];
         return NeatBrain.Propagate(organism.Brain, sensoryInputs[id], Morphology.BrainSteps(organism.Genome, mc));
+    }
+
+    /// <summary>
+    /// Runs a per-index phase <paramref name="body"/> over <paramref name="count"/> indices across up to
+    /// <see cref="MaxDegreeOfParallelism"/> threads when it pays off, else serially. The body MUST be
+    /// order-independent: it may read shared read-only state and may write only state private to its own
+    /// index (its own organism, or an array slot it alone owns), and must not touch a shared PRNG stream.
+    /// Under those rules the result is byte-identical for any thread count — the invariant the
+    /// determinism suite (incl. the thread-count equivalence test) pins. Sensing, Decision, and
+    /// Metabolism all satisfy this.
+    /// </summary>
+    private void RunPhase(int count, Action<int> body)
+    {
+        if (_maxDegreeOfParallelism > 1 && count > 1)
+        {
+            var options = new ParallelOptions { MaxDegreeOfParallelism = _maxDegreeOfParallelism };
+            Parallel.For(0, count, options, body);
+        }
+        else
+        {
+            for (int i = 0; i < count; i++)
+            {
+                body(i);
+            }
+        }
     }
 
     /// <summary>Node state is dynamic organism state, initialized to zero at birth — topology/weights are inherited unchanged.</summary>

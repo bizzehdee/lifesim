@@ -103,9 +103,11 @@ public class FlagshipDeterminismTests
     }
 
     /// <summary>
-    /// Multithreading is an execution knob, not a simulation input: the parallelised
-    /// brain forward pass is a pure function and the softmax roll stays sequential, so a run must be
-    /// byte-identical for any thread count. This is the safety net for the whole parallelisation.
+    /// Multithreading is an execution knob, not a simulation input: the parallelised phases (sensing,
+    /// the brain forward pass, and metabolism) are all order-independent — sensing derives each
+    /// organism's noise from a per-tick seed and its id, the forward pass is pure, and metabolism writes
+    /// only each organism's own energy — and every shared PRNG roll stays sequential in id order. So a
+    /// run must be byte-identical for any thread count. This is the safety net for the whole parallelisation.
     /// </summary>
     [Theory]
     [InlineData(2)]

@@ -43,6 +43,23 @@ public static class Metabolism
         return agedTicks * config.SenescenceCostPerTick;
     }
 
+    /// <summary>
+    /// Multiplier applied to an organism's self-generated running costs (base upkeep, multicellular
+    /// overhead, sensory tax, locomotion) from its evolvable <c>metabolic_efficiency</c>. Ranges from 1
+    /// (no frugality) down to <c>1 − MaxMetabolicReduction</c> at maximal frugality — always positive,
+    /// so cost asymptotes toward but never reaches zero (the thermodynamic floor).
+    /// </summary>
+    public static double EfficiencyCostMultiplier(Genome genome, MetabolismConfig config) =>
+        1.0 - (config.MaxMetabolicReduction * genome.MetabolicEfficiency);
+
+    /// <summary>
+    /// Multiplier applied to grazing yield — the rate–yield trade-off for <c>metabolic_efficiency</c>.
+    /// Ranges from 1 (full yield) down to <c>1 − EfficiencyIntakePenalty</c> at maximal frugality, so a
+    /// frugal metabolism extracts less usable energy per graze.
+    /// </summary>
+    public static double EfficiencyYieldMultiplier(Genome genome, MetabolismConfig config) =>
+        1.0 - (config.EfficiencyIntakePenalty * genome.MetabolicEfficiency);
+
     /// <summary>The full base-metabolism equation: base + thermal stress + sensory tax.</summary>
     public static double Total(Genome genome, double tileTemperature, MetabolismConfig config) =>
         BaseMetabolism(genome, config)

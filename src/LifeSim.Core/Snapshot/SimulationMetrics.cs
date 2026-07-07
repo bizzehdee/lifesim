@@ -122,6 +122,9 @@ public sealed record TraitAverages
     public double OrgRadius { get; init; }
     public double SensoryAcuity { get; init; }
 
+    /// <summary>Mean metabolic frugality — tracks whether the population is evolving toward energy efficiency.</summary>
+    public double MetabolicEfficiency { get; init; }
+
     /// <summary>Mean evolvable generosity — tracks whether the population drifts toward hoarding or over-sharing.</summary>
     public double ShareFraction { get; init; }
 

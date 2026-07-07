@@ -12,14 +12,14 @@ genuinely random: actions are sampled, mutation is random, combat is a roll — 
 
 ## 1. The world
 - The map is a grid of tiles reconstructed from the world **seed** — no two seeds look alike, and terrain is never stored, only regenerated.
-- Every tile belongs to one of four **biomes**, each with its own temperature, friction (movement cost), and food: **Grassland** (balanced), **Desert** (hot, barren), **Swamp** (wet, rich, sticky), **Ice Sheet** (freezing, lifeless ground). Temperatures are **smoothed across biome borders into gradients** rather than hard walls, so an organism at a margin can adapt into a neighbouring biome incrementally.
+- Every tile belongs to one of four **biomes**, each with its own temperature, friction (movement cost), and food: **Grassland** (balanced), **Desert** (hot, sparse food), **Swamp** (wet, rich, sticky), **Ice Sheet** (freezing, harshest — only a minimal food trickle). Deserts and ice sheets yield only a little energy — not enough for a fat generalist, but enough that a cold-adapted, frugal lineage can scrape a living there (see rules 3 and the metabolic-efficiency trait). Temperatures are **smoothed across biome borders into gradients** rather than hard walls, so an organism at a margin can adapt into a neighbouring biome incrementally.
 - Each tile holds a **ground energy pool** that regrows toward its biome's cap every tick. This is the base of the food web.
 
 ## 2. Organisms
 - An organism occupies **one tile**. It has a **genome** (its inherited traits), a **brain** (an evolvable neural network), and an **energy budget**.
 - The founding population is a **varied gene pool** — each founder is spawned with randomised traits (kept viable for its starting biome), not identical clones — so the world is diverse and unpredictable from the first tick.
 - Energy runs from 0 to a ceiling (100 by default). **Energy hits zero → the organism dies** and is removed. There is no other automatic death unless aging is switched on (see rule 7).
-- Traits include body **size**, **speed**, a **thermal comfort band** (centre ± width), **sensing radii** and **acuity**, **generosity**, and a multicellular **body plan** (see rule 9).
+- Traits include body **size**, **speed**, a **thermal comfort band** (centre ± width), **sensing radii** and **acuity**, **metabolic efficiency** (see rule 3), **generosity**, and a multicellular **body plan** (see rule 9).
 
 ## 3. Energy is a strict budget
 Every action and condition is an energy transaction. Each tick an organism pays for:
@@ -28,6 +28,8 @@ Every action and condition is an energy transaction. Each tick an organism pays 
 - **Sensory tax** — perception is expensive; wider/sharper senses cost more (moving-agent vision costs more than static terrain sensing).
 - **Movement** — proportional to distance and speed², scaled by biome friction.
 - **Crowding** — a small cost per neighbour in its 3×3 block, so packed regions self-thin (a soft carrying capacity).
+
+**Metabolic efficiency is an evolvable trait.** A lineage can evolve to spend less energy on its own upkeep, sensing, and movement — approaching, but never reaching, zero (a thermodynamic floor). The trade-off follows the real rate–yield law: a frugal metabolism **extracts less usable energy per graze**, so frugality pays off where food is scarce (deserts, ice) but loses to fast full-yield generalists in rich grassland and swamp. Founders start at baseline and must evolve frugality up.
 
 It **gains** energy only by feeding (rule 5).
 

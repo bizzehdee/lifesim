@@ -335,11 +335,18 @@ public sealed class SimulationWorld
             Genome g = organism.Genome;
             MulticellularConfig mc = Config.Multicellular;
             double perCellBase = Metabolism.BaseMetabolism(g, Config.Metabolism);
-            double cost = perCellBase
+
+            // Self-generated running costs — the price of the body existing, sensing, and moving — are
+            // the ones the evolvable metabolic_efficiency trait scales down (toward, never to, zero).
+            double selfCost = perCellBase
                 + Morphology.MulticellularOverhead(g, perCellBase, mc)
-                + (Metabolism.ThermalStress(g, tileTemperature, Config.Metabolism) * Morphology.ThermalStressFactor(g, mc))
                 + Metabolism.SensoryTax(g, Config.Metabolism)
-                + (Metabolism.LocomotionTax(distanceTraveled[index], g.SpeedCapacity, friction, Config.MovementCombat) * Morphology.LocomotionFactor(g, mc))
+                + (Metabolism.LocomotionTax(distanceTraveled[index], g.SpeedCapacity, friction, Config.MovementCombat) * Morphology.LocomotionFactor(g, mc));
+
+            // Thermal stress and crowding are externally imposed (climate, neighbours), not self-generated
+            // upkeep, so efficiency doesn't discount them — they have their own adaptation levers.
+            double cost = (selfCost * Metabolism.EfficiencyCostMultiplier(g, Config.Metabolism))
+                + (Metabolism.ThermalStress(g, tileTemperature, Config.Metabolism) * Morphology.ThermalStressFactor(g, mc))
                 + Metabolism.CrowdingTax(localDensity - 1, Config.Metabolism); // density-dependent overpopulation cost
 
             if (Config.Senescence)
@@ -581,7 +588,9 @@ public sealed class SimulationWorld
         // wide area (in ascending-id order), they crowd out smaller neighbours and tend to hold
         // territory — an emergent consequence, not a scripted one.
         double gathered = GrazeFootprint(organism, x, y);
-        organism.AddEnergy(gathered * Morphology.FeedMultiplier(organism.Genome, Config.Multicellular));
+        organism.AddEnergy(gathered
+            * Morphology.FeedMultiplier(organism.Genome, Config.Multicellular)
+            * Metabolism.EfficiencyYieldMultiplier(organism.Genome, Config.Metabolism)); // rate–yield trade-off
         if (gathered > 0.0)
         {
             counters.SuccessfulGrazing++;
@@ -870,7 +879,7 @@ public sealed class SimulationWorld
         TraitBounds bounds = Config.TraitBounds;
 
         double energyMin = 0.0, energyMax = 0.0, energySum = 0.0;
-        double sumSize = 0, sumSpeed = 0, sumThermalC = 0, sumThermalW = 0, sumEnv = 0, sumOrg = 0, sumAcuity = 0, sumShare = 0, sumCells = 0;
+        double sumSize = 0, sumSpeed = 0, sumThermalC = 0, sumThermalW = 0, sumEnv = 0, sumOrg = 0, sumAcuity = 0, sumEfficiency = 0, sumShare = 0, sumCells = 0;
 
         var biomeCounts = new Dictionary<Biome, long>
         {
@@ -887,6 +896,7 @@ public sealed class SimulationWorld
         var envRadiusBuckets = new int[HistogramBucketCount];
         var orgRadiusBuckets = new int[HistogramBucketCount];
         var acuityBuckets = new int[HistogramBucketCount];
+        var efficiencyBuckets = new int[HistogramBucketCount];
         var shareBuckets = new int[HistogramBucketCount];
         var cellBuckets = new int[HistogramBucketCount];
 
@@ -915,6 +925,7 @@ public sealed class SimulationWorld
             sumEnv += g.EnvRadius;
             sumOrg += g.OrgRadius;
             sumAcuity += g.SensoryAcuity;
+            sumEfficiency += g.MetabolicEfficiency;
             sumShare += g.ShareFraction;
             sumCells += Morphology.CellCount(g, Config.Multicellular);
 
@@ -927,6 +938,7 @@ public sealed class SimulationWorld
             envRadiusBuckets[BucketIndex(g.EnvRadius, bounds.EnvRadius)]++;
             orgRadiusBuckets[BucketIndex(g.OrgRadius, bounds.OrgRadius)]++;
             acuityBuckets[BucketIndex(g.SensoryAcuity, bounds.SensoryAcuity)]++;
+            efficiencyBuckets[BucketIndex(g.MetabolicEfficiency, bounds.MetabolicEfficiency)]++;
             shareBuckets[BucketIndex(g.ShareFraction, bounds.ShareFraction)]++;
             cellBuckets[BucketIndex(Morphology.CellCount(g, Config.Multicellular), bounds.CellCount)]++;
         }
@@ -972,6 +984,7 @@ public sealed class SimulationWorld
                 EnvRadius = Average(sumEnv),
                 OrgRadius = Average(sumOrg),
                 SensoryAcuity = Average(sumAcuity),
+                MetabolicEfficiency = Average(sumEfficiency),
                 ShareFraction = Average(sumShare),
                 CellCount = Average(sumCells),
             },
@@ -984,6 +997,7 @@ public sealed class SimulationWorld
                 Histogram("env_radius", bounds.EnvRadius, envRadiusBuckets),
                 Histogram("org_radius", bounds.OrgRadius, orgRadiusBuckets),
                 Histogram("sensory_acuity", bounds.SensoryAcuity, acuityBuckets),
+                Histogram("metabolic_efficiency", bounds.MetabolicEfficiency, efficiencyBuckets),
                 Histogram("share_fraction", bounds.ShareFraction, shareBuckets),
                 Histogram("cell_count", bounds.CellCount, cellBuckets),
             ],

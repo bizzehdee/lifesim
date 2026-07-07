@@ -20,6 +20,24 @@ public class MetabolismTests
     };
 
     [Fact]
+    public void EfficiencyCostMultiplier_dropsWithFrugality_butNeverToZero()
+    {
+        // Baseline efficiency pays full cost; maximal frugality shaves at most MaxMetabolicReduction,
+        // so the multiplier stays strictly positive — cost asymptotes toward, never to, zero.
+        Assert.Equal(1.0, Metabolism.EfficiencyCostMultiplier(NewGenome() with { MetabolicEfficiency = 0.0 }, Metabolic), precision: 10);
+        Assert.Equal(1.0 - Metabolic.MaxMetabolicReduction, Metabolism.EfficiencyCostMultiplier(NewGenome() with { MetabolicEfficiency = 1.0 }, Metabolic), precision: 10);
+        Assert.True(Metabolism.EfficiencyCostMultiplier(NewGenome() with { MetabolicEfficiency = 1.0 }, Metabolic) > 0.0);
+    }
+
+    [Fact]
+    public void EfficiencyYieldMultiplier_isTheRateYieldTradeOff()
+    {
+        // The price of frugality: less usable energy per graze, down to 1 - EfficiencyIntakePenalty.
+        Assert.Equal(1.0, Metabolism.EfficiencyYieldMultiplier(NewGenome() with { MetabolicEfficiency = 0.0 }, Metabolic), precision: 10);
+        Assert.Equal(1.0 - Metabolic.EfficiencyIntakePenalty, Metabolism.EfficiencyYieldMultiplier(NewGenome() with { MetabolicEfficiency = 1.0 }, Metabolic), precision: 10);
+    }
+
+    [Fact]
     public void CrowdingTax_isZeroWithinTheFreeAllowance_thenScalesPerNeighbour()
     {
         // Defaults: free 1 neighbour, 0.5 per additional.

@@ -19,6 +19,17 @@ public sealed record Genome
     public double SensoryAcuity { get; init; }
 
     /// <summary>
+    /// Evolvable metabolic frugality in [0, 1]: 0 is the baseline metabolism, 1 is maximally frugal.
+    /// It scales down the organism's self-generated running costs (base upkeep, sensory tax, locomotion)
+    /// toward — but never to — zero (a configurable floor, the thermodynamic waste-heat limit). The
+    /// trade-off follows the biological rate–yield law: a frugal metabolism extracts less usable energy
+    /// per graze (<see cref="Metabolism.EfficiencyYieldMultiplier"/>), so it pays off where food is
+    /// scarce (ice/desert) but loses to fast full-yield generalists in rich biomes. Founders start at 0
+    /// and lineages must evolve frugality up.
+    /// </summary>
+    public double MetabolicEfficiency { get; init; }
+
+    /// <summary>
     /// Evolvable generosity: the fraction of its own energy the organism donates
     /// when it performs a Share action. Under selection this drifts freely — lineages can evolve
     /// toward hoarding (→ 0) or over-sharing (→ 1), whichever the local kin economy favours. The
@@ -53,6 +64,7 @@ public sealed record Genome
         EnvRadius = Clamp(EnvRadius, bounds.EnvRadius),
         OrgRadius = Clamp(OrgRadius, bounds.OrgRadius),
         SensoryAcuity = Clamp(SensoryAcuity, bounds.SensoryAcuity),
+        MetabolicEfficiency = Clamp(MetabolicEfficiency, bounds.MetabolicEfficiency),
         ShareFraction = Clamp(ShareFraction, bounds.ShareFraction),
         CellCount = Clamp(CellCount, bounds.CellCount),
         GermWeight = Clamp(GermWeight, bounds.GermWeight),
@@ -66,7 +78,9 @@ public sealed record Genome
     /// <summary>
     /// Mid-range genome: the midpoint of every bound, except <see cref="CellCount"/> which starts at 1
     /// (unicellular, not the bound midpoint) with equal specialisation-weight midpoints, so the single
-    /// cell is a generalist. Used as a neutral baseline; genesis founders use <see cref="Random"/>.
+    /// cell is a generalist, and <see cref="MetabolicEfficiency"/> which starts at its baseline (min, no
+    /// frugality) so efficiency is an evolved gain rather than a starting endowment. Used as a neutral
+    /// baseline; genesis founders use <see cref="Random"/>.
     /// </summary>
     public static Genome MidRange(TraitBounds bounds) => new()
     {
@@ -77,6 +91,7 @@ public sealed record Genome
         EnvRadius = Midpoint(bounds.EnvRadius),
         OrgRadius = Midpoint(bounds.OrgRadius),
         SensoryAcuity = Midpoint(bounds.SensoryAcuity),
+        MetabolicEfficiency = bounds.MetabolicEfficiency.Min,
         ShareFraction = Midpoint(bounds.ShareFraction),
         CellCount = bounds.CellCount.Min,
         GermWeight = Midpoint(bounds.GermWeight),
@@ -91,7 +106,8 @@ public sealed record Genome
     /// A fully randomised genome — each trait drawn uniformly within its bounds — for a *varied*
     /// founding gene pool rather than a clone army of identical <see cref="MidRange"/> founders, so
     /// the world feels alive and diverse from tick 0. Cell count is forced to 1 (founders are
-    /// unicellular and evolve up). Draws come from the supplied PRNG in a fixed trait order.
+    /// unicellular and evolve up) and metabolic efficiency to its baseline 0 (frugality is an evolved
+    /// gain, not a founding endowment). Draws come from the supplied PRNG in a fixed trait order.
     /// </summary>
     public static Genome Random(TraitBounds bounds, Prng prng)
     {
@@ -107,6 +123,7 @@ public sealed record Genome
             EnvRadius = Sample(bounds.EnvRadius, prng),
             OrgRadius = Sample(bounds.OrgRadius, prng),
             SensoryAcuity = Sample(bounds.SensoryAcuity, prng),
+            MetabolicEfficiency = bounds.MetabolicEfficiency.Min,
             ShareFraction = Sample(bounds.ShareFraction, prng),
             CellCount = 1.0,
             GermWeight = Sample(bounds.GermWeight, prng),

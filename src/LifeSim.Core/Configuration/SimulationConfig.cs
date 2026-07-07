@@ -51,6 +51,19 @@ public sealed record MetabolismConfig
     public double ThermalStressScale { get; init; } = 0.1;
 
     /// <summary>
+    /// The <c>metabolic_efficiency</c> trait's evolvable payoff and price (the biological rate–yield
+    /// trade-off). <see cref="MaxMetabolicReduction"/> is the largest fraction of self-generated running
+    /// cost (base upkeep + multicellular overhead + sensory tax + locomotion) that maximal frugality
+    /// (efficiency = 1) can shave off — kept below 1 so cost asymptotes toward but never reaches zero
+    /// (the thermodynamic floor). <see cref="EfficiencyIntakePenalty"/> is the matching fraction of
+    /// grazing yield that maximal frugality gives up, so being efficient means extracting less usable
+    /// energy per graze — worthwhile where food is scarce, costly where it is abundant. Set the penalty
+    /// to 0 for a no-trade-off, free-lunch efficiency.
+    /// </summary>
+    public double MaxMetabolicReduction { get; init; } = 0.6;
+    public double EfficiencyIntakePenalty { get; init; } = 0.5;
+
+    /// <summary>
     /// Density-dependent crowding cost: extra metabolism per neighbouring organism
     /// in the 3×3 block beyond <see cref="CrowdingFreeNeighbours"/>. A continuous carrying-capacity
     /// pressure — dense clusters starve faster, so overpopulation is self-limiting.
@@ -282,6 +295,9 @@ public sealed record TraitBounds
     public Range EnvRadius { get; init; } = new(0.0, 20.0);
     public Range OrgRadius { get; init; } = new(0.0, 20.0);
     public Range SensoryAcuity { get; init; } = new(0.0, 1.0);
+
+    /// <summary>Metabolic frugality: 0 = baseline metabolism, 1 = maximally frugal. Founders start at 0 and evolve up.</summary>
+    public Range MetabolicEfficiency { get; init; } = new(0.0, 1.0);
 
     /// <summary>Generosity bounds: 0 = never donates, 1 = donates all of its energy per Share.</summary>
     public Range ShareFraction { get; init; } = new(0.0, 1.0);

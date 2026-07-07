@@ -119,6 +119,7 @@
               "env_radius": { "type": "number" },
               "org_radius": { "type": "number" },
               "sensory_acuity": { "type": "number" },
+              "metabolic_efficiency": { "type": "number" },
               "share_fraction": { "type": "number" },
               "cell_count": { "type": "number" },
               "germ_weight": { "type": "number" },

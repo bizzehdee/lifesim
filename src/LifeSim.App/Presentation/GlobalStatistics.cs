@@ -69,6 +69,7 @@ public static class GlobalStatistics
                 new StatRow("Env radius", Num(m.TraitAverages.EnvRadius)),
                 new StatRow("Org radius", Num(m.TraitAverages.OrgRadius)),
                 new StatRow("Sensory acuity", Num(m.TraitAverages.SensoryAcuity)),
+                new StatRow("Metabolic efficiency", Num(m.TraitAverages.MetabolicEfficiency)),
                 new StatRow("Generosity", Num(m.TraitAverages.ShareFraction)),
             ]));
         }

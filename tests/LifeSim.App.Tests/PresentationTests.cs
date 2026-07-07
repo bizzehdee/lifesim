@@ -111,6 +111,19 @@ public class PresentationTests
     }
 
     [Fact]
+    public void CooperationColour_onlyMarksSharesThatActuallyTransferred()
+    {
+        // A share that landed (had a neighbour, passed the roll) reads as cooperating…
+        OrganismSnapshot shared = Organism(lastAction: OrganismAction.ShareNorth, result: ActionResult.Success);
+        Assert.Equal(SimulationPalette.Share, OrganismColours.Fill(ColourMode.Cooperation, shared, 1, 100, 20));
+
+        // …but a share *attempted* with no neighbour (no-op) must not — otherwise isolated organisms
+        // look like they cooperated.
+        OrganismSnapshot attempted = Organism(lastAction: OrganismAction.ShareNorth, result: ActionResult.NoOp);
+        Assert.Equal(SimulationPalette.Neutral, OrganismColours.Fill(ColourMode.Cooperation, attempted, 1, 100, 20));
+    }
+
+    [Fact]
     public void Legend_everyModeProducesFillActionAndBiomeSections()
     {
         foreach (ColourMode mode in Enum.GetValues<ColourMode>())

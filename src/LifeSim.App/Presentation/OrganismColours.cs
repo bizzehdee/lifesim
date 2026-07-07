@@ -30,11 +30,15 @@ public static class OrganismColours
             ColourMode.DietTendency => DietColour(organism),
             ColourMode.StressFit => SimulationPalette.StressFitColour(tileTemperatureCelsius, g.ThermalCenter, g.ThermalWidth),
             ColourMode.Lineage => LineageColour.ForLineage(lineageId),
-            ColourMode.Cooperation => IsShare(organism.LastAction) ? SimulationPalette.Share : SimulationPalette.Neutral,
+            ColourMode.Cooperation => IsShare(organism.LastAction) && organism.LastActionResult == ActionResult.Success
+                ? SimulationPalette.Share
+                : SimulationPalette.Neutral,
             _ => SimulationPalette.Neutral,
         };
     }
 
+    // Only a share that actually transferred energy (had a neighbour and passed the relatedness roll)
+    // counts as cooperating; a share attempted with no neighbour no-ops and must not read as cooperation.
     private static bool IsShare(OrganismAction? action) => action is OrganismAction.ShareNorth
         or OrganismAction.ShareSouth or OrganismAction.ShareEast or OrganismAction.ShareWest;
 

@@ -88,6 +88,10 @@ public partial class WorldViewModel : ViewModelBase
 
     private readonly EventWatcher _eventWatcher = new();
 
+    /// <summary>Whether in-app notifications are shown; toggleable live during a run. When off, frames are still folded into the watcher (so no backlog piles up), but nothing is raised.</summary>
+    [ObservableProperty]
+    private bool _notificationsEnabled = true;
+
     /// <summary>Raised (on the UI thread) when a frame reveals a notable event — blight, population explosion, a new multicellular milestone.</summary>
     public event Action<SimNotification>? NotificationRaised;
 
@@ -198,11 +202,17 @@ public partial class WorldViewModel : ViewModelBase
         OnPropertyChanged(nameof(Population));
         OnPropertyChanged(nameof(Extinct));
 
-        if (value is not null && NotificationRaised is { } handler)
+        if (value is not null)
         {
-            foreach (SimNotification notification in _eventWatcher.Observe(value))
+            // Always fold the frame in (keeps baselines/latches current, so toggling on doesn't dump a
+            // backlog); only surface notifications when they're enabled.
+            IReadOnlyList<SimNotification> notifications = _eventWatcher.Observe(value);
+            if (NotificationsEnabled && NotificationRaised is { } handler)
             {
-                handler(notification);
+                foreach (SimNotification notification in notifications)
+                {
+                    handler(notification);
+                }
             }
         }
     }

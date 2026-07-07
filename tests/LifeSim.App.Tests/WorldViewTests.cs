@@ -1,6 +1,7 @@
 using LifeSim.App.Presentation;
 using LifeSim.App.ViewModels;
 using LifeSim.Core.Configuration;
+using LifeSim.Core.Events;
 using LifeSim.Core.Simulation;
 using LifeSim.Core.Snapshot;
 using LifeSim.Core.World;
@@ -50,6 +51,34 @@ public class WorldViewTests
 
         vm.ToggleStatisticsCommand.Execute(null);
         Assert.False(vm.IsStatisticsVisible);
+    }
+
+    [Fact]
+    public void NotificationsToggle_gatesWhetherEventsAreRaised_withoutBacklog()
+    {
+        static WorldSnapshot Frame(long tick, EventType? evt) => new()
+        {
+            Tick = tick,
+            World = new WorldState { Seed = 42, Width = 32, Height = 32 },
+            Configuration = SimulationConfig.Default,
+            Metrics = new SimulationMetrics(),
+            EnvironmentModifiers = evt is { } e ? [new EnvironmentModifier { Type = e, RemainingTicks = 5 }] : [],
+        };
+
+        var vm = new WorldViewModel();
+        int count = 0;
+        vm.NotificationRaised += _ => count++;
+
+        // Disabled: the blight onset is folded into the watcher but not surfaced.
+        vm.NotificationsEnabled = false;
+        vm.LoadSnapshot(Frame(0, null));                 // seed
+        vm.LoadSnapshot(Frame(1, EventType.ResourceBlight));
+        Assert.Equal(0, count);
+
+        // Re-enabled: only a NEW transition fires (blight lifting) — no backlog of the suppressed onset.
+        vm.NotificationsEnabled = true;
+        vm.LoadSnapshot(Frame(2, null));                 // blight ends
+        Assert.True(count > 0);
     }
 
     [Fact]

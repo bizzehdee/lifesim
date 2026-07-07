@@ -22,6 +22,16 @@ public static class Metabolism
         + (genome.OrgRadius * genome.OrgRadius * config.SensoryTaxC2)
         + (genome.SensoryAcuity * config.SensoryTaxC3);
 
+    /// <summary>
+    /// Density-dependent crowding cost (lifesim.md §3, §6): energy per neighbour beyond the free
+    /// allowance. A continuous carrying-capacity pressure that only bites in crowded areas.
+    /// </summary>
+    public static double CrowdingTax(int neighbours, MetabolismConfig config)
+    {
+        int crowded = Math.Max(0, neighbours - config.CrowdingFreeNeighbours);
+        return crowded * config.CrowdingCostPerNeighbour;
+    }
+
     /// <summary>The full base-metabolism equation: base + thermal stress + sensory tax (lifesim.md §3).</summary>
     public static double Total(Genome genome, double tileTemperature, MetabolismConfig config) =>
         BaseMetabolism(genome, config)

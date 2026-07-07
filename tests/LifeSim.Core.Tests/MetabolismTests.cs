@@ -20,6 +20,16 @@ public class MetabolismTests
     };
 
     [Fact]
+    public void CrowdingTax_isZeroWithinTheFreeAllowance_thenScalesPerNeighbour()
+    {
+        // Defaults: free 1 neighbour, 0.5 per additional.
+        Assert.Equal(0.0, Metabolism.CrowdingTax(0, Metabolic));
+        Assert.Equal(0.0, Metabolism.CrowdingTax(1, Metabolic));         // a kin pair is free
+        Assert.Equal(0.5, Metabolism.CrowdingTax(2, Metabolic), precision: 10);
+        Assert.Equal(3.5, Metabolism.CrowdingTax(8, Metabolic), precision: 10); // fully surrounded → (8-1)*0.5
+    }
+
+    [Fact]
     public void BaseMetabolism_isSizeTimesConfiguredBase()
     {
         Genome genome = NewGenome();

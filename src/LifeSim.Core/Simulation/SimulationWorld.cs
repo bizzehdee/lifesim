@@ -256,10 +256,12 @@ public sealed class SimulationWorld
 
             double tileTemperature = _terrain.TemperatureCelsiusAt(organism.X, organism.Y) + temperatureShift;
             double friction = Config.Biomes.For(_terrain.BiomeAt(organism.X, organism.Y)).Friction;
+            int localDensity = LocalOrganismDensity(organism); // 3×3 including self
             double cost = Metabolism.Total(organism.Genome, tileTemperature, Config.Metabolism)
-                + Metabolism.LocomotionTax(distanceTraveled[id], organism.Genome.SpeedCapacity, friction, Config.MovementCombat);
+                + Metabolism.LocomotionTax(distanceTraveled[id], organism.Genome.SpeedCapacity, friction, Config.MovementCombat)
+                + Metabolism.CrowdingTax(localDensity - 1, Config.Metabolism); // density-dependent overpopulation cost (lifesim.md §3, §6)
 
-            if (plagueActive && LocalOrganismDensity(organism) >= Config.Events.PlagueDensityThreshold)
+            if (plagueActive && localDensity >= Config.Events.PlagueDensityThreshold)
             {
                 cost += Config.Events.PlagueEnergyDrainPerTick;
             }
@@ -360,13 +362,13 @@ public sealed class SimulationWorld
                 return (0.0, ResolveReproduce(organism, currentTick, pendingBirths));
 
             case OrganismAction.ShareNorth:
-                return (0.0, ResolveShare(organism, 0, -1, counters));
+                return (0.0, ResolveShare(organism, 0, -1, behaviorStream, counters));
             case OrganismAction.ShareSouth:
-                return (0.0, ResolveShare(organism, 0, 1, counters));
+                return (0.0, ResolveShare(organism, 0, 1, behaviorStream, counters));
             case OrganismAction.ShareEast:
-                return (0.0, ResolveShare(organism, 1, 0, counters));
+                return (0.0, ResolveShare(organism, 1, 0, behaviorStream, counters));
             case OrganismAction.ShareWest:
-                return (0.0, ResolveShare(organism, -1, 0, counters));
+                return (0.0, ResolveShare(organism, -1, 0, behaviorStream, counters));
 
             case OrganismAction.Idle:
                 return (0.0, ActionResult.Success);
@@ -485,10 +487,13 @@ public sealed class SimulationWorld
     /// <summary>
     /// The Share action (lifesim.md §20): donate a fraction of this organism's energy to the live
     /// organism on the adjacent target tile, credited at <c>share_efficiency</c> (the lost remainder
-    /// is what keeps altruism genuinely costly). Off-grid, empty, or not-yet-materialized-offspring
-    /// targets are a no-op. Recipient gain is clamped to the energy ceiling; surplus is lost.
+    /// is what keeps altruism genuinely costly). Sharing is relatedness-scaled — once chosen, it
+    /// actually goes through with probability <c>floor + (ceiling − floor)·relatedness</c> (kin: likely
+    /// but not certain; strangers: unlikely but possible), rolled against the behaviour stream (§9).
+    /// Off-grid, empty, or not-yet-materialized-offspring targets are a no-op; recipient gain is
+    /// clamped to the ceiling and surplus is lost.
     /// </summary>
-    private ActionResult ResolveShare(Organism organism, int dx, int dy, TickCounters counters)
+    private ActionResult ResolveShare(Organism organism, int dx, int dy, Prng behaviorStream, TickCounters counters)
     {
         int x = organism.X + dx;
         int y = organism.Y + dy;
@@ -501,8 +506,18 @@ public sealed class SimulationWorld
             return ActionResult.NoOp;
         }
 
-        double donated = organism.SpendEnergy(organism.Energy * Config.Cooperation.ShareFraction);
-        recipient.AddEnergy(donated * Config.Cooperation.ShareEfficiency);
+        double relatedness = Kinship.Relatedness(organism.Genome, recipient.Genome, Config.TraitBounds);
+        CooperationConfig coop = Config.Cooperation;
+        double shareProbability = coop.ShareProbabilityFloor
+            + ((coop.ShareProbabilityCeiling - coop.ShareProbabilityFloor) * relatedness);
+        if (behaviorStream.NextDouble() >= shareProbability)
+        {
+            counters.FailedShare++;
+            return ActionResult.Failed; // cooperation declined (scaled by relatedness)
+        }
+
+        double donated = organism.SpendEnergy(organism.Energy * coop.ShareFraction);
+        recipient.AddEnergy(donated * coop.ShareEfficiency);
         counters.SuccessfulShare++;
         counters.EnergyShared += donated;
         return ActionResult.Success;

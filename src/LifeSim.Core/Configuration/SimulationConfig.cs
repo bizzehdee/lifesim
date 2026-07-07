@@ -44,6 +44,16 @@ public sealed record MetabolismConfig
     public double SensoryTaxC2 { get; init; } = 0.002;  // quadratic on org_radius (Phase 12 calibration; was 0.01)
     public double SensoryTaxC3 { get; init; } = 0.05;   // on sensory_acuity
     public double ThermalStressScale { get; init; } = 0.1;
+
+    /// <summary>
+    /// Density-dependent crowding cost (lifesim.md §3, §6): extra metabolism per neighbouring organism
+    /// in the 3×3 block beyond <see cref="CrowdingFreeNeighbours"/>. A continuous carrying-capacity
+    /// pressure — dense clusters starve faster, so overpopulation is self-limiting.
+    /// </summary>
+    public double CrowdingCostPerNeighbour { get; init; } = 0.5;
+
+    /// <summary>Neighbours tolerated before the crowding cost applies (a kin pair is free).</summary>
+    public int CrowdingFreeNeighbours { get; init; } = 1;
 }
 
 /// <summary>Movement &amp; combat constants (lifesim.md §3, §5, Appendix A).</summary>
@@ -62,6 +72,15 @@ public sealed record CooperationConfig
 
     /// <summary>Fraction of the shared energy the recipient actually receives (&lt; 1 keeps altruism costly).</summary>
     public double ShareEfficiency { get; init; } = 0.8;
+
+    /// <summary>
+    /// Sharing is relatedness-scaled (lifesim.md §20): when an organism chooses to Share, it actually
+    /// donates with probability <c>floor + (ceiling − floor) · relatedness(donor, recipient)</c>. The
+    /// ceiling &lt; 1 means even kin aren't certain; the floor &gt; 0 means strangers are unlikely but possible.
+    /// </summary>
+    public double ShareProbabilityFloor { get; init; } = 0.05;
+
+    public double ShareProbabilityCeiling { get; init; } = 0.9;
 
     /// <summary>Relatedness at/above which the closest organism counts as kin (for the deterrent and metrics).</summary>
     public double KinRelatednessThreshold { get; init; } = 0.9;

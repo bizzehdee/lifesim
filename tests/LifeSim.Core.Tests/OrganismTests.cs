@@ -35,6 +35,21 @@ public class OrganismTests
     }
 
     [Fact]
+    public void PredationCounters_tallyWinsLosses_andAttemptsIsTheirSum()
+    {
+        var organism = new Organism(1, NewGenome(), "Test-Test-Organism", 50.0, 0, 0, NewBrain());
+        Assert.Equal(0, organism.PredationAttempts);
+
+        organism.RecordPredationWin();
+        organism.RecordPredationWin();
+        organism.RecordPredationLoss();
+
+        Assert.Equal(2, organism.PredationWins);
+        Assert.Equal(1, organism.PredationLosses);
+        Assert.Equal(3, organism.PredationAttempts);
+    }
+
+    [Fact]
     public void AddEnergy_neverExceedsTheCeiling()
     {
         var organism = new Organism(1, NewGenome(), "Test-Test-Organism", 90.0, 0, 0, NewBrain());

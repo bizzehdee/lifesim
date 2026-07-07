@@ -55,6 +55,11 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
     /// <summary>How many offspring this organism has produced (lineage records whose parent is this one).</summary>
     public long ChildCount { get; private init; }
 
+    // Predation record (lifetime).
+    public long PredationAttempts => Organism.PredationWins + Organism.PredationLosses;
+    public long PredationWins => Organism.PredationWins;
+    public long PredationLosses => Organism.PredationLosses;
+
     // Physical state.
     public int X => Organism.X;
     public int Y => Organism.Y;

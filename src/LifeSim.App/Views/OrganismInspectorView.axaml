@@ -29,6 +29,11 @@
                        Text="{Binding BirthTick, StringFormat='born tick {0}'}" />
             <TextBlock FontSize="12" Opacity="0.75"
                        Text="{Binding Age, StringFormat='age {0}'}" />
+            <TextBlock FontSize="12" Opacity="0.75">
+                <Run Text="{Binding PredationAttempts, StringFormat='preyed {0}'}" />
+                <Run Text="{Binding PredationWins, StringFormat=' · won {0}'}" />
+                <Run Text="{Binding PredationLosses, StringFormat=' · gave up {0}'}" />
+            </TextBlock>
         </StackPanel>
 
         <!-- Physical state -->

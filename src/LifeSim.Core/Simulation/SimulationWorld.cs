@@ -526,6 +526,7 @@ public sealed class SimulationWorld
             {
                 double victimEnergy = victim.SpendEnergy(victim.Energy);
                 organism.AddEnergy(victimEnergy * Config.MovementCombat.PredationTransferFraction);
+                organism.RecordPredationWin();
                 counters.SuccessfulPredation++;
 
                 // Kin cannibalism: counted for analytics, and optionally penalised
@@ -543,6 +544,7 @@ public sealed class SimulationWorld
             }
 
             organism.SpendEnergy(Config.MovementCombat.FailedCombatPenalty);
+            organism.RecordPredationLoss();
             counters.FailedPredation++;
             return ActionResult.Failed;
         }

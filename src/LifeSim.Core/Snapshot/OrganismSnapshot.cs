@@ -26,6 +26,12 @@ public sealed record OrganismSnapshot
     /// <summary>Null if this organism has never reproduced; reconstructs cooldown/readiness without replay.</summary>
     public long? LastBirthTick { get; init; }
 
+    /// <summary>Lifetime successful hunts (kills).</summary>
+    public long PredationWins { get; init; }
+
+    /// <summary>Lifetime failed hunts (fought off).</summary>
+    public long PredationLosses { get; init; }
+
     public static OrganismSnapshot From(Organism organism) => new()
     {
         OrganismId = organism.Id,
@@ -39,10 +45,12 @@ public sealed record OrganismSnapshot
         LastAction = organism.LastAction,
         LastActionResult = organism.LastActionResult,
         LastBirthTick = organism.LastBirthTick,
+        PredationWins = organism.PredationWins,
+        PredationLosses = organism.PredationLosses,
     };
 
     public Organism ToOrganism(double? energyCapacity = null) =>
-        new(OrganismId, Genome.ToGenome(), Name, Energy, X, Y, Brain, Age, LastAction, LastActionResult, LastBirthTick, energyCapacity);
+        new(OrganismId, Genome.ToGenome(), Name, Energy, X, Y, Brain, Age, LastAction, LastActionResult, LastBirthTick, energyCapacity, PredationWins, PredationLosses);
 }
 
 /// <summary>The inheritable trait values, as stored in a snapshot.</summary>

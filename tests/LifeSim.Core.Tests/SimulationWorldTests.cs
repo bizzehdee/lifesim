@@ -65,6 +65,39 @@ public class SimulationWorldTests
     }
 
     [Fact]
+    public void Advance_recordsPerOrganismPredationWins_thatRoundTrip()
+    {
+        var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), SimulationConfig.Default with { InitialPopulation = 60 });
+
+        bool sawKill = false;
+        for (int i = 0; i < 200 && !world.Extinct; i++)
+        {
+            world.Advance();
+            foreach (Organism o in world.Organisms.Values)
+            {
+                // Any organism whose last action was a kill must carry at least one recorded win.
+                if (o.LastActionResult == ActionResult.Killed)
+                {
+                    sawKill = true;
+                    Assert.True(o.PredationWins >= 1);
+                }
+
+                Assert.Equal(o.PredationWins + o.PredationLosses, o.PredationAttempts);
+            }
+        }
+
+        // Whatever the counters ended at, they survive a save/reload exactly.
+        var reloaded = SimulationWorld.FromSnapshot(world.ToSnapshot());
+        foreach ((long id, Organism o) in world.Organisms)
+        {
+            Assert.Equal(o.PredationWins, reloaded.Organisms[id].PredationWins);
+            Assert.Equal(o.PredationLosses, reloaded.Organisms[id].PredationLosses);
+        }
+
+        Assert.True(sawKill, "Expected at least one predation kill over the run at this seed.");
+    }
+
+    [Fact]
     public void Advance_incrementsTick()
     {
         var world = SimulationWorld.CreateGenesis(NewWorldState(), SmallPopulation());

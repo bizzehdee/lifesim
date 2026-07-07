@@ -40,12 +40,21 @@ public sealed class Organism
     /// <summary>The tick of this organism's most recent successful birth; null if it has never reproduced.</summary>
     public long? LastBirthTick { get; private set; }
 
+    /// <summary>Lifetime kills — how many other organisms this one has successfully preyed on.</summary>
+    public long PredationWins { get; private set; }
+
+    /// <summary>Lifetime failed hunts — predation attempts that were fought off (the attacker survived, took the retaliation penalty).</summary>
+    public long PredationLosses { get; private set; }
+
+    /// <summary>Lifetime predation attempts against live organisms (<see cref="PredationWins"/> + <see cref="PredationLosses"/>).</summary>
+    public long PredationAttempts => PredationWins + PredationLosses;
+
     public bool IsAlive => Energy > 0.0;
 
     public Organism(
         long id, Genome genome, string name, double energy, int x, int y, NeatGenome brain,
         long age = 0, OrganismAction? lastAction = null, ActionResult lastActionResult = ActionResult.None,
-        long? lastBirthTick = null, double? energyCapacity = null)
+        long? lastBirthTick = null, double? energyCapacity = null, long predationWins = 0, long predationLosses = 0)
     {
         ArgumentNullException.ThrowIfNull(genome);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -63,6 +72,8 @@ public sealed class Organism
         LastAction = lastAction;
         LastActionResult = lastActionResult;
         LastBirthTick = lastBirthTick;
+        PredationWins = predationWins;
+        PredationLosses = predationLosses;
     }
 
     public void AddEnergy(double amount)
@@ -93,6 +104,12 @@ public sealed class Organism
     public void RecordActionResult(ActionResult result) => LastActionResult = result;
 
     public void RecordBirth(long tick) => LastBirthTick = tick;
+
+    /// <summary>Tally a successful hunt (a kill).</summary>
+    public void RecordPredationWin() => PredationWins++;
+
+    /// <summary>Tally a failed hunt (the target fought it off).</summary>
+    public void RecordPredationLoss() => PredationLosses++;
 
     public void UpdateBrain(NeatGenome brain)
     {

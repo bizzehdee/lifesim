@@ -11,10 +11,11 @@ public enum OrganismSortKey
     Children,
     Score,
     BrainNodes,
+    PreyCount,
 }
 
-/// <summary>One row of the live-organisms list: identity plus the sortable stats.</summary>
-public sealed record OrganismRow(long OrganismId, string Name, long Age, double CellCount, long Children, double Score, int BrainNodes);
+/// <summary>One row of the live-organisms list: identity plus the sortable stats. PreyCount is lifetime kills.</summary>
+public sealed record OrganismRow(long OrganismId, string Name, long Age, double CellCount, long Children, double Score, int BrainNodes, long PreyCount);
 
 /// <summary>
 /// Builds the sortable list of currently-alive organisms for the Organisms sidebar tab. Score is the
@@ -65,7 +66,8 @@ public static class OrganismListBuilder
             Morphology.CellCount(o.Genome.ToGenome(), multicellular),
             children.GetValueOrDefault(o.OrganismId),
             score.GetValueOrDefault(o.OrganismId),
-            o.Brain.Nodes.Count));
+            o.Brain.Nodes.Count,
+            o.PredationWins));
 
         Func<OrganismRow, double> selector = key switch
         {
@@ -73,6 +75,7 @@ public static class OrganismListBuilder
             OrganismSortKey.CellCount => r => r.CellCount,
             OrganismSortKey.Children => r => r.Children,
             OrganismSortKey.BrainNodes => r => r.BrainNodes,
+            OrganismSortKey.PreyCount => r => r.PreyCount,
             _ => r => r.Score,
         };
 

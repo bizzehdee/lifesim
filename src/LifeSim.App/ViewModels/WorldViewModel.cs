@@ -78,6 +78,14 @@ public partial class WorldViewModel : ViewModelBase
 
     public bool HasSelection => Inspector is not null;
 
+    private readonly EventWatcher _eventWatcher = new();
+
+    /// <summary>Raised (on the UI thread) when a frame reveals a notable event — blight, population explosion, a new multicellular milestone (lifesim.md §18).</summary>
+    public event Action<SimNotification>? NotificationRaised;
+
+    /// <summary>Forget notification history so the next frame re-seeds baselines silently (call when a new world is adopted).</summary>
+    public void ResetNotifications() => _eventWatcher.Reset();
+
     /// <summary>Feed a new frame from either a live Core or a loaded snapshot.</summary>
     public void LoadSnapshot(WorldSnapshot snapshot) => Snapshot = snapshot;
 
@@ -153,6 +161,14 @@ public partial class WorldViewModel : ViewModelBase
         OnPropertyChanged(nameof(Tick));
         OnPropertyChanged(nameof(Population));
         OnPropertyChanged(nameof(Extinct));
+
+        if (value is not null && NotificationRaised is { } handler)
+        {
+            foreach (SimNotification notification in _eventWatcher.Observe(value))
+            {
+                handler(notification);
+            }
+        }
     }
 
     partial void OnSidebarTabIndexChanged(int value)

@@ -525,6 +525,8 @@ There is no distinct corpse entity. Corpse energy folds into the tile's ground p
 
 The Avalonia app renders the world identically on both its targets (§1) — the visual language, colour key, and inspector are one shared set of C# views, so a world looks the same on desktop and in the browser demo. The desktop target (and small-world browser mode) render directly from live in-process engine state; the browser demo normally renders from snapshots (file or `serve` stream), subject to its scale constraints. All colour mappings are derived purely from the state fields defined in §12, so a static snapshot renders identically to a live frame — the UI never invents state. The shared scene is a legible, colour-coded map with an always-visible key, visibly distinct biomes, and a click-through inspector exposing every stat behind an organism.
 
+**In-app event notifications.** The app surfaces notable transitions as transient in-window toast cards (a `WindowNotificationManager`, not native OS notifications): a new environmental event (blight / plague / climatic anomaly), a population explosion (population more than doubling from a recent trough), and the first time a body of *N* cells evolves (§21). Detection is UI-only and purely a function of consecutive snapshots (an `EventWatcher` folding one frame at a time) — it never touches the engine, seeds silently on the first frame, and re-seeds on a new or reloaded world.
+
 ### Biome Rendering (Visibly Distinct)
 Each biome has a distinct base tile colour so regions read at a glance, and the tile's **ground energy pool** modulates brightness (darker = depleted, brighter/more saturated = near cap):
 

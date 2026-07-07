@@ -319,6 +319,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         DisposeSources();
         Mode = SessionMode.Live;
         IsPlaying = false;
+        World.ResetNotifications(); // fresh world → re-seed notification baselines silently
         world.MaxDegreeOfParallelism = ResolveThreads(ThreadCount);
         _runner = new EngineRunner(world, PublishFrame);
         _runner.SetTicksPerSecond(TicksPerSecond);

@@ -1,13 +1,83 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Notifications;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using LifeSim.App.Presentation;
 using LifeSim.App.ViewModels;
 
 namespace LifeSim.App.Views;
 
 public partial class MainView : UserControl
 {
-    public MainView() => InitializeComponent();
+    private WindowNotificationManager? _notifications;
+    private WorldViewModel? _subscribedWorld;
+
+    public MainView()
+    {
+        InitializeComponent();
+        DataContextChanged += (_, _) => Resubscribe();
+    }
+
+    // In-app toasts (lifesim.md §18): a WindowNotificationManager renders Fluent toast cards inside
+    // this window (not native OS notifications). Frames publish on the UI thread, so the World's
+    // NotificationRaised fires here directly.
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        if (TopLevel.GetTopLevel(this) is { } top)
+        {
+            _notifications = new WindowNotificationManager(top)
+            {
+                Position = NotificationPosition.BottomRight,
+                MaxItems = 4,
+            };
+        }
+
+        Resubscribe();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        Unsubscribe();
+        _notifications = null;
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void Resubscribe()
+    {
+        WorldViewModel? world = (DataContext as MainViewModel)?.World;
+        if (ReferenceEquals(world, _subscribedWorld))
+        {
+            return;
+        }
+
+        Unsubscribe();
+        _subscribedWorld = world;
+        if (_subscribedWorld is not null)
+        {
+            _subscribedWorld.NotificationRaised += OnNotification;
+        }
+    }
+
+    private void Unsubscribe()
+    {
+        if (_subscribedWorld is not null)
+        {
+            _subscribedWorld.NotificationRaised -= OnNotification;
+            _subscribedWorld = null;
+        }
+    }
+
+    private void OnNotification(SimNotification notification) =>
+        _notifications?.Show(new Notification(notification.Title, notification.Detail, Map(notification.Kind)));
+
+    private static NotificationType Map(SimNotificationKind kind) => kind switch
+    {
+        SimNotificationKind.Warning => NotificationType.Warning,
+        SimNotificationKind.Success => NotificationType.Success,
+        _ => NotificationType.Information,
+    };
 
     // Save/Load go through the picked file's stream (not a path) so they work on both the desktop
     // and the browser (WASM) target, which has no local filesystem (lifesim.md §1, §12).

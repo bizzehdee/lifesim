@@ -57,17 +57,27 @@ public class GroundEnergyGridTests
     }
 
     [Fact]
-    public void IceSheet_neverRegenerates()
+    public void IceSheet_hasOnlyAMinimalEnergyTrickle()
     {
         (TerrainSampler terrain, SimulationConfig config) = NewWorld();
         int x = FindTileOfBiome(terrain, Biome.IceSheet);
         int y = 0;
 
-        var grid = new GroundEnergyGrid(terrain, config);
-        grid.Deposit(x, y, 5.0); // cap is 0.0, so this is a no-op
-        grid.RegenerateTick();
+        // Barely productive, but not barren: a small non-zero cap that regenerates far slower than
+        // grassland, so only a lean, cold-adapted lineage can live off it.
+        double iceCap = config.Biomes.For(Biome.IceSheet).EnergyCap;
+        double grassCap = config.Biomes.For(Biome.Grassland).EnergyCap;
+        Assert.True(iceCap > 0.0 && iceCap < grassCap);
 
+        var grid = new GroundEnergyGrid(terrain, config);
+        Assert.Equal(iceCap, grid.EnergyAt(x, y)); // starts full at its (tiny) cap
+
+        grid.Drain(x, y, iceCap);
         Assert.Equal(0.0, grid.EnergyAt(x, y));
+
+        grid.RegenerateTick();
+        double afterOneTick = grid.EnergyAt(x, y);
+        Assert.True(afterOneTick > 0.0 && afterOneTick < iceCap); // regenerates, but only a trickle
     }
 
     [Fact]

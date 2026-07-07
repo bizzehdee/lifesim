@@ -201,7 +201,10 @@ public sealed record BiomesConfig
     public BiomeSettings Grassland { get; init; } = new() { Friction = 1.0, RegenRate = 0.8, EnergyCap = 20.0, Temperature = 20.0 };
     public BiomeSettings Desert { get; init; } = new() { Friction = 0.8, RegenRate = 0.05, EnergyCap = 5.0, Temperature = 45.0 };
     public BiomeSettings Swamp { get; init; } = new() { Friction = 3.0, RegenRate = 1.5, EnergyCap = 40.0, Temperature = 25.0 };
-    public BiomeSettings IceSheet { get; init; } = new() { Friction = 1.2, RegenRate = 0.0, EnergyCap = 0.0, Temperature = -15.0 };
+    // A minimal energy trickle — harsher than the desert, but non-zero — so a cold-adapted, lean
+    // lineage (cold thermal_center, small size, sparse senses) can scrape a living on the ice where a
+    // grassland generalist would starve, rather than the ice being flatly uninhabitable.
+    public BiomeSettings IceSheet { get; init; } = new() { Friction = 1.2, RegenRate = 0.02, EnergyCap = 3.0, Temperature = -15.0 };
 
     /// <summary>Moisture/temperature noise bands that select a biome from the matrix.</summary>
     public BiomeThresholds Thresholds { get; init; } = new();

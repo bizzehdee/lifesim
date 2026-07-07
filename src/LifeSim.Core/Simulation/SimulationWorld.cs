@@ -539,13 +539,15 @@ public sealed class SimulationWorld
             return ActionResult.Failed;
         }
 
-        // Ambient grazing (lifesim.md §21): surface exchange caps how much ground a body can process
-        // per tick at ∝ N^⅔ (the square-cube ceiling), while Feeder cells raise how much usable energy
-        // it extracts from what it processes. A generalist 1-cell body grazes exactly as before.
-        double throughput = Math.Min(_groundEnergy.EnergyAt(x, y), Morphology.MaxGrazingIntake(organism.Genome, Config.Multicellular));
-        double drained = _groundEnergy.Drain(x, y, throughput);
-        organism.AddEnergy(drained * Morphology.FeedMultiplier(organism.Genome, Config.Multicellular));
-        if (drained > 0.0)
+        // Ambient grazing (lifesim.md §21): a larger body covers more ground, so it skims a footprint
+        // of nearby tiles (radius grows with cell count) — pulling energy from more of the surface —
+        // while total intake stays bounded by the surface cap (∝ N^⅔). Feeder cells raise the usable
+        // yield. A single cell grazes exactly the target tile, as before. Because big bodies drain a
+        // wide area (in ascending-id order), they crowd out smaller neighbours and tend to hold
+        // territory — an emergent consequence, not a scripted one.
+        double gathered = GrazeFootprint(organism, x, y);
+        organism.AddEnergy(gathered * Morphology.FeedMultiplier(organism.Genome, Config.Multicellular));
+        if (gathered > 0.0)
         {
             counters.SuccessfulGrazing++;
         }
@@ -555,6 +557,50 @@ public sealed class SimulationWorld
         }
 
         return ActionResult.Success;
+    }
+
+    /// <summary>
+    /// Drains a body's grazing footprint (lifesim.md §21) centred on (x,y): the target tile first, then
+    /// expanding square rings out to <see cref="Morphology.GrazingReach"/>, in a fixed order, until the
+    /// surface-bounded intake budget (<see cref="Morphology.MaxGrazingIntake"/>) is spent. Returns the
+    /// raw ground energy gathered. Fixed iteration + ascending-id resolution keep it deterministic (§9).
+    /// </summary>
+    private double GrazeFootprint(Organism organism, int x, int y)
+    {
+        double budget = Morphology.MaxGrazingIntake(organism.Genome, Config.Multicellular);
+        int reach = Morphology.GrazingReach(organism.Genome, Config.Multicellular);
+        double gathered = 0.0;
+
+        for (int r = 0; r <= reach && budget > 0.0; r++)
+        {
+            for (int dy = -r; dy <= r && budget > 0.0; dy++)
+            {
+                for (int dx = -r; dx <= r; dx++)
+                {
+                    if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != r)
+                    {
+                        continue; // only the ring exactly r tiles out (inner rings drained already)
+                    }
+
+                    int fx = x + dx;
+                    int fy = y + dy;
+                    if (fx < 0 || fx >= World.Width || fy < 0 || fy >= World.Height)
+                    {
+                        continue;
+                    }
+
+                    double drained = _groundEnergy.Drain(fx, fy, Math.Min(_groundEnergy.EnergyAt(fx, fy), budget));
+                    gathered += drained;
+                    budget -= drained;
+                    if (budget <= 0.0)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        return gathered;
     }
 
     /// <summary>

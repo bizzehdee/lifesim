@@ -532,6 +532,31 @@ public class SimulationWorldTests
     }
 
     [Fact]
+    public void Advance_grazingFootprint_changesDynamics_whenBodiesGrowLarge()
+    {
+        // With a footprint (default), large bodies skim ground from surrounding tiles (lifesim.md §21),
+        // so their grazing — and the ecology it drives — diverges from a footprint-free run of the same
+        // seed once multicellular bodies appear.
+        static string Run(int maxReach)
+        {
+            var config = SimulationConfig.Default with
+            {
+                InitialPopulation = 80,
+                Multicellular = SimulationConfig.Default.Multicellular with { MaxGrazingReach = maxReach },
+            };
+            var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), config);
+            for (int i = 0; i < 150 && !world.Extinct; i++)
+            {
+                world.Advance();
+            }
+
+            return SnapshotSerializer.Save(world.ToSnapshot());
+        }
+
+        Assert.NotEqual(Run(maxReach: 0), Run(maxReach: 3));
+    }
+
+    [Fact]
     public void Advance_withMulticellularityDisabled_keepsEveryBodyUnicellular()
     {
         var config = SimulationConfig.Default with

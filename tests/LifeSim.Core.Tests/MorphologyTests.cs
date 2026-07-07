@@ -169,6 +169,18 @@ public class MorphologyTests
     }
 
     [Fact]
+    public void GrazingReach_growsWithCellCount_soFootprintAreaScales()
+    {
+        Assert.Equal(0, Morphology.GrazingReach(Cell(count: 1), Enabled));    // single cell → target tile only
+        Assert.Equal(0, Morphology.GrazingReach(Cell(count: 9), Disabled));   // no footprint when disabled
+
+        // reach = floor((√cells − 1) × 1): 4 cells → 1, 9 → 2, 16 → 3.
+        Assert.Equal(1, Morphology.GrazingReach(Cell(count: 4), Enabled));
+        Assert.Equal(2, Morphology.GrazingReach(Cell(count: 9), Enabled));
+        Assert.Equal(Enabled.MaxGrazingReach, Morphology.GrazingReach(Cell(count: 100), Enabled)); // capped
+    }
+
+    [Fact]
     public void GermCells_gateFertility_sterileSomaCannotReproduce()
     {
         // A body that invests everything except germ (germ fraction below the threshold) is sterile.

@@ -162,6 +162,22 @@ public static class Morphology
         return genome.Size * (1.0 + extraCells);
     }
 
+    /// <summary>
+    /// Grazing-footprint radius in tiles (lifesim.md §21): 0 for a single cell (it grazes only its
+    /// target tile), growing roughly as √cells so the footprint area scales with the body's cell
+    /// count, capped by <see cref="MulticellularConfig.MaxGrazingReach"/>.
+    /// </summary>
+    public static int GrazingReach(Genome genome, MulticellularConfig config)
+    {
+        if (!config.Enabled)
+        {
+            return 0;
+        }
+
+        int reach = (int)Math.Floor((Math.Sqrt(CellCount(genome, config)) - 1.0) * config.GrazingReachScale);
+        return Math.Clamp(reach, 0, Math.Max(0, config.MaxGrazingReach));
+    }
+
     /// <summary>Grazing yield multiplier from Feeder emphasis (1 for a generalist body).</summary>
     public static double FeedMultiplier(Genome genome, MulticellularConfig config) =>
         1.0 + (Excess(Fractions(genome, config).Feeder) * config.FeederYieldBonus);

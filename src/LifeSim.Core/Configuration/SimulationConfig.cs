@@ -151,6 +151,18 @@ public sealed record MulticellularConfig
     /// <summary>Surface-exchange coefficient: max energy a body can absorb from grazing per tick is this × N^⅔ (lifesim.md §21).</summary>
     public double IntakeSurfaceCoeff { get; init; } = 20.0;
 
+    /// <summary>
+    /// Grazing footprint (lifesim.md §21): a larger body physically covers more ground, so when it
+    /// grazes it also skims tiles within a reach that grows with cell count (radius ≈ (√cells − 1) ×
+    /// this scale, so footprint area ∝ cells) — pulling energy from more of the surface. Total intake
+    /// is still capped by <see cref="IntakeSurfaceCoeff"/>×N^⅔, so the footprint mainly lets big bodies
+    /// feed on sparse terrain. A single cell grazes only its target tile.
+    /// </summary>
+    public double GrazingReachScale { get; init; } = 1.0;
+
+    /// <summary>Hard cap on grazing-footprint radius in tiles, so a giant body's per-tick tile scan stays bounded.</summary>
+    public int MaxGrazingReach { get; init; } = 3;
+
     /// <summary>Feeder emphasis (above baseline) multiplies grazing yield up to 1 + this.</summary>
     public double FeederYieldBonus { get; init; } = 1.0;
 

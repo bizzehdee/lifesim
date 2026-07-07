@@ -43,8 +43,10 @@
 
             <!-- Info: colour mode + legend + inspector -->
             <TabItem Header="Info">
-                <ScrollViewer Padding="12">
-                    <StackPanel Spacing="16">
+                <!-- Padding on the content (not the ScrollViewer) so the scrollbar stays at the true right
+                     edge and the extra right inset clears it off the right-aligned trait values. -->
+                <ScrollViewer Padding="0">
+                    <StackPanel Spacing="16" Margin="12,12,22,12">
                         <StackPanel Spacing="6">
                             <TextBlock Text="Colour mode" FontWeight="SemiBold" />
                             <ComboBox ItemsSource="{Binding ColourModes}" SelectedItem="{Binding ColourMode}" HorizontalAlignment="Stretch" />
@@ -117,8 +119,8 @@
                     <Grid Grid.Row="2" RowDefinitions="Auto,*">
                         <Button Grid.Row="0" Content="🌳 View lineage graph" Margin="4,6" HorizontalAlignment="Left"
                                 Command="{Binding ViewLineageGraphCommand}" IsEnabled="{Binding CanViewLineageGraph}" />
-                        <ScrollViewer Grid.Row="1" Padding="4,4">
-                            <ContentControl Content="{Binding RankingDetail}" />
+                        <ScrollViewer Grid.Row="1" Padding="0">
+                            <ContentControl Content="{Binding RankingDetail}" Margin="4,4,22,4" />
                         </ScrollViewer>
                     </Grid>
                 </Grid>

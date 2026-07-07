@@ -1,6 +1,6 @@
 # LifeSim
 
-An emergent evolutionary ML life simulation. See [`lifesim.md`](./lifesim.md) for the architectural blueprint (source of truth) and [`tasks.md`](./tasks.md) for the phased build plan.
+An emergent evolutionary ML life simulation. See [`lifesim.md`](./lifesim.md) for the architectural blueprint (source of truth), [`tasks.md`](./tasks.md) for the phased build plan, and [`rules.md`](./rules.md) for a plain-language, high-level summary of the rules that govern the world.
 
 ## Architecture at a glance
 - **`LifeSim.Core`** — deterministic C# simulation engine (class library). Authoritative; no UI dependency; trimming/AOT-friendly so it also runs under WebAssembly.

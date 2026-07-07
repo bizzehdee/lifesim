@@ -9,11 +9,11 @@ namespace LifeSim.Core.Neat;
 /// </summary>
 public static class NeatTopology
 {
-    /// <summary>The fixed sensory vector width (lifesim.md §13) — see <see cref="LifeSim.Core.Sensing.SensoryField"/>.</summary>
-    public const int InputCount = 17;
+    /// <summary>The fixed sensory vector width (lifesim.md §13, §20) — see <see cref="LifeSim.Core.Sensing.SensoryField"/>.</summary>
+    public const int InputCount = 18;
 
-    /// <summary>The 11 action outputs (lifesim.md §4) — matches <see cref="Organisms.OrganismAction"/>.</summary>
-    public const int OutputCount = 11;
+    /// <summary>The 15 action outputs (lifesim.md §4, §20) — matches <see cref="Organisms.OrganismAction"/>.</summary>
+    public const int OutputCount = 15;
 
     /// <summary>Total innovation ids reserved for the fixed genesis topology (nodes + full connectivity).</summary>
     public const long ReservedInnovationIdCount = InputCount + OutputCount + ((long)InputCount * OutputCount);

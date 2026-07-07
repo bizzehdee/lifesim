@@ -58,6 +58,7 @@ public sealed class SensoryInputBuilder
         values[(int)SensoryField.ClosestOrganismDirectionX] = closest.DirectionX;
         values[(int)SensoryField.ClosestOrganismDirectionY] = closest.DirectionY;
         values[(int)SensoryField.ClosestOrganismSizeDelta] = closest.NormalizedSizeDelta;
+        values[(int)SensoryField.ClosestOrganismRelatedness] = closest.Relatedness;
 
         NeighborCounts neighbors = CountNeighbors(self, allOrganisms);
         values[(int)SensoryField.NearbySmallerCount] = Math.Tanh(neighbors.Smaller / NearbyCountSaturation);
@@ -167,14 +168,14 @@ public sealed class SensoryInputBuilder
     }
 
     private readonly record struct ClosestOrganismInfo(
-        double NormalizedDistance, double DirectionX, double DirectionY, double NormalizedSizeDelta);
+        double NormalizedDistance, double DirectionX, double DirectionY, double NormalizedSizeDelta, double Relatedness);
 
     private ClosestOrganismInfo FindClosestOrganism(Organism self, IReadOnlyDictionary<long, Organism> allOrganisms)
     {
         int radius = (int)Math.Floor(self.Genome.OrgRadius);
         if (radius < 1)
         {
-            return new ClosestOrganismInfo(0.0, 0.0, 0.0, 0.0);
+            return new ClosestOrganismInfo(0.0, 0.0, 0.0, 0.0, 0.0);
         }
 
         Organism? best = null;
@@ -205,7 +206,7 @@ public sealed class SensoryInputBuilder
 
         if (best is null)
         {
-            return new ClosestOrganismInfo(0.0, 0.0, 0.0, 0.0);
+            return new ClosestOrganismInfo(0.0, 0.0, 0.0, 0.0, 0.0);
         }
 
         double dirLength = bestDistance;
@@ -214,8 +215,9 @@ public sealed class SensoryInputBuilder
 
         double sizeBoundWidth = _config.TraitBounds.Size.Max - _config.TraitBounds.Size.Min;
         double sizeDelta = sizeBoundWidth > 0.0 ? (best.Genome.Size - self.Genome.Size) / sizeBoundWidth : 0.0;
+        double relatedness = Kinship.Relatedness(self.Genome, best.Genome, _config.TraitBounds);
 
-        return new ClosestOrganismInfo(bestDistance / radius, dirX, dirY, sizeDelta);
+        return new ClosestOrganismInfo(bestDistance / radius, dirX, dirY, sizeDelta, relatedness);
     }
 
     private readonly record struct NeighborCounts(int Smaller, int Larger, int Total);

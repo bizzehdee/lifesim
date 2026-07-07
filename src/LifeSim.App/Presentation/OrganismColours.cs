@@ -30,9 +30,13 @@ public static class OrganismColours
             ColourMode.DietTendency => DietColour(organism),
             ColourMode.StressFit => SimulationPalette.StressFitColour(tileTemperatureCelsius, g.ThermalCenter, g.ThermalWidth),
             ColourMode.Lineage => LineageColour.ForLineage(lineageId),
+            ColourMode.Cooperation => IsShare(organism.LastAction) ? SimulationPalette.Share : SimulationPalette.Neutral,
             _ => SimulationPalette.Neutral,
         };
     }
+
+    private static bool IsShare(OrganismAction? action) => action is OrganismAction.ShareNorth
+        or OrganismAction.ShareSouth or OrganismAction.ShareEast or OrganismAction.ShareWest;
 
     /// <summary>The outline colour, from the last action + its result (lifesim.md §18).</summary>
     public static Color Outline(OrganismAction? lastAction, ActionResult lastResult)
@@ -50,6 +54,8 @@ public static class OrganismColours
                 or OrganismAction.HarvestEast or OrganismAction.HarvestWest
                 => lastResult == ActionResult.Killed ? SimulationPalette.Predation : SimulationPalette.Graze,
             OrganismAction.Reproduce => SimulationPalette.Reproduce,
+            OrganismAction.ShareNorth or OrganismAction.ShareSouth
+                or OrganismAction.ShareEast or OrganismAction.ShareWest => SimulationPalette.Share,
             _ => SimulationPalette.Idle,
         };
     }

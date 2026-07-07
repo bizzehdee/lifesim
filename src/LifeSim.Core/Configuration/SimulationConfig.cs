@@ -13,6 +13,7 @@ public sealed record SimulationConfig
 {
     public MetabolismConfig Metabolism { get; init; } = new();
     public MovementCombatConfig MovementCombat { get; init; } = new();
+    public CooperationConfig Cooperation { get; init; } = new();
     public BiomesConfig Biomes { get; init; } = new();
     public ReproductionConfig Reproduction { get; init; } = new();
     public MutationConfig Mutation { get; init; } = new();
@@ -51,6 +52,22 @@ public sealed record MovementCombatConfig
     public double LocomotionVelocityExponent { get; init; } = 2.0;
     public double PredationTransferFraction { get; init; } = 0.75;
     public double FailedCombatPenalty { get; init; } = 5.0;
+}
+
+/// <summary>Cooperation controls (lifesim.md §20): energy sharing and optional kin-predation deterrence.</summary>
+public sealed record CooperationConfig
+{
+    /// <summary>Fraction of the donor's energy transferred by a Share action.</summary>
+    public double ShareFraction { get; init; } = 0.25;
+
+    /// <summary>Fraction of the shared energy the recipient actually receives (&lt; 1 keeps altruism costly).</summary>
+    public double ShareEfficiency { get; init; } = 0.8;
+
+    /// <summary>Relatedness at/above which the closest organism counts as kin (for the deterrent and metrics).</summary>
+    public double KinRelatednessThreshold { get; init; } = 0.9;
+
+    /// <summary>Extra energy an attacker pays for killing kin — a tunable anti-cannibalism nudge; 0 disables it.</summary>
+    public double KinPredationPenalty { get; init; }
 }
 
 /// <summary>Per-biome physics/resource settings (lifesim.md §2, Appendix A).</summary>

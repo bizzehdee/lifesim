@@ -24,6 +24,7 @@ public static class SimulationPalette
     public static readonly Color Graze = Color.FromRgb(0x4C, 0xAF, 0x50);      // green
     public static readonly Color Predation = Color.FromRgb(0xE5, 0x48, 0x4D);  // red
     public static readonly Color Reproduce = Color.FromRgb(0xC4, 0x55, 0xC4);  // magenta
+    public static readonly Color Share = Color.FromRgb(0x17, 0xB8, 0xC4);      // teal (cooperation)
     public static readonly Color Idle = Color.FromRgb(0x8A, 0x8F, 0x98);       // grey
 
     // --- Diet-tendency & neutral tokens. ---
@@ -57,6 +58,8 @@ public static class SimulationPalette
         OrganismAction.HarvestSelf or OrganismAction.HarvestNorth or OrganismAction.HarvestSouth
             or OrganismAction.HarvestEast or OrganismAction.HarvestWest => Graze,
         OrganismAction.Reproduce => Reproduce,
+        OrganismAction.ShareNorth or OrganismAction.ShareSouth
+            or OrganismAction.ShareEast or OrganismAction.ShareWest => Share,
         OrganismAction.Idle => Idle,
         _ => Idle,
     };

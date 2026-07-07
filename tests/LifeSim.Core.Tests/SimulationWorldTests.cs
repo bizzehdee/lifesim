@@ -321,6 +321,27 @@ public class SimulationWorldTests
         Assert.True(distinctBirthSizes > 1, "Expected mutation to spread trait values across lineages.");
     }
 
+    [Fact]
+    public void Advance_organismsShareEnergy_overALongAbundantRun()
+    {
+        // Cooperation (lifesim.md §20): once reproduction forms adjacent kin clusters, Share actions
+        // find neighbours and transfer energy. Statistical but deterministic for this fixed seed.
+        var config = SimulationConfig.Default with { InitialPopulation = 40 };
+        var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), config);
+
+        double totalShared = 0.0;
+        long shareEvents = 0;
+        for (int i = 0; i < 150 && !world.Extinct; i++)
+        {
+            world.Advance();
+            totalShared += world.Metrics.EnergyShared;
+            shareEvents += world.Metrics.SuccessfulShare;
+        }
+
+        Assert.True(shareEvents > 0, "Expected some Share actions to resolve over the run.");
+        Assert.True(totalShared > 0.0, "Expected energy to be transferred by sharing.");
+    }
+
     // --- Phase 9: environmental stochasticity & events (lifesim.md §6) ---
 
     private static EventsConfig NoEvents() => new EventsConfig() with

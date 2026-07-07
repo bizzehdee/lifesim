@@ -80,7 +80,7 @@ public class WorldViewTests
         Assert.NotNull(inspector);
         Assert.Equal(organism.Name, inspector.Name);
         Assert.Equal(7, inspector.Traits.Count);
-        Assert.Equal(11, inspector.ActionProbabilities.Count);
+        Assert.Equal(15, inspector.ActionProbabilities.Count); // 4 move + 5 harvest + idle + reproduce + 4 share
         Assert.Equal(1.0, inspector.ActionProbabilities.Sum(p => p.Probability), precision: 6);
         Assert.Equal(organism.Brain.Nodes.Count, inspector.BrainGraph.Nodes.Count);
         Assert.Equal(

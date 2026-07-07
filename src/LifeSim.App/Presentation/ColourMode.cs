@@ -20,4 +20,7 @@ public enum ColourMode
 
     /// <summary>A stable hashed colour per <c>lineage_id</c>, so clonal clusters are visible.</summary>
     Lineage,
+
+    /// <summary>Teal if the organism's last action was to share energy, else neutral — a cooperation readout (lifesim.md §20).</summary>
+    Cooperation,
 }

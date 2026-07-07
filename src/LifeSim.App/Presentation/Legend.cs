@@ -38,6 +38,7 @@ public static class LegendBuilder
                 new LegendEntry("Graze", SimulationPalette.Graze, LegendGlyph.Ring),
                 new LegendEntry("Predation", SimulationPalette.Predation, LegendGlyph.Ring),
                 new LegendEntry("Reproduce", SimulationPalette.Reproduce, LegendGlyph.Ring),
+                new LegendEntry("Share", SimulationPalette.Share, LegendGlyph.Ring),
                 new LegendEntry("Idle", SimulationPalette.Idle, LegendGlyph.Ring),
             ]),
             new LegendSection("Overlays",
@@ -65,6 +66,7 @@ public static class LegendBuilder
             new LegendEntry("Graze", SimulationPalette.Graze),
             new LegendEntry("Predation", SimulationPalette.Predation),
             new LegendEntry("Reproduce", SimulationPalette.Reproduce),
+            new LegendEntry("Share", SimulationPalette.Share),
             new LegendEntry("Idle", SimulationPalette.Idle),
         ]),
         ColourMode.Energy => new LegendSection("Fill: Energy",
@@ -86,6 +88,11 @@ public static class LegendBuilder
         ColourMode.Lineage => new LegendSection("Fill: Lineage",
         [
             new LegendEntry("Hashed colour per lineage", SimulationPalette.Neutral, LegendGlyph.Gradient),
+        ]),
+        ColourMode.Cooperation => new LegendSection("Fill: Cooperation",
+        [
+            new LegendEntry("Shared energy this tick", SimulationPalette.Share),
+            new LegendEntry("Did not share", SimulationPalette.Neutral),
         ]),
         _ => new LegendSection("Fill", []),
     };

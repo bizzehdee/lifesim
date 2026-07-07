@@ -24,4 +24,7 @@ public enum SensoryField
     LastActionResult = 14,
     ReproductiveReadiness = 15,
     GlobalStressLevel = 16,
+
+    /// <summary>Genome relatedness (0..1) to the closest organism — the kin-recognition signal (lifesim.md §20).</summary>
+    ClosestOrganismRelatedness = 17,
 }

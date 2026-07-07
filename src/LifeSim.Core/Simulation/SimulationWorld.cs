@@ -359,6 +359,15 @@ public sealed class SimulationWorld
             case OrganismAction.Reproduce:
                 return (0.0, ResolveReproduce(organism, currentTick, pendingBirths));
 
+            case OrganismAction.ShareNorth:
+                return (0.0, ResolveShare(organism, 0, -1, counters));
+            case OrganismAction.ShareSouth:
+                return (0.0, ResolveShare(organism, 0, 1, counters));
+            case OrganismAction.ShareEast:
+                return (0.0, ResolveShare(organism, 1, 0, counters));
+            case OrganismAction.ShareWest:
+                return (0.0, ResolveShare(organism, -1, 0, counters));
+
             case OrganismAction.Idle:
                 return (0.0, ActionResult.Success);
 
@@ -441,6 +450,15 @@ public sealed class SimulationWorld
                 double victimEnergy = victim.SpendEnergy(victim.Energy);
                 organism.AddEnergy(victimEnergy * Config.MovementCombat.PredationTransferFraction);
                 counters.SuccessfulPredation++;
+
+                // Kin cannibalism (lifesim.md §20): counted for analytics, and optionally penalised
+                // (default off) as a tunable anti-cannibalism deterrent.
+                if (Kinship.Relatedness(organism.Genome, victim.Genome, Config.TraitBounds) >= Config.Cooperation.KinRelatednessThreshold)
+                {
+                    counters.KinPredation++;
+                    organism.SpendEnergy(Config.Cooperation.KinPredationPenalty);
+                }
+
                 return ActionResult.Killed;
             }
 
@@ -461,6 +479,32 @@ public sealed class SimulationWorld
             counters.FailedGrazing++;
         }
 
+        return ActionResult.Success;
+    }
+
+    /// <summary>
+    /// The Share action (lifesim.md §20): donate a fraction of this organism's energy to the live
+    /// organism on the adjacent target tile, credited at <c>share_efficiency</c> (the lost remainder
+    /// is what keeps altruism genuinely costly). Off-grid, empty, or not-yet-materialized-offspring
+    /// targets are a no-op. Recipient gain is clamped to the energy ceiling; surplus is lost.
+    /// </summary>
+    private ActionResult ResolveShare(Organism organism, int dx, int dy, TickCounters counters)
+    {
+        int x = organism.X + dx;
+        int y = organism.Y + dy;
+
+        if (x < 0 || x >= World.Width || y < 0 || y >= World.Height
+            || !_occupancy.TryGetValue((x, y), out long targetId) || targetId == organism.Id
+            || !_organisms.TryGetValue(targetId, out Organism? recipient))
+        {
+            counters.FailedShare++;
+            return ActionResult.NoOp;
+        }
+
+        double donated = organism.SpendEnergy(organism.Energy * Config.Cooperation.ShareFraction);
+        recipient.AddEnergy(donated * Config.Cooperation.ShareEfficiency);
+        counters.SuccessfulShare++;
+        counters.EnergyShared += donated;
         return ActionResult.Success;
     }
 
@@ -685,6 +729,10 @@ public sealed class SimulationWorld
             FailedGrazing = counters.FailedGrazing,
             SuccessfulPredation = counters.SuccessfulPredation,
             FailedPredation = counters.FailedPredation,
+            SuccessfulShare = counters.SuccessfulShare,
+            FailedShare = counters.FailedShare,
+            KinPredation = counters.KinPredation,
+            EnergyShared = counters.EnergyShared,
             EnergyMin = population > 0 ? energyMin : 0.0,
             EnergyAverage = Average(energySum),
             EnergyMax = population > 0 ? energyMax : 0.0,
@@ -748,6 +796,10 @@ public sealed class SimulationWorld
         public long FailedGrazing;
         public long SuccessfulPredation;
         public long FailedPredation;
+        public long SuccessfulShare;
+        public long FailedShare;
+        public long KinPredation;
+        public double EnergyShared;
     }
 
     private sealed record PendingBirth(

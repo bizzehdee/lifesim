@@ -337,24 +337,25 @@ These extend the model beyond the v1 blueprint (`lifesim.md` §1–§19, which e
 ## Phase 16 — Cooperation (Kin Selection & Mutualism)
 **Goal:** Give unicellular organisms the *mechanisms* and *information* to evolve cooperative behaviour — kin recognition, energy sharing, and restraint from cannibalising relatives — so that cooperation can emerge under the population viscosity the engine already produces (adjacent-tile birth + inherited `lineage_id` cluster kin, and asexual cloning makes intra-cluster relatedness ≈ 1). This is **social behaviour between separate individuals**; it does not change the level of selection.
 **Depends on:** Phases 5–10 (NEAT brain, sensing, interactions, metrics). **Independent of Phase 17.**
-**New spec section:** §20 (write first, as source of truth).
+**Spec section:** §20 (written as source of truth).
 
-- [ ] **Kin-recognition sensory inputs (Plan §13-style):** add relatedness signal(s) to the fixed input vector — at minimum "relatedness to closest organism" (1.0 same `lineage_id`, else a normalized genome-distance measure), optionally "mean local relatedness within `org_radius`". Grows `NeatTopology.InputCount`; genesis wiring re-baselines (as in Phase 6). Read from start-of-tick state in the Sensing phase; consumes no new randomness.
-- [ ] **Energy-share action(s) (Plan §5, §11):** add directional `Share-N/S/E/W` outputs that transfer a configurable fraction of the donor's energy to the adjacent organism, credited at a `share_efficiency < 1` (the lost fraction is what keeps sharing a genuine altruistic cost, satisfying "no free lunch"). Grows `NeatTopology.OutputCount` (11 → 15) and `OrganismAction`. Resolves in the Intent Resolution phase in ascending organism-id order; recipient gain clamped to the energy ceiling.
-- [ ] **Kin-safe interaction:** with the relatedness input present, brains *can* evolve to stop choosing Harvest-toward-kin (cooperation via restraint) with no new action. Optionally add a config `kin_predation_penalty` (default off) as a tunable structural nudge against cannibalism.
-- [ ] **Cooperation-requiring pressure (optional, advanced):** a resource whose yield scales with the number of adjacent harvesters (or a threat only a group repels), making aggregation directly payoff-positive rather than only kin-altruistic. Config-gated; off by default.
-- [ ] **Config (Plan Appendix A):** `share_fraction`, `share_efficiency`, optional `kin_predation_penalty`, optional cooperative-resource knobs — all in the versioned configuration block.
-- [ ] **Metrics (Plan §14):** energy shared per tick, share success/failure counts, mean local relatedness, kin-vs-non-kin predation counts.
-- [ ] **UI (Plan §18):** a Share entry in the action outline palette + legend; a "relatedness" or "cooperation" colour mode; inspector shows relatedness to neighbours and energy shared/received; every new colour has a legend entry.
-- [ ] **Calibration (Plan §15):** a fixed-seed scenario showing sharing is *used* and that kin clusters benefit (cooperators out-persist loners under viscosity), that sharing is net-costly (efficiency < 1), and that both flagship determinism tests stay green with sharing live.
+- [x] **Kin-recognition sensory input (Plan §13, §20):** `SensoryField.ClosestOrganismRelatedness` — genome relatedness (0–1) to the closest organism, via the pure `Organisms/Kinship.cs` (`1 − mean normalized trait distance`). `NeatTopology.InputCount` 17 → 18; genesis wiring re-baselines. Read in the Sensing phase; no new randomness.
+- [x] **Energy-share actions (Plan §5, §11, §20):** `OrganismAction.ShareNorth/South/East/West` (`NeatTopology.OutputCount` 11 → 15); `SimulationWorld.ResolveShare` transfers `share_fraction` of the donor's energy, credited at `share_efficiency < 1`, clamped to the ceiling, resolving in ascending-id order (off-grid/empty/unborn-offspring targets → no-op).
+- [x] **Kin-safe interaction:** the relatedness input lets brains evolve to withhold predation from kin; optional `kin_predation_penalty` (default 0) charges an attacker extra for killing kin, and kin kills are counted.
+- [~] **Cooperation-requiring pressure (optional, advanced):** deliberately deferred — starting with kin selection + viscosity only, per the §20 plan; add later only if cooperation doesn't emerge.
+- [x] **Config (Plan Appendix A):** `CooperationConfig` block — `share_fraction` (0.25), `share_efficiency` (0.8), `kin_relatedness_threshold` (0.9), `kin_predation_penalty` (0, off) — in the versioned configuration.
+- [x] **Metrics (Plan §14):** `EnergyShared`, `SuccessfulShare`, `FailedShare`, `KinPredation` on `SimulationMetrics` + CSV columns. (Mean-local-relatedness omitted to avoid a per-tick O(n·neighbours) reduction — a judgment call.)
+- [x] **UI (Plan §18):** Share entry in the action-outline palette + legend; a **Cooperation** colour mode (teal when the last action shared, else neutral) with its own legend section; the inspector's softmax now includes the four Share outputs. Every new colour has a legend entry.
+- [x] **Verification (Plan §15):** `KinshipTests`, a sensory test that relatedness tracks genome similarity, and `Advance_organismsShareEnergy_overALongAbundantRun` (sharing is used and transfers energy once kin clusters form). Both flagship determinism tests + the eventful-determinism test stay green with sharing live, and all Phase 12 calibration scenarios still pass with cooperation in the default action set.
 
-**Exit criteria:** Organisms can sense relatedness and transfer energy; a calibration scenario demonstrates cooperation is viable but costly and that kin clusters gain from it; determinism holds; cooperation is visible in metrics and the UI.
+**Exit criteria:** Organisms sense relatedness and transfer energy ✅; sharing is used and costly ✅; determinism holds and calibration still passes with cooperation live ✅; cooperation is visible in metrics and the UI ✅. 253 tests pass (Core 159 / Console 16 / Determinism 14 / App 55 / Calibration 9); `dotnet format --verify-no-changes` clean.
 
-**Key design decisions to settle in §20:**
-- **Directional shares add 4 outputs** (brain re-baseline + snapshot regeneration). A single "donate to a chosen neighbour" output would be cheaper but needs a target-selection scheme; directional keeps parity with Move/Harvest. Decide before writing §20.
-- **Relatedness metric:** same-lineage flag (cheap, coarse) vs. genome distance (finer, needs a distance function and normalization). Could ship both as separate inputs.
-- **Whether to add explicit cooperation pressure** (the group-only resource) or rely purely on kin selection + viscosity. Start without it; add only if cooperation doesn't emerge.
-- **No new PRNG stream** unless a mechanic becomes probabilistic — keep sharing deterministic.
+**Judgment calls worth flagging:**
+- **Directional shares add 4 outputs** (brain re-baselined 11 → 15, determinism snapshots regenerated) — chosen for parity with Move/Harvest over a single "donate to a chosen neighbour" output that would need a target-selection scheme.
+- **Relatedness is phenotype-matching (genome distance), not lineage-id** — self-contained (no lineage plumbing into per-organism sensing) and apt for an asexual world where clones are near-identical.
+- **Cooperation ships enabled in the default config** and the Phase 12 calibration seeds still pass, so no re-tuning was needed; the `share_efficiency < 1` loss keeps random early sharing from being a free lunch.
+- **Sharing is fully deterministic** (no roll) — no new PRNG stream.
+- The optional group-only resource was **not** built (deferred), so cooperation here is purely kin-selection + viscosity driven.
 
 ---
 

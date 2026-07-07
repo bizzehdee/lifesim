@@ -618,6 +618,29 @@ The word lists are versioned assets referenced from configuration; the resolved 
 
 ---
 
+## 20. Cooperation (Kin Selection & Mutualism)
+
+*Post-v1 extension (see `tasks.md` Phase 16). This is social behaviour **between separate individuals**; it does not change the level of selection (that is §21).*
+
+The engine already produces the substrate cooperation needs — **population viscosity**: offspring are placed on an adjacent tile and inherit their parent's `lineage_id`, so lineages form spatial clusters, and asexual cloning makes within-cluster relatedness ≈ 1. What v1 lacks is a way for an organism to *benefit* a neighbour and *recognise* kin. §20 adds both, then lets cooperation evolve (or not) under selection.
+
+### Kin recognition
+The fixed input vector (§13) gains a **relatedness signal**: the genome relatedness (0–1) to the closest organism inside `org_radius`. Relatedness is a phenotype-matching proxy — `1 − mean(|trait difference| / trait bound span)`, clamped to [0,1] — so clones read ≈ 1 and divergent organisms read lower. This needs no lineage bookkeeping and suits an asexual world; a lineage-id match could be substituted if exact kinship is preferred.
+
+### Energy sharing
+The action set (§4) gains four directional **Share** outputs (N/S/E/W). A Share transfers a `share_fraction` of the donor's energy to the live organism on the adjacent tile, credited at `share_efficiency < 1`; the lost remainder is what makes altruism a genuine cost (and prevents free energy-laundering loops). Off-grid, empty, or not-yet-materialised-offspring targets are a no-op. Sharing resolves in the Intent Resolution phase in ascending organism-id order and draws no randomness, so it is fully deterministic (§9). With kin recognition present, brains can also evolve to *withhold* predation from kin (cooperation via restraint) with no new action; an optional `kin_predation_penalty` (default 0) is a tunable structural deterrent against cannibalism.
+
+### What this changes
+Cooperation is expected to be favoured **inside kin clusters** (Hamilton's `rB > C`, with `r ≈ 1` for clones and `C` set by `1 − share_efficiency`) and disfavoured between strangers — an emergent, not scripted, outcome. Metrics (§14) expose energy shared, share success/failure, and kin-predation counts; the GUI (§18) adds a Share action colour and a Cooperation colour mode. The default configuration stays calibrated (§15) with sharing available.
+
+---
+
+## 21. Multicellular Individuals
+
+*Post-v1 extension (see `tasks.md` Phase 17), independent of §20. This introduces a **new level of individuality** — bodies of differentiated cells grown from a genome, with a germline/soma split, selected and reproduced as whole organisms. Intra-body coordination is structural (a shared energy pool + a germline that alone reproduces), not evolved social behaviour, which is why it needs nothing from §20. See Phase 17 for the staged task breakdown.*
+
+---
+
 ## Appendix A: Configuration Reference
 
 The `configuration` block centralizes every coupled constant so experiments tune behavior without touching source. It is versioned by `config_version` (§12). Values below are illustrative defaults, not final calibration.

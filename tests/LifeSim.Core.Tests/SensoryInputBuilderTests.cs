@@ -60,6 +60,23 @@ public class SensoryInputBuilderTests
     }
 
     [Fact]
+    public void Build_closestOrganismRelatedness_reflectsGenomeSimilarity()
+    {
+        (SensoryInputBuilder builder, _, _) = NewBuilder();
+        Organism self = NewOrganism(1, 20, 20); // pristine genome (acuity 1 → no noise), org_radius 10
+
+        Organism clone = NewOrganism(2, 21, 20); // identical genome, adjacent
+        var withKin = new Dictionary<long, Organism> { [self.Id] = self, [clone.Id] = clone };
+        double kinRelated = builder.Build(self, withKin, 1, new Prng(1), 0.0, 0.0)[(int)SensoryField.ClosestOrganismRelatedness];
+        Assert.Equal(1.0, kinRelated, precision: 6);
+
+        Organism stranger = NewOrganism(3, 21, 20, genome: PristineGenome() with { Size = Config.TraitBounds.Size.Max });
+        var withStranger = new Dictionary<long, Organism> { [self.Id] = self, [stranger.Id] = stranger };
+        double strangerRelated = builder.Build(self, withStranger, 1, new Prng(1), 0.0, 0.0)[(int)SensoryField.ClosestOrganismRelatedness];
+        Assert.True(strangerRelated < 1.0);
+    }
+
+    [Fact]
     public void Build_tileTemperatureAndFriction_matchTerrainAndConfig()
     {
         (SensoryInputBuilder builder, TerrainSampler terrain, _) = NewBuilder();

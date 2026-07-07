@@ -26,6 +26,12 @@ public sealed record SimulationMetrics
     public long SuccessfulPredation { get; init; }
     public long FailedPredation { get; init; }
 
+    // --- Cooperation counters (lifesim.md §20). ---
+    public long SuccessfulShare { get; init; }
+    public long FailedShare { get; init; }
+    public long KinPredation { get; init; }
+    public double EnergyShared { get; init; }
+
     // --- Energy distribution across the live population (zeros when empty). ---
     public double EnergyMin { get; init; }
     public double EnergyAverage { get; init; }
@@ -59,6 +65,10 @@ public sealed record SimulationMetrics
         && FailedGrazing == other.FailedGrazing
         && SuccessfulPredation == other.SuccessfulPredation
         && FailedPredation == other.FailedPredation
+        && SuccessfulShare == other.SuccessfulShare
+        && FailedShare == other.FailedShare
+        && KinPredation == other.KinPredation
+        && EnergyShared.Equals(other.EnergyShared)
         && EnergyMin.Equals(other.EnergyMin)
         && EnergyAverage.Equals(other.EnergyAverage)
         && EnergyMax.Equals(other.EnergyMax)

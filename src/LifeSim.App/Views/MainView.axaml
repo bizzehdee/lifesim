@@ -58,7 +58,7 @@
                         <TextBlock Opacity="0.75" TextWrapping="Wrap"
                                    Text="Set the starting parameters, then create the world. The engine stays paused until you press Play." />
 
-                        <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="10">
+                        <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="10">
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="Seed" VerticalAlignment="Center" />
                             <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding Seed}"
                                            Minimum="0" Maximum="999999999" Increment="1" FormatString="0" ParsingNumberStyle="Integer" />
@@ -74,6 +74,10 @@
                             <TextBlock Grid.Row="3" Grid.Column="0" Text="Population" VerticalAlignment="Center" />
                             <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Population}"
                                            Minimum="1" Maximum="1000000" Increment="1" FormatString="0" ParsingNumberStyle="Integer" />
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Threads" VerticalAlignment="Center" />
+                            <NumericUpDown Grid.Row="4" Grid.Column="1" Value="{Binding ThreadCount}"
+                                           Minimum="1" Maximum="{Binding MaxThreads}" Increment="1" FormatString="0" ParsingNumberStyle="Integer" />
                         </Grid>
 
                         <StackPanel Spacing="6">

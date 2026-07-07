@@ -50,6 +50,20 @@ public sealed class SimulationWorld
 
     public long Tick { get; private set; }
 
+    /// <summary>
+    /// Max threads for the per-organism brain forward pass (lifesim.md §7). Purely an execution knob:
+    /// the forward pass is a pure function with no shared writes and no PRNG, so results are
+    /// byte-identical for any value ≥ 1 (the single softmax roll stays sequential in id order). Not
+    /// part of the snapshot; default 1 (serial). Clamped to ≥ 1 on set.
+    /// </summary>
+    public int MaxDegreeOfParallelism
+    {
+        get => _maxDegreeOfParallelism;
+        set => _maxDegreeOfParallelism = Math.Max(1, value);
+    }
+
+    private int _maxDegreeOfParallelism = 1;
+
     /// <summary>Set once population reaches zero; the engine halts and never auto-reseeds (lifesim.md §17).</summary>
     public bool Extinct { get; private set; }
 
@@ -204,19 +218,39 @@ public sealed class SimulationWorld
         }
 
         // 3. Decision Phase. Per-organism NEAT evaluation is independent of every other organism
-        //    (each reads only its own cached inputs and its own prior brain state), so this loop
-        //    is safe to parallelize once that becomes worth doing (lifesim.md §7) — it draws from
-        //    one shared behavior stream, so the *order* of the softmax rolls must stay sequential
-        //    in ascending organism-id order even if the evaluation work itself is parallelized.
+        //    (each reads only its own cached inputs and its own prior brain state). The expensive
+        //    forward pass is pure — no PRNG, no shared writes — so it runs across up to
+        //    MaxDegreeOfParallelism threads (lifesim.md §7). The single softmax roll then draws from
+        //    the shared behavior stream strictly in ascending organism-id order, so the stream is
+        //    consumed identically regardless of the parallelism — results are byte-identical for any
+        //    thread count (lifesim.md §9).
         Prng behavior = _prngStreams[PrngStream.Behavior];
-        var actions = new Dictionary<long, OrganismAction>(_organisms.Count);
-        foreach (long id in _organisms.Keys)
+        long[] decisionIds = _organisms.Keys.ToArray();
+        var propagations = new NeatPropagation[decisionIds.Length];
+
+        if (_maxDegreeOfParallelism > 1 && decisionIds.Length > 1)
         {
+            var options = new ParallelOptions { MaxDegreeOfParallelism = _maxDegreeOfParallelism };
+            Parallel.For(0, decisionIds.Length, options, i =>
+                propagations[i] = NeatBrain.Propagate(_organisms[decisionIds[i]].Brain, sensoryInputs[decisionIds[i]]));
+        }
+        else
+        {
+            for (int i = 0; i < decisionIds.Length; i++)
+            {
+                propagations[i] = NeatBrain.Propagate(_organisms[decisionIds[i]].Brain, sensoryInputs[decisionIds[i]]);
+            }
+        }
+
+        var actions = new Dictionary<long, OrganismAction>(_organisms.Count);
+        for (int i = 0; i < decisionIds.Length; i++)
+        {
+            long id = decisionIds[i];
             Organism organism = _organisms[id];
-            NeatEvaluationResult result = NeatBrain.Evaluate(organism.Brain, sensoryInputs[id], behavior);
-            organism.UpdateBrain(result.Genome);
-            organism.RecordAction(result.Action);
-            actions[id] = result.Action;
+            OrganismAction action = NeatBrain.SelectAction(propagations[i].Probabilities, behavior);
+            organism.UpdateBrain(propagations[i].Genome);
+            organism.RecordAction(action);
+            actions[id] = action;
         }
 
         // 4. Intent Resolution Phase: movement, harvest (grazing/predation), and reproduction

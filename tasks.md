@@ -405,6 +405,8 @@ These hold at every phase, not just one:
 - [x] New snapshot fields are added to the JSON Schema and covered by the save/reload test (Plan §12) — events, metrics, edit log, and branch provenance all extended the schema and round-trip.
 - [x] New config constants live in the `configuration` block (Plan Appendix A), not in source — e.g. `plague_energy_drain_per_tick`, `temperature_variation`; Phase 12 tuned defaults in-block. (Exception: histogram bin count and marker-radius bounds are UI/analysis presentation constants, not simulation config.)
 - [x] Anything rendered by a GUI is derived from snapshot/state fields only and has a corresponding legend entry (Plan §18) — the shared views render purely from `WorldSnapshot`; `LegendBuilder` covers every colour channel.
+- [x] **Multithreading is determinism-preserving (§7):** the per-organism brain forward pass runs across 1..hardware-threads (`--threads` CLI flag / GUI setup spinner, live-adjustable), but it is a pure function and the softmax roll stays sequential in id order — a flagship test pins threads 1 vs 2/4/8 to byte-identical snapshots. Thread count is execution-only, not snapshot state.
+- [x] **GUI seed is randomised per launch** so each new world differs by default, while any seed can still be pinned for reproducible runs.
 
 ---
 

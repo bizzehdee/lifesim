@@ -86,6 +86,13 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _multicellularEnabled = true;
 
+    /// <summary>Brain-evaluation threads (lifesim.md §7): 1..<see cref="MaxThreads"/>. Execution-only — results are identical for any value.</summary>
+    [ObservableProperty]
+    private decimal _threadCount = 1;
+
+    /// <summary>Upper bound for <see cref="ThreadCount"/>: the machine's hardware threads.</summary>
+    public int MaxThreads { get; } = Environment.ProcessorCount;
+
     /// <summary>The full simulation configuration as JSON — pre-filled with the defaults, editable so any starting constant can be set (same block as <c>sim new --config</c>).</summary>
     [ObservableProperty]
     private string _configJson = SnapshotSerializer.SaveConfig(SimulationConfig.Default);
@@ -110,6 +117,10 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             ? "Configure a new world, or load / connect to a stream."
             : "Load a snapshot or connect to a sim serve stream.";
         Mode = _liveCapable ? SessionMode.Live : SessionMode.Streaming;
+
+        // Fresh random seed each launch so a new world is different by default (still deterministic
+        // once chosen — the user can pin any seed for reproducible runs).
+        Seed = Random.Shared.Next(0, 1_000_000_000);
     }
 
     [RelayCommand]
@@ -290,6 +301,11 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     partial void OnTicksPerSecondChanged(double value) => _runner?.SetTicksPerSecond(value);
 
+    partial void OnThreadCountChanged(decimal value) => _runner?.SetMaxDegreeOfParallelism(ResolveThreads(value));
+
+    /// <summary>Clamp a requested thread count to 1..hardware-threads (lifesim.md §7).</summary>
+    private int ResolveThreads(decimal requested) => Math.Clamp((int)requested, 1, MaxThreads);
+
     private static string NewId(string prefix) => $"{prefix}-{Guid.NewGuid():N}";
 
     private void Adopt(WorldSnapshot snapshot) => Adopt(SimulationWorld.FromSnapshot(snapshot));
@@ -299,6 +315,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         DisposeSources();
         Mode = SessionMode.Live;
         IsPlaying = false;
+        world.MaxDegreeOfParallelism = ResolveThreads(ThreadCount);
         _runner = new EngineRunner(world, PublishFrame);
         _runner.SetTicksPerSecond(TicksPerSecond);
         HasWorld = true;

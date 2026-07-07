@@ -66,6 +66,15 @@ public sealed class EngineRunner : IDisposable
         _delayMs = Math.Max(1, (int)Math.Round(1000.0 / clamped));
     }
 
+    /// <summary>Live-adjust the brain-evaluation thread count (execution-only; results are unaffected, lifesim.md §7).</summary>
+    public void SetMaxDegreeOfParallelism(int threads)
+    {
+        lock (_gate)
+        {
+            _world.MaxDegreeOfParallelism = threads;
+        }
+    }
+
     public void Dispose()
     {
         _stopping = true;

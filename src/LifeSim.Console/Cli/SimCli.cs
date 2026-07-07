@@ -78,10 +78,13 @@ public static class SimCli
         writer.WriteLine("  new    --out FILE [--seed S] [--width W] [--height H] [--population P] [--config FILE]");
         writer.WriteLine("         Create an initial world from config + seed.");
         writer.WriteLine("  run    --in FILE --out FILE --ticks N [--out-dir DIR --stream K]");
-        writer.WriteLine("         [--metrics FILE --metrics-format csv|ndjson]");
+        writer.WriteLine("         [--metrics FILE --metrics-format csv|ndjson] [--threads N]");
         writer.WriteLine("         Advance the world N ticks; optionally stream frames and metrics.");
-        writer.WriteLine("  serve  --in FILE [--port P] [--tps R] [--max-ticks N]");
+        writer.WriteLine("  serve  --in FILE [--port P] [--tps R] [--max-ticks N] [--threads N]");
         writer.WriteLine("         Run the engine and expose snapshots over HTTP/WebSocket.");
+        writer.WriteLine();
+        writer.WriteLine("  --threads N  brain evaluation threads, 1..hardware-threads (default 1;");
+        writer.WriteLine("               execution-only, results are identical for any value).");
         return exitCode;
     }
 }

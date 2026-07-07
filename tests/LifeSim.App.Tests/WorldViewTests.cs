@@ -80,6 +80,13 @@ public class WorldViewTests
         Assert.NotNull(inspector);
         Assert.Equal(organism.Name, inspector.Name);
         Assert.Equal(8, inspector.Traits.Count); // 7 physical/sensory traits + Generosity (lifesim.md §20)
+
+        // Body composition stats (multicellularity, lifesim.md §21): cell count + one entry per cell type.
+        Assert.True(inspector.CellCount >= 1.0);
+        Assert.Equal(6, inspector.CellComposition.Count);
+        Assert.Equal(new[] { "Germ", "Feeder", "Store", "Defender", "Mover", "Sensor" }, inspector.CellComposition.Select(c => c.Type));
+        Assert.Equal(inspector.CellCount, inspector.CellComposition.Sum(c => c.Cells), precision: 6);
+
         Assert.Equal(15, inspector.ActionProbabilities.Count); // 4 move + 5 harvest + idle + reproduce + 4 share
         Assert.Equal(1.0, inspector.ActionProbabilities.Sum(p => p.Probability), precision: 6);
         Assert.Equal(organism.Brain.Nodes.Count, inspector.BrainGraph.Nodes.Count);

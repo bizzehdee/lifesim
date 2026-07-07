@@ -95,6 +95,23 @@ public class SimCliTests
     }
 
     [Fact]
+    public void Run_withThreads_isByteIdenticalToASerialRun()
+    {
+        using var temp = new TempDir();
+        string genesis = temp.File("genesis.json");
+        RunCli(out _, out _, "new", "--out", genesis, "--seed", "909090", "--width", "48", "--height", "48", "--population", "25");
+
+        string serial = temp.File("serial.json");
+        string threaded = temp.File("threaded.json");
+        RunCli(out _, out _, "run", "--in", genesis, "--out", serial, "--ticks", "100");
+        int exit = RunCli(out _, out _, "run", "--in", genesis, "--out", threaded, "--ticks", "100", "--threads", "4");
+
+        // --threads is an execution knob only: the result must match a serial run (lifesim.md §7, §15).
+        Assert.Equal(0, exit);
+        Assert.Equal(File.ReadAllText(serial), File.ReadAllText(threaded));
+    }
+
+    [Fact]
     public void Run_withStream_writesOnePeriodicFramePerInterval()
     {
         using var temp = new TempDir();

@@ -25,6 +25,7 @@ public static class ServeCommand
         long maxTicks = args.GetLong("max-ticks", -1);
 
         var world = SimulationWorld.FromSnapshot(SnapshotSerializer.Load(File.ReadAllText(inPath)));
+        world.MaxDegreeOfParallelism = ThreadOption.Resolve(args);
         var service = new SnapshotService(world);
 
         using var cts = new CancellationTokenSource();

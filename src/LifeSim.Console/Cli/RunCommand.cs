@@ -38,6 +38,7 @@ public static class RunCommand
         }
 
         var world = SimulationWorld.FromSnapshot(SnapshotSerializer.Load(File.ReadAllText(inPath)));
+        world.MaxDegreeOfParallelism = ThreadOption.Resolve(args);
 
         if (outDir is not null)
         {

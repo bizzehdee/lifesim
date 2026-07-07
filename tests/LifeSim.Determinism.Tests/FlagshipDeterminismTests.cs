@@ -103,6 +103,26 @@ public class FlagshipDeterminismTests
         Assert.Equal(SnapshotSerializer.Save(a), SnapshotSerializer.Save(resumedResult));
     }
 
+    /// <summary>
+    /// Multithreading is an execution knob, not a simulation input (lifesim.md §7): the parallelised
+    /// brain forward pass is a pure function and the softmax roll stays sequential, so a run must be
+    /// byte-identical for any thread count. This is the safety net for the whole parallelisation.
+    /// </summary>
+    [Theory]
+    [InlineData(2)]
+    [InlineData(4)]
+    [InlineData(8)]
+    public void ThreadCount_doesNotChangeTheResult(int threads)
+    {
+        WorldSnapshot serial = RunTicks(SimulationWorld.CreateGenesis(NewWorldState(), NewConfig()), Ticks);
+
+        SimulationWorld parallelWorld = SimulationWorld.CreateGenesis(NewWorldState(), NewConfig());
+        parallelWorld.MaxDegreeOfParallelism = threads;
+        WorldSnapshot parallel = RunTicks(parallelWorld, Ticks);
+
+        Assert.Equal(SnapshotSerializer.Save(serial), SnapshotSerializer.Save(parallel));
+    }
+
     private static WorldSnapshot RunTicks(SimulationWorld world, int ticks)
     {
         for (int i = 0; i < ticks && !world.Extinct; i++)

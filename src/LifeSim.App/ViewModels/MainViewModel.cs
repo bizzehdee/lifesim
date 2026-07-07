@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LifeSim.App.Engine;
@@ -93,9 +95,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     /// <summary>Upper bound for <see cref="ThreadCount"/>: the machine's hardware threads.</summary>
     public int MaxThreads { get; } = Environment.ProcessorCount;
 
-    /// <summary>The full simulation configuration as JSON — pre-filled with the defaults, editable so any starting constant can be set (same block as <c>sim new --config</c>).</summary>
+    /// <summary>Structured editor over every starting constant (lifesim.md §18) — the advanced setup panel binds to it, and it round-trips through save/load of options.</summary>
     [ObservableProperty]
-    private string _configJson = SnapshotSerializer.SaveConfig(SimulationConfig.Default);
+    private AdvancedConfigEditor _advancedConfig = new(SnapshotSerializer.SaveConfig(SimulationConfig.Default));
 
     public WorldViewModel World { get; } = new();
 
@@ -170,7 +172,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         SimulationConfig config;
         try
         {
-            SimulationConfig parsed = SnapshotSerializer.LoadConfig(ConfigJson);
+            SimulationConfig parsed = SnapshotSerializer.LoadConfig(AdvancedConfig.ToJson());
             config = parsed with
             {
                 InitialPopulation = (int)Population,
@@ -181,11 +183,60 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
         catch (SnapshotValidationException ex)
         {
-            Status = $"Invalid configuration JSON: {ex.Message}";
+            Status = $"Invalid configuration: {ex.Message}";
             return;
         }
 
         TryCreateWorld((ulong)Seed, (int)Width, (int)Height, config, out _);
+    }
+
+    /// <summary>Pick a fresh random seed for the new world (the run stays deterministic once created).</summary>
+    [RelayCommand]
+    public void RandomiseSeed() => Seed = Random.Shared.Next(0, 1_000_000_000);
+
+    /// <summary>Serialise the full setup — run parameters, headline toggles, and the whole config — for save-to-file.</summary>
+    public string SaveOptionsJson()
+    {
+        var options = new JsonObject
+        {
+            ["seed"] = (long)Seed,
+            ["width"] = (int)Width,
+            ["height"] = (int)Height,
+            ["population"] = (int)Population,
+            ["threads"] = (int)ThreadCount,
+            ["cooperation"] = CooperationEnabled,
+            ["senescence"] = SenescenceEnabled,
+            ["multicellular"] = MulticellularEnabled,
+            ["config"] = JsonNode.Parse(AdvancedConfig.ToJson()),
+        };
+
+        return options.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    /// <summary>Restore a setup previously saved with <see cref="SaveOptionsJson"/>; leaves the screen ready to create the world.</summary>
+    public void LoadOptionsFromJson(string json)
+    {
+        JsonObject options;
+        try
+        {
+            options = JsonNode.Parse(json)!.AsObject();
+            AdvancedConfig = new AdvancedConfigEditor(options["config"]!.ToJsonString());
+        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or NullReferenceException or SnapshotValidationException)
+        {
+            Status = $"Invalid options file: {ex.Message}";
+            return;
+        }
+
+        Seed = options["seed"]!.GetValue<long>();
+        Width = options["width"]!.GetValue<int>();
+        Height = options["height"]!.GetValue<int>();
+        Population = options["population"]!.GetValue<int>();
+        ThreadCount = ResolveThreads(options["threads"]!.GetValue<int>());
+        CooperationEnabled = options["cooperation"]!.GetValue<bool>();
+        SenescenceEnabled = options["senescence"]!.GetValue<bool>();
+        MulticellularEnabled = options["multicellular"]!.GetValue<bool>();
+        Status = "Loaded starting options — ready to create the world.";
     }
 
     /// <summary>Builds a genesis world from explicit parameters; returns false (with <paramref name="error"/>) on invalid input.</summary>

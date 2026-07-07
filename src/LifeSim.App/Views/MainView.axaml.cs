@@ -113,6 +113,56 @@ public partial class MainView : UserControl
         await writer.WriteAsync(json);
     }
 
+    // Starting-options save/load: the whole setup (run parameters, toggles, and full config) as one
+    // JSON file, via the picked file's stream so it works on desktop and the browser target alike.
+    private async void OnSaveOptionsClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm || TopLevel.GetTopLevel(this) is not { } top)
+        {
+            return;
+        }
+
+        IStorageFile? file = await top.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save starting options",
+            SuggestedFileName = "options.json",
+            FileTypeChoices = [new FilePickerFileType("Options JSON") { Patterns = ["*.json"] }],
+        });
+
+        if (file is null)
+        {
+            return;
+        }
+
+        await using Stream stream = await file.OpenWriteAsync();
+        await using var writer = new StreamWriter(stream);
+        await writer.WriteAsync(vm.SaveOptionsJson());
+    }
+
+    private async void OnLoadOptionsClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm || TopLevel.GetTopLevel(this) is not { } top)
+        {
+            return;
+        }
+
+        IReadOnlyList<IStorageFile> files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Load starting options",
+            AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType("Options JSON") { Patterns = ["*.json"] }],
+        });
+
+        if (files.Count == 0)
+        {
+            return;
+        }
+
+        await using Stream stream = await files[0].OpenReadAsync();
+        using var reader = new StreamReader(stream);
+        vm.LoadOptionsFromJson(await reader.ReadToEndAsync());
+    }
+
     private async void OnLoadClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not MainViewModel vm || TopLevel.GetTopLevel(this) is not { } top)

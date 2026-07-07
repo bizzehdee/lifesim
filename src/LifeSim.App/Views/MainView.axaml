@@ -50,7 +50,7 @@
 
             <!-- New-world setup (before the simulation starts) -->
             <ScrollViewer IsVisible="{Binding !HasWorld}" HorizontalScrollBarVisibility="Disabled">
-                <Border MaxWidth="560" Margin="24" Padding="24" CornerRadius="8"
+                <Border MaxWidth="680" Margin="24" Padding="24" CornerRadius="8"
                         HorizontalAlignment="Center" VerticalAlignment="Top"
                         Background="{DynamicResource SystemChromeLowColor}">
                     <StackPanel Spacing="14">
@@ -60,8 +60,11 @@
 
                         <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="10">
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="Seed" VerticalAlignment="Center" />
-                            <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding Seed}"
-                                           Minimum="0" Maximum="999999999" Increment="1" FormatString="0" ParsingNumberStyle="Integer" />
+                            <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                <NumericUpDown Grid.Column="0" Value="{Binding Seed}"
+                                               Minimum="0" Maximum="999999999" Increment="1" FormatString="0" ParsingNumberStyle="Integer" />
+                                <Button Grid.Column="1" Content="🎲" Command="{Binding RandomiseSeedCommand}" ToolTip.Tip="Randomise seed" />
+                            </Grid>
 
                             <TextBlock Grid.Row="1" Grid.Column="0" Text="Width (tiles)" VerticalAlignment="Center" />
                             <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Width}"
@@ -95,19 +98,62 @@
                                        Text="Bodies can evolve many cells specialised to jobs (germ, feeder, store, defender, mover, sensor). Bigger bodies cost more but store more; the square-cube law caps size. Off = every organism is a single cell." />
                         </StackPanel>
 
-                        <Expander Header="Advanced: full configuration (JSON)">
+                        <Expander Header="Advanced: all simulation settings">
                             <StackPanel Spacing="6">
                                 <TextBlock Opacity="0.7" FontSize="12" TextWrapping="Wrap"
-                                           Text="Every simulation constant (Appendix A defaults shown). Edit any value to change the starting conditions. The Population field above overrides initial_population." />
-                                <TextBox Text="{Binding ConfigJson}" AcceptsReturn="True" TextWrapping="NoWrap"
-                                         FontFamily="Cascadia Code,Consolas,monospace" Height="260"
-                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                                         ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                                           Text="Every starting constant, grouped by category. Tweak any value; the Population and toggles above override their config entries." />
+                                <ScrollViewer MaxHeight="420" Padding="0,0,10,0">
+                                    <ItemsControl ItemsSource="{Binding AdvancedConfig.Groups}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:ConfigGroup">
+                                                <StackPanel Margin="0,0,0,10" Spacing="2">
+                                                    <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="13" Margin="0,4,0,2" />
+                                                    <ItemsControl ItemsSource="{Binding Fields}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate x:DataType="vm:ConfigField">
+                                                                <Grid ColumnDefinitions="*,150" Margin="0,1">
+                                                                    <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="12" VerticalAlignment="Center" />
+                                                                    <NumericUpDown Grid.Column="1" Value="{Binding Number}" IsVisible="{Binding !IsBool}"
+                                                                                   Increment="{Binding Increment}" FormatString="{Binding Format}" />
+                                                                    <CheckBox Grid.Column="1" IsChecked="{Binding Flag}" IsVisible="{Binding IsBool}" HorizontalAlignment="Right" />
+                                                                </Grid>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <ItemsControl ItemsSource="{Binding Groups}" Margin="14,2,0,0">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate x:DataType="vm:ConfigGroup">
+                                                                <StackPanel Margin="0,2,0,4" Spacing="2">
+                                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12" Opacity="0.85" />
+                                                                    <ItemsControl ItemsSource="{Binding Fields}">
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate x:DataType="vm:ConfigField">
+                                                                                <Grid ColumnDefinitions="*,150" Margin="0,1">
+                                                                                    <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="12" VerticalAlignment="Center" />
+                                                                                    <NumericUpDown Grid.Column="1" Value="{Binding Number}" IsVisible="{Binding !IsBool}"
+                                                                                                   Increment="{Binding Increment}" FormatString="{Binding Format}" />
+                                                                                    <CheckBox Grid.Column="1" IsChecked="{Binding Flag}" IsVisible="{Binding IsBool}" HorizontalAlignment="Right" />
+                                                                                </Grid>
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                </StackPanel>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
                             </StackPanel>
                         </Expander>
 
-                        <Button Content="Create World" Command="{Binding CreateWorldCommand}"
-                                HorizontalAlignment="Left" Classes="accent" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Create World" Command="{Binding CreateWorldCommand}" Classes="accent" />
+                            <Button Content="💾 Save options…" Click="OnSaveOptionsClick" />
+                            <Button Content="📂 Load options…" Click="OnLoadOptionsClick" />
+                        </StackPanel>
                         <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Opacity="0.85" />
                     </StackPanel>
                 </Border>

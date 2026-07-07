@@ -257,12 +257,12 @@ public class SessionTests
         session.Height = 40;
         session.Population = 12;
 
-        // A starting property set through the full-config JSON (any constant is reachable this way).
+        // A starting property set through the advanced config editor (any constant is reachable this way).
         SimulationConfig config = SimulationConfig.Default with
         {
             Reproduction = SimulationConfig.Default.Reproduction with { ReproductionBaseCost = 5.5 },
         };
-        session.ConfigJson = SnapshotSerializer.SaveConfig(config);
+        session.AdvancedConfig = new AdvancedConfigEditor(SnapshotSerializer.SaveConfig(config));
 
         session.CreateWorld();
 

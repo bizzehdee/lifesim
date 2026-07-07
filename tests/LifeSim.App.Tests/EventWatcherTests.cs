@@ -28,7 +28,7 @@ public class EventWatcherTests
                 genome = genome with { CellCount = Math.Max(2.0, maxCell), FeederWeight = 1.0 };
             }
 
-            organisms.Add(new OrganismSnapshot { Genome = genome });
+            organisms.Add(new OrganismSnapshot { OrganismId = i + 1, Genome = genome });
         }
 
         return new WorldSnapshot
@@ -150,11 +150,15 @@ public class EventWatcherTests
     // --- Evolutionary milestones ---
 
     [Fact]
-    public void CellMilestones_notifyPerNewWholeCellCount()
+    public void CellMilestones_notifyPerNewWholeCellCount_andCarryTheOrganismId()
     {
         var watcher = new EventWatcher();
         watcher.Observe(Frame(0, 40, maxCell: 1.0));
-        Assert.Equal(["First 2-cell organism"], Titles(watcher.Observe(Frame(1, 40, maxCell: 2.3))));
+
+        IReadOnlyList<SimNotification> two = watcher.Observe(Frame(1, 40, maxCell: 2.3));
+        Assert.Equal(["First 2-cell organism"], Titles(two));
+        Assert.Equal(1, two[0].OrganismId); // the largest body is organism i==0 → id 1, so the toast is click-to-select
+
         Assert.Empty(watcher.Observe(Frame(2, 40, maxCell: 2.9)));
         Assert.Equal(["First 3-cell organism", "First 4-cell organism"], Titles(watcher.Observe(Frame(3, 40, maxCell: 4.1))));
     }
@@ -191,7 +195,10 @@ public class EventWatcherTests
     {
         var watcher = new EventWatcher();
         watcher.Observe(Frame(0, 40));
-        Assert.Contains("First sterile soma", Titles(watcher.Observe(Frame(1, 40, sterileSoma: true))));
+
+        SimNotification soma = watcher.Observe(Frame(1, 40, sterileSoma: true)).Single(n => n.Title == "First sterile soma");
+        Assert.Equal(1, soma.OrganismId); // click-to-select the sterile body
+
         Assert.DoesNotContain("First sterile soma", Titles(watcher.Observe(Frame(2, 40, sterileSoma: true))));
     }
 

@@ -69,8 +69,16 @@ public partial class MainView : UserControl
         }
     }
 
-    private void OnNotification(SimNotification notification) =>
-        _notifications?.Show(new Notification(notification.Title, notification.Detail, Map(notification.Kind)));
+    private void OnNotification(SimNotification notification)
+    {
+        // A notification about a specific organism is click-to-select: clicking the toast focuses
+        // that organism exactly like a map click (lifesim.md §18).
+        Action? onClick = notification.OrganismId is { } id
+            ? () => _subscribedWorld?.FocusOrganism(id)
+            : null;
+
+        _notifications?.Show(new Notification(notification.Title, notification.Detail, Map(notification.Kind), onClick: onClick));
+    }
 
     private static NotificationType Map(SimNotificationKind kind) => kind switch
     {

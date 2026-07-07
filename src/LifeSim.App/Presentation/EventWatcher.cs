@@ -14,8 +14,12 @@ public enum SimNotificationKind
     Success,
 }
 
-/// <summary>A single in-app notification (lifesim.md §18): a short title + detail and a severity.</summary>
-public sealed record SimNotification(string Title, string Detail, SimNotificationKind Kind);
+/// <summary>
+/// A single in-app notification (lifesim.md §18): a short title + detail and a severity. When it
+/// concerns one organism (a multicellular milestone, a sterile-soma body), <see cref="OrganismId"/>
+/// carries that organism so clicking the toast can select it on the map, exactly like a map click.
+/// </summary>
+public sealed record SimNotification(string Title, string Detail, SimNotificationKind Kind, long? OrganismId = null);
 
 /// <summary>
 /// Watches the snapshot stream and flags notable transitions as in-app notifications (lifesim.md
@@ -106,7 +110,7 @@ public sealed class EventWatcher
 
         _lastTick = snapshot.Tick;
         int population = snapshot.Organisms.Count;
-        int maxCells = MaxWholeCells(snapshot);
+        (int maxCells, long maxCellOrganismId) = LargestBody(snapshot);
         SimulationMetrics? metrics = snapshot.Metrics;
 
         if (!_initialized)
@@ -118,7 +122,7 @@ public sealed class EventWatcher
         var results = new List<SimNotification>();
         DetectEnvironmentEvents(snapshot, results);
         DetectPopulation(population, results);
-        DetectCellMilestones(maxCells, results);
+        DetectCellMilestones(maxCells, maxCellOrganismId, results);
         DetectGenerationMilestones(snapshot, results);
         DetectFirsts(snapshot, metrics, results);
         DetectBiomeColonization(metrics, results);
@@ -145,7 +149,7 @@ public sealed class EventWatcher
         _nearExtinctionArmed = population > NearExtinctionThreshold;
         _shareAnnounced = metrics is { SuccessfulShare: > 0 };
         _kinPredationAnnounced = metrics is { KinPredation: > 0 };
-        _sterileSomaAnnounced = HasSterileSoma(snapshot);
+        _sterileSomaAnnounced = SterileSomaId(snapshot) is not null;
         foreach (Biome biome in HostileBiomes)
         {
             if (BiomeCount(metrics, biome) > 0)
@@ -232,11 +236,15 @@ public sealed class EventWatcher
         }
     }
 
-    private void DetectCellMilestones(int maxCells, List<SimNotification> results)
+    private void DetectCellMilestones(int maxCells, long organismId, List<SimNotification> results)
     {
         for (int cells = _cellMilestone + 1; cells <= maxCells; cells++)
         {
-            results.Add(new SimNotification($"First {cells}-cell organism", $"A multicellular body of {cells} cells has evolved.", SimNotificationKind.Success));
+            results.Add(new SimNotification(
+                $"First {cells}-cell organism",
+                $"A multicellular body of {cells} cells has evolved. Click to inspect it.",
+                SimNotificationKind.Success,
+                organismId));
         }
 
         if (maxCells > _cellMilestone)
@@ -269,9 +277,13 @@ public sealed class EventWatcher
             _kinPredationAnnounced = true;
         }
 
-        if (!_sterileSomaAnnounced && HasSterileSoma(snapshot))
+        if (!_sterileSomaAnnounced && SterileSomaId(snapshot) is { } somaId)
         {
-            results.Add(new SimNotification("First sterile soma", "A body has evolved too few germ cells to reproduce.", SimNotificationKind.Info));
+            results.Add(new SimNotification(
+                "First sterile soma",
+                "A body has evolved too few germ cells to reproduce. Click to inspect it.",
+                SimNotificationKind.Info,
+                somaId));
             _sterileSomaAnnounced = true;
         }
     }
@@ -366,35 +378,43 @@ public sealed class EventWatcher
         return max;
     }
 
-    private static bool HasSterileSoma(WorldSnapshot snapshot)
+    /// <summary>The id of the first sterile-soma body (too few germ cells to reproduce), or null when none / multicellularity is off.</summary>
+    private static long? SterileSomaId(WorldSnapshot snapshot)
     {
         MulticellularConfig config = snapshot.Configuration.Multicellular;
         if (!config.Enabled)
         {
-            return false;
+            return null;
         }
 
         foreach (OrganismSnapshot organism in snapshot.Organisms)
         {
             if (!Morphology.CanReproduce(organism.Genome.ToGenome(), config))
             {
-                return true;
+                return organism.OrganismId;
             }
         }
 
-        return false;
+        return null;
     }
 
-    private static int MaxWholeCells(WorldSnapshot snapshot)
+    /// <summary>The whole-cell count of the largest body and the id of the organism that carries it (id -1 if the world is empty).</summary>
+    private static (int Cells, long OrganismId) LargestBody(WorldSnapshot snapshot)
     {
         MulticellularConfig config = snapshot.Configuration.Multicellular;
-        double max = 1.0;
+        double best = 0.0;
+        long id = -1;
         foreach (OrganismSnapshot organism in snapshot.Organisms)
         {
-            max = Math.Max(max, Morphology.CellCount(organism.Genome.ToGenome(), config));
+            double cells = Morphology.CellCount(organism.Genome.ToGenome(), config);
+            if (cells > best)
+            {
+                best = cells;
+                id = organism.OrganismId;
+            }
         }
 
-        return (int)Math.Floor(max);
+        return ((int)Math.Floor(Math.Max(1.0, best)), id);
     }
 
     private static readonly Biome[] HostileBiomes = [Biome.Desert, Biome.Swamp, Biome.IceSheet];

@@ -22,6 +22,23 @@ public class WorldViewTests
     }
 
     [Fact]
+    public void FocusOrganism_selectsItAndSwitchesToTheInfoTab()
+    {
+        WorldSnapshot snapshot = BuildSnapshot();
+        var vm = new WorldViewModel();
+        vm.LoadSnapshot(snapshot);
+        vm.SidebarTabIndex = 1; // start on the Ranking tab
+        long id = snapshot.Organisms[0].OrganismId;
+
+        vm.FocusOrganism(id); // what a clickable notification invokes
+
+        Assert.Equal(0, vm.SidebarTabIndex); // Info tab, where the inspector lives
+        Assert.Equal(id, vm.SelectedOrganismId);
+        Assert.NotNull(vm.Inspector);
+        Assert.Equal(id, vm.Inspector!.OrganismId);
+    }
+
+    [Fact]
     public void WorldScene_buildsOneViewPerOrganism_andReturnsTileColours()
     {
         WorldSnapshot snapshot = BuildSnapshot();

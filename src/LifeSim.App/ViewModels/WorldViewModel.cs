@@ -92,6 +92,13 @@ public partial class WorldViewModel : ViewModelBase
     [RelayCommand]
     private void SelectOrganism(long? organismId) => SelectedOrganismId = organismId;
 
+    /// <summary>Select an organism as if it were clicked on the map — used by clickable notifications (lifesim.md §18). Switches to the Info tab so its inspector is visible.</summary>
+    public void FocusOrganism(long organismId)
+    {
+        SidebarTabIndex = 0; // the Info tab hosts the inspector
+        SelectedOrganismId = organismId;
+    }
+
     [RelayCommand]
     private void ClearSelection() => SelectedOrganismId = null;
 

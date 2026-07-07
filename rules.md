@@ -1,26 +1,24 @@
 # LifeSim — The Rules
 
-A plain-language tour of the laws that govern the world. This is the high-level "rules of the
-game"; [`lifesim.md`](./lifesim.md) is the authoritative blueprint (the section markers `§n` below
-point into it) and [`tasks.md`](./tasks.md) tracks how it was built.
+A plain-language tour of the laws that govern the world — the high-level "rules of the game".
 
 Everything below is **deterministic**: the same seed and settings always produce exactly the same
-run, tick for tick, on any machine and at any thread count (§9).
+run, tick for tick, on any machine and at any thread count.
 
 ---
 
 ## 1. The world
-- The map is a grid of tiles reconstructed from the world **seed** — no two seeds look alike, and terrain is never stored, only regenerated (§2).
+- The map is a grid of tiles reconstructed from the world **seed** — no two seeds look alike, and terrain is never stored, only regenerated.
 - Every tile belongs to one of four **biomes**, each with its own temperature, friction (movement cost), and food: **Grassland** (balanced), **Desert** (hot, barren), **Swamp** (wet, rich, sticky), **Ice Sheet** (freezing, lifeless ground).
 - Each tile holds a **ground energy pool** that regrows toward its biome's cap every tick. This is the base of the food web.
 
 ## 2. Organisms
 - An organism occupies **one tile**. It has a **genome** (its inherited traits), a **brain** (an evolvable neural network), and an **energy budget**.
-- Energy runs from 0 to a ceiling (100 by default). **Energy hits zero → the organism dies** and is removed. There is no other automatic death unless aging is switched on (§7 rules 8).
+- Energy runs from 0 to a ceiling (100 by default). **Energy hits zero → the organism dies** and is removed. There is no other automatic death unless aging is switched on (see rule 7).
 - Traits include body **size**, **speed**, a **thermal comfort band** (centre ± width), **sensing radii** and **acuity**, **generosity**, and a multicellular **body plan** (see rule 9).
 
 ## 3. Energy is a strict budget
-Every action and condition is an energy transaction (§3). Each tick an organism pays for:
+Every action and condition is an energy transaction. Each tick an organism pays for:
 - **Base metabolism** — proportional to its body mass.
 - **Thermal stress** — free inside its comfort band, growing the further the tile's temperature strays outside it.
 - **Sensory tax** — perception is expensive; wider/sharper senses cost more (moving-agent vision costs more than static terrain sensing).
@@ -30,14 +28,14 @@ Every action and condition is an energy transaction (§3). Each tick an organism
 It **gains** energy only by feeding (rule 5).
 
 ## 4. The tick — how time passes
-Every tick resolves in a fixed order (§7): **sense → decide → act → pay metabolism → remove the dead → regrow ground → commit newborns → record stats**. When two organisms want the same thing, the lower id resolves first. This strict ordering is what makes runs reproducible.
+Every tick resolves in a fixed order: **sense → decide → act → pay metabolism → remove the dead → regrow ground → commit newborns → record stats**. When two organisms want the same thing, the lower id resolves first. This strict ordering is what makes runs reproducible.
 
 ## 5. Sensing, brains, and actions
 - **Sensing** gives each organism a snapshot of its surroundings — local biome, temperature, its own energy, nearby organisms (and how *related* they are), reproductive readiness, and a global stress signal. Low acuity blurs these readings with noise.
-- The **brain** is a recurrent neural network that turns senses into one chosen action. Its structure is **not fixed** — it starts minimal (senses wired straight to actions) and **evolves new neurons and connections** over generations (§4). Deeper, cleverer networks only persist if they help their lineage survive.
+- The **brain** is a recurrent neural network that turns senses into one chosen action. Its structure is **not fixed** — it starts minimal (senses wired straight to actions) and **evolves new neurons and connections** over generations. Deeper, cleverer networks only persist if they help their lineage survive.
 - The 15 possible **actions**: move (N/S/E/W), harvest (self or a neighbour tile), idle, reproduce, and share (N/S/E/W).
 
-## 6. Feeding and combat (§5)
+## 6. Feeding and combat
 - **Harvest an empty tile** → graze its ground energy.
 - **Harvest an occupied tile** → attempt predation. The kill chance is `attacker_mass / (attacker_mass + victim_mass)` — bigger bodies win more often but never with certainty. A kill transfers most of the victim's energy; a failed attack costs the attacker a retaliation penalty.
 
@@ -48,22 +46,23 @@ Every tick resolves in a fixed order (§7): **sense → decide → act → pay m
 4. Every organism gets a **name** and a tracked **lineage** (parent, generation depth, descendants).
 5. **Senescence** (aging) is on by default: past an onset age, an organism pays a metabolic tax that grows with age, so no lineage is immortal. It can be switched off per world.
 
-## 8. Environmental shocks (§6)
+## 8. Environmental shocks
 Rare, world-level events punish over-specialisation and monocultures:
 - **Resource blight** — ground energy stops regrowing in a biome for a while.
 - **Density plague** — crowded regions bleed energy, hitting dense clone-clusters hardest.
 - **Climatic anomaly** — a heatwave or ice age shifts temperatures, turning safe ground lethal.
 
-## 9. Cooperation (§20, optional — on by default)
+## 9. Cooperation (optional — on by default)
 - Organisms can **sense how related** a neighbour is and **share energy** with it. Sharing loses a little in transfer (altruism is genuinely costly).
 - **Generosity is an evolvable trait** — lineages can drift toward hoarding or over-sharing, whichever pays off.
 - Sharing is **relatedness-scaled**: close kin are helped usually (not always), strangers rarely (but possibly). Cooperation tends to emerge inside families, not between strangers.
 
-## 10. Multicellularity (§21, optional — on by default)
+## 10. Multicellularity (optional — on by default)
 - A body can evolve to be made of **many cells** (it still occupies one tile). Cells specialise into six jobs: **Germ** (reproduction), **Feeder** (food yield), **Store** (energy capacity), **Defender** (combat + thermal resistance), **Mover** (cheaper movement), **Sensor** (sharper senses).
 - **The square-cube law limits size**: upkeep grows with a body's volume (∝ cells) but feeding is limited by its surface — so a bigger body runs an ever-larger per-cell deficit and starves… *unless it divides its labour*.
 - **Division of labour outweighs the square-cube law**: a body drawing on several *distinct* specialist types runs far cheaper, feeds closer to its full size, and reproduces almost as cheaply as a single cell — so well-differentiated bodies can grow large while lopsided or generalist ones stay small.
 - Only bodies with enough **germ** cells can reproduce; a body that abandons germ becomes sterile **soma**.
+- **Bigger bodies graze a wider footprint**: a larger body skims ground energy from surrounding tiles (its reach grows with cell count), so it pulls energy from more of the surface. Because it drains a whole area, it crowds out smaller neighbours and tends to **hold territory** — an emergent consequence, not a scripted rule.
 - **More cells also mean more brain**: a larger body runs extra neural-processing steps per tick, so it thinks more deeply before acting.
 - Founders start as single cells; offspring of multicellular parents **tend toward multicellularity**, so once the transition happens it reinforces itself.
 

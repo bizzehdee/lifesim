@@ -132,6 +132,35 @@
                 </Grid>
             </TabItem>
 
+            <!-- Organisms: every currently-alive organism, sortable; click to jump to its stats -->
+            <TabItem Header="Organisms">
+                <Grid RowDefinitions="Auto,*" Margin="8">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="4,4,4,8" VerticalAlignment="Center">
+                        <TextBlock Text="Sort by" VerticalAlignment="Center" FontSize="12" />
+                        <ComboBox ItemsSource="{Binding OrganismSortKeys}" SelectedItem="{Binding OrganismSortKey}" MinWidth="120" />
+                        <CheckBox Content="Descending" IsChecked="{Binding OrganismSortDescending}" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <ListBox Grid.Row="1" ItemsSource="{Binding OrganismList}"
+                             SelectedItem="{Binding SelectedOrganismRow, Mode=TwoWay}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="pres:OrganismRow">
+                                <StackPanel Margin="0,1">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock FontSize="11" Opacity="0.7" Text="{Binding Age, StringFormat='age {0}'}" />
+                                        <TextBlock FontSize="11" Opacity="0.7" Text="{Binding CellCount, StringFormat='· cells {0:F1}'}" />
+                                        <TextBlock FontSize="11" Opacity="0.7" Text="{Binding Children, StringFormat='· children {0}'}" />
+                                        <TextBlock FontSize="11" Opacity="0.7" Text="{Binding Score, StringFormat='· score {0:F2}'}" />
+                                        <TextBlock FontSize="11" Opacity="0.7" Text="{Binding BrainNodes, StringFormat='· nodes {0}'}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </TabItem>
+
         </TabControl>
 
         <!-- Lineage graph overlay (over the whole view) -->

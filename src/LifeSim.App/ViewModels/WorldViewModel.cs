@@ -43,7 +43,23 @@ public partial class WorldViewModel : ViewModelBase
     [ObservableProperty]
     private ViewModelBase? _rankingDetail;
 
-    /// <summary>0 = Info tab, 1 = Ranking tab. The ranking is (re)built when this becomes 1, to avoid per-frame cost.</summary>
+    // --- Organisms tab (currently-alive organisms, sortable). ---
+    [ObservableProperty]
+    private IReadOnlyList<OrganismRow> _organismList = [];
+
+    [ObservableProperty]
+    private OrganismSortKey _organismSortKey = OrganismSortKey.Score;
+
+    [ObservableProperty]
+    private bool _organismSortDescending = true;
+
+    [ObservableProperty]
+    private OrganismRow? _selectedOrganismRow;
+
+    /// <summary>The sort options offered by the Organisms tab.</summary>
+    public IReadOnlyList<OrganismSortKey> OrganismSortKeys { get; } = Enum.GetValues<OrganismSortKey>();
+
+    /// <summary>0 = Info tab, 1 = Ranking tab, 2 = Organisms tab. Each list is (re)built when its tab is open, to avoid per-frame cost.</summary>
     [ObservableProperty]
     private int _sidebarTabIndex;
 
@@ -188,6 +204,11 @@ public partial class WorldViewModel : ViewModelBase
             RefreshRankingPreservingSelection(); // auto-refresh the leaderboard while the tab is open
         }
 
+        if (SidebarTabIndex == 2)
+        {
+            RefreshOrganismList(); // auto-refresh the live-organisms list while the tab is open
+        }
+
         if (IsLineageGraphVisible)
         {
             RebuildLineageGraph(); // keep the open lineage graph live as the sim advances
@@ -223,6 +244,10 @@ public partial class WorldViewModel : ViewModelBase
         {
             RefreshRankingPreservingSelection();
         }
+        else if (value == 2)
+        {
+            RefreshOrganismList();
+        }
 
         NotifyCurrentOrganismChanged();
     }
@@ -238,6 +263,22 @@ public partial class WorldViewModel : ViewModelBase
         RebuildRankingDetail();
         NotifyCurrentOrganismChanged();
     }
+
+    partial void OnOrganismSortKeyChanged(OrganismSortKey value) => RefreshOrganismList();
+
+    partial void OnOrganismSortDescendingChanged(bool value) => RefreshOrganismList();
+
+    partial void OnSelectedOrganismRowChanged(OrganismRow? value)
+    {
+        // Clicking an organism jumps to its full stats (selects it and switches to the Info tab).
+        if (value is not null)
+        {
+            FocusOrganism(value.OrganismId);
+        }
+    }
+
+    private void RefreshOrganismList() =>
+        OrganismList = Snapshot is null ? [] : OrganismListBuilder.Build(Snapshot, OrganismSortKey, ascending: !OrganismSortDescending);
 
     partial void OnColourModeChanged(ColourMode value)
     {

@@ -82,6 +82,44 @@ public class WorldViewTests
     }
 
     [Fact]
+    public void OrganismList_listsAliveOrganisms_sortedByTheChosenKeyAndDirection()
+    {
+        WorldSnapshot snap = BuildSnapshot(ticks: 30, seed: 909090);
+        Assert.NotEmpty(snap.Organisms);
+
+        IReadOnlyList<OrganismRow> byAgeDesc = OrganismListBuilder.Build(snap, OrganismSortKey.Age, ascending: false);
+        Assert.Equal(snap.Organisms.Count, byAgeDesc.Count);
+        for (int i = 1; i < byAgeDesc.Count; i++)
+        {
+            Assert.True(byAgeDesc[i - 1].Age >= byAgeDesc[i].Age, "Age-descending order violated.");
+        }
+
+        IReadOnlyList<OrganismRow> byNodesAsc = OrganismListBuilder.Build(snap, OrganismSortKey.BrainNodes, ascending: true);
+        for (int i = 1; i < byNodesAsc.Count; i++)
+        {
+            Assert.True(byNodesAsc[i - 1].BrainNodes <= byNodesAsc[i].BrainNodes, "Brain-nodes-ascending order violated.");
+        }
+    }
+
+    [Fact]
+    public void OrganismsTab_populatesLive_andClickingARowJumpsToItsStats()
+    {
+        var vm = new WorldViewModel();
+        vm.LoadSnapshot(BuildSnapshot());
+
+        vm.SidebarTabIndex = 2; // Organisms tab
+        Assert.NotEmpty(vm.OrganismList);
+
+        OrganismRow row = vm.OrganismList[0];
+        vm.SelectedOrganismRow = row;
+
+        Assert.Equal(0, vm.SidebarTabIndex); // jumped to the Info tab (its stats)
+        Assert.Equal(row.OrganismId, vm.SelectedOrganismId);
+        Assert.NotNull(vm.Inspector);
+        Assert.Equal(row.OrganismId, vm.Inspector!.OrganismId);
+    }
+
+    [Fact]
     public void FocusOrganism_selectsItAndSwitchesToTheInfoTab()
     {
         WorldSnapshot snapshot = BuildSnapshot();

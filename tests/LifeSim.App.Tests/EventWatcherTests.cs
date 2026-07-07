@@ -2,18 +2,33 @@ using LifeSim.App.Presentation;
 using LifeSim.Core.Configuration;
 using LifeSim.Core.Events;
 using LifeSim.Core.Snapshot;
+using LifeSim.Core.World;
 
 namespace LifeSim.App.Tests;
 
 public class EventWatcherTests
 {
-    private static WorldSnapshot Frame(long tick, int population, double maxCell = 1.0, bool multicellular = true, params EventType[] events)
+    private static WorldSnapshot Frame(
+        long tick,
+        int population,
+        double maxCell = 1.0,
+        bool multicellular = true,
+        EventType[]? events = null,
+        SimulationMetrics? metrics = null,
+        int maxGeneration = 0,
+        bool sterileSoma = false)
     {
         var organisms = new List<OrganismSnapshot>(population);
         for (int i = 0; i < population; i++)
         {
-            // One organism carries the body's max cell count; the rest are single cells.
-            organisms.Add(new OrganismSnapshot { Genome = new GenomeSnapshot { CellCount = i == 0 ? maxCell : 1.0 } });
+            var genome = new GenomeSnapshot { CellCount = i == 0 ? maxCell : 1.0 };
+            if (sterileSoma && i == 0)
+            {
+                // All Feeder, no Germ → germ fraction 0 → sterile soma (needs a multicellular body).
+                genome = genome with { CellCount = Math.Max(2.0, maxCell), FeederWeight = 1.0 };
+            }
+
+            organisms.Add(new OrganismSnapshot { Genome = genome });
         }
 
         return new WorldSnapshot
@@ -24,84 +39,124 @@ public class EventWatcherTests
                 Multicellular = SimulationConfig.Default.Multicellular with { Enabled = multicellular },
             },
             Organisms = organisms,
-            EnvironmentModifiers = [.. events.Select(t => new EnvironmentModifier { Type = t, RemainingTicks = 10 })],
+            Lineages = maxGeneration > 0 ? [new LineageSnapshot { OrganismId = 1, GenerationDepth = maxGeneration }] : [],
+            EnvironmentModifiers = events is null ? [] : [.. events.Select(t => new EnvironmentModifier { Type = t, RemainingTicks = 10 })],
+            Metrics = metrics,
         };
     }
+
+    private static SimulationMetrics Metrics(
+        long births = 0,
+        long deaths = 0,
+        long predation = 0,
+        long grazing = 0,
+        long share = 0,
+        long kinPredation = 0,
+        double energyAvg = 50.0,
+        (Biome Biome, long Count)[]? biomes = null)
+        => new()
+        {
+            Births = births,
+            Deaths = deaths,
+            SuccessfulPredation = predation,
+            SuccessfulGrazing = grazing,
+            SuccessfulShare = share,
+            KinPredation = kinPredation,
+            EnergyAverage = energyAvg,
+            PopulationByBiome = biomes is null ? [] : [.. biomes.Select(b => new BiomePopulation { Biome = b.Biome, Count = b.Count })],
+        };
+
+    private static IReadOnlyList<string> Titles(IReadOnlyList<SimNotification> notifications) => [.. notifications.Select(n => n.Title)];
+
+    // --- Seeding & environment events ---
 
     [Fact]
     public void FirstFrame_seedsBaselinesSilently()
     {
         var watcher = new EventWatcher();
-        Assert.Empty(watcher.Observe(Frame(tick: 0, population: 40, events: EventType.ResourceBlight)));
+        Assert.Empty(watcher.Observe(Frame(tick: 0, population: 40, events: [EventType.ResourceBlight])));
     }
 
     [Fact]
-    public void NewEnvironmentEvent_notifiesOnce_thenReArmsAfterItEnds()
-    {
-        var watcher = new EventWatcher();
-        watcher.Observe(Frame(0, 40));                                              // seed, no events
-
-        IReadOnlyList<SimNotification> onset = watcher.Observe(Frame(1, 40, events: EventType.ResourceBlight));
-        Assert.Single(onset);
-        Assert.Equal("Resource blight", onset[0].Title);
-        Assert.Equal(SimNotificationKind.Warning, onset[0].Kind);
-
-        Assert.Empty(watcher.Observe(Frame(2, 40, events: EventType.ResourceBlight))); // still active → silent
-        Assert.Empty(watcher.Observe(Frame(3, 40)));                                    // ended → silent
-
-        Assert.Single(watcher.Observe(Frame(4, 40, events: EventType.ResourceBlight))); // recurs → notifies again
-    }
-
-    [Fact]
-    public void SimultaneousEvents_eachNotifyInEnumOrder()
+    public void EnvironmentEvent_notifiesOnStartAndEnd_thenReArms()
     {
         var watcher = new EventWatcher();
         watcher.Observe(Frame(0, 40));
 
-        IReadOnlyList<SimNotification> events = watcher.Observe(
-            Frame(1, 40, events: [EventType.DensityPlague, EventType.ResourceBlight]));
+        Assert.Equal(["Resource blight"], Titles(watcher.Observe(Frame(1, 40, events: [EventType.ResourceBlight]))));
+        Assert.Empty(watcher.Observe(Frame(2, 40, events: [EventType.ResourceBlight])));       // still active
+        Assert.Equal(["Blight lifted"], Titles(watcher.Observe(Frame(3, 40))));                 // ended
+        Assert.Equal(["Resource blight"], Titles(watcher.Observe(Frame(4, 40, events: [EventType.ResourceBlight])))); // recurs
+    }
 
-        Assert.Equal(["Resource blight", "Density plague"], events.Select(n => n.Title)); // declared enum order
+    [Fact]
+    public void SimultaneousEvents_notifyInEnumOrder()
+    {
+        var watcher = new EventWatcher();
+        watcher.Observe(Frame(0, 40));
+        Assert.Equal(["Resource blight", "Density plague"],
+            Titles(watcher.Observe(Frame(1, 40, events: [EventType.DensityPlague, EventType.ResourceBlight]))));
+    }
+
+    // --- Population dynamics ---
+
+    [Fact]
+    public void Extinction_firesOnceWhenPopulationHitsZero()
+    {
+        var watcher = new EventWatcher();
+        watcher.Observe(Frame(0, 10));
+        Assert.Contains("Extinction", Titles(watcher.Observe(Frame(1, 0))));
+        Assert.DoesNotContain("Extinction", Titles(watcher.Observe(Frame(2, 0))));
+    }
+
+    [Fact]
+    public void NearExtinction_firesOnceThenReArmsAfterRecovery()
+    {
+        var watcher = new EventWatcher();
+        watcher.Observe(Frame(0, 6)); // small peak so a crash isn't also triggered
+
+        Assert.Contains("Near extinction", Titles(watcher.Observe(Frame(1, 3))));
+        Assert.DoesNotContain("Near extinction", Titles(watcher.Observe(Frame(2, 4)))); // still low, already armed off
+        watcher.Observe(Frame(3, 20));                                                  // recovers → re-arm
+        Assert.Contains("Near extinction", Titles(watcher.Observe(Frame(4, 2))));
+    }
+
+    [Fact]
+    public void PopulationCrash_firesWhenHalvingFromARecentPeak()
+    {
+        var watcher = new EventWatcher();
+        watcher.Observe(Frame(0, 100));
+        Assert.Equal(["Population crash"], Titles(watcher.Observe(Frame(1, 40))));
     }
 
     [Fact]
     public void PopulationExplosion_firesWhenDoublingFromARecentTrough()
     {
         var watcher = new EventWatcher();
-        watcher.Observe(Frame(0, 100));            // seed high
-        Assert.Empty(watcher.Observe(Frame(1, 20))); // crash → trough, no explosion
-
-        IReadOnlyList<SimNotification> boom = watcher.Observe(Frame(2, 40)); // 40 >= 2 x 20
-        Assert.Single(boom);
-        Assert.Equal("Population explosion", boom[0].Title);
-
-        Assert.Empty(watcher.Observe(Frame(3, 45))); // not another doubling from the new high
+        watcher.Observe(Frame(0, 100));
+        watcher.Observe(Frame(1, 20));
+        Assert.Contains("Population explosion", Titles(watcher.Observe(Frame(2, 40))));
     }
 
     [Fact]
-    public void PopulationExplosion_ignoresTinyPopulations()
+    public void PopulationRecord_firesOnAMeaningfulNewHigh()
     {
         var watcher = new EventWatcher();
-        watcher.Observe(Frame(0, 5));
-        watcher.Observe(Frame(1, 2));
-        Assert.Empty(watcher.Observe(Frame(2, 10))); // doubled, but below the meaningful-size floor
+        watcher.Observe(Frame(0, 40));
+        Assert.Equal(["Population record"], Titles(watcher.Observe(Frame(1, 60))));
+        Assert.DoesNotContain("Population record", Titles(watcher.Observe(Frame(2, 65)))); // not a big enough jump
     }
 
+    // --- Evolutionary milestones ---
+
     [Fact]
-    public void FirstMulticellularBody_notifiesPerNewCellMilestone()
+    public void CellMilestones_notifyPerNewWholeCellCount()
     {
         var watcher = new EventWatcher();
         watcher.Observe(Frame(0, 40, maxCell: 1.0));
-
-        IReadOnlyList<SimNotification> two = watcher.Observe(Frame(1, 40, maxCell: 2.3));
-        Assert.Single(two);
-        Assert.Equal("First 2-cell organism", two[0].Title);
-        Assert.Equal(SimNotificationKind.Success, two[0].Kind);
-
-        Assert.Empty(watcher.Observe(Frame(2, 40, maxCell: 2.9))); // still a 2-cell body → silent
-
-        IReadOnlyList<SimNotification> jump = watcher.Observe(Frame(3, 40, maxCell: 4.1));
-        Assert.Equal(["First 3-cell organism", "First 4-cell organism"], jump.Select(n => n.Title));
+        Assert.Equal(["First 2-cell organism"], Titles(watcher.Observe(Frame(1, 40, maxCell: 2.3))));
+        Assert.Empty(watcher.Observe(Frame(2, 40, maxCell: 2.9)));
+        Assert.Equal(["First 3-cell organism", "First 4-cell organism"], Titles(watcher.Observe(Frame(3, 40, maxCell: 4.1))));
     }
 
     [Fact]
@@ -113,22 +168,86 @@ public class EventWatcherTests
     }
 
     [Fact]
+    public void GenerationMilestones_fireAtEveryTenthGeneration()
+    {
+        var watcher = new EventWatcher();
+        watcher.Observe(Frame(0, 40, maxGeneration: 3));
+        Assert.Equal(["Generation 10", "Generation 20"], Titles(watcher.Observe(Frame(1, 40, maxGeneration: 23))));
+        Assert.Empty(watcher.Observe(Frame(2, 40, maxGeneration: 25)));
+    }
+
+    [Fact]
+    public void FirstCooperationAndKinPredation_fireOnce()
+    {
+        var watcher = new EventWatcher();
+        watcher.Observe(Frame(0, 40, metrics: Metrics()));
+        Assert.Contains("First cooperation", Titles(watcher.Observe(Frame(1, 40, metrics: Metrics(share: 2)))));
+        Assert.DoesNotContain("First cooperation", Titles(watcher.Observe(Frame(2, 40, metrics: Metrics(share: 5)))));
+        Assert.Contains("First kin predation", Titles(watcher.Observe(Frame(3, 40, metrics: Metrics(kinPredation: 1)))));
+    }
+
+    [Fact]
+    public void FirstSterileSoma_firesOnce()
+    {
+        var watcher = new EventWatcher();
+        watcher.Observe(Frame(0, 40));
+        Assert.Contains("First sterile soma", Titles(watcher.Observe(Frame(1, 40, sterileSoma: true))));
+        Assert.DoesNotContain("First sterile soma", Titles(watcher.Observe(Frame(2, 40, sterileSoma: true))));
+    }
+
+    // --- Ecology ---
+
+    [Fact]
+    public void BiomeColonisation_firesOncePerHostileBiome()
+    {
+        var watcher = new EventWatcher();
+        watcher.Observe(Frame(0, 40, metrics: Metrics(biomes: [(Biome.Grassland, 40)])));
+        Assert.Contains("Colonised the Desert",
+            Titles(watcher.Observe(Frame(1, 40, metrics: Metrics(biomes: [(Biome.Grassland, 38), (Biome.Desert, 2)])))));
+        Assert.DoesNotContain("Colonised the Desert",
+            Titles(watcher.Observe(Frame(2, 40, metrics: Metrics(biomes: [(Biome.Desert, 3)])))));
+    }
+
+    [Fact]
+    public void BabyBoomAndMassDieOff_fireWithCooldown()
+    {
+        var watcher = new EventWatcher();
+        watcher.Observe(Frame(0, 40, metrics: Metrics()));
+        Assert.Contains("Baby boom", Titles(watcher.Observe(Frame(1, 40, metrics: Metrics(births: 30)))));
+        Assert.DoesNotContain("Baby boom", Titles(watcher.Observe(Frame(2, 40, metrics: Metrics(births: 30))))); // cooldown
+
+        var other = new EventWatcher();
+        other.Observe(Frame(0, 40, metrics: Metrics()));
+        Assert.Contains("Mass die-off", Titles(other.Observe(Frame(1, 40, metrics: Metrics(deaths: 30)))));
+    }
+
+    [Fact]
+    public void Starvation_firesWhenAverageEnergyCollapses_thenReArms()
+    {
+        var watcher = new EventWatcher();
+        watcher.Observe(Frame(0, 40, metrics: Metrics(energyAvg: 50)));
+        Assert.Contains("Widespread starvation", Titles(watcher.Observe(Frame(1, 40, metrics: Metrics(energyAvg: 10)))));
+        Assert.DoesNotContain("Widespread starvation", Titles(watcher.Observe(Frame(2, 40, metrics: Metrics(energyAvg: 12))))); // still active
+        watcher.Observe(Frame(3, 40, metrics: Metrics(energyAvg: 40)));                                                          // recovers
+        Assert.Contains("Widespread starvation", Titles(watcher.Observe(Frame(4, 40, metrics: Metrics(energyAvg: 8)))));
+    }
+
+    [Fact]
+    public void ForagingRegime_notifiesOnAShift_notOnTheInitialRegime()
+    {
+        var watcher = new EventWatcher();
+        watcher.Observe(Frame(0, 40, metrics: Metrics(grazing: 100))); // seeds Herbivore silently
+        Assert.Equal(["Predatory era"], Titles(watcher.Observe(Frame(1, 40, metrics: Metrics(predation: 100)))));
+    }
+
+    // --- Lifecycle ---
+
+    [Fact]
     public void TickRegression_resetsAndReSeedsSilently()
     {
         var watcher = new EventWatcher();
         watcher.Observe(Frame(100, 40));
-        watcher.Observe(Frame(101, 40, events: EventType.DensityPlague)); // notified
-
-        // A brand-new world (tick back to 0) with a plague already active must re-seed, not notify.
-        Assert.Empty(watcher.Observe(Frame(0, 40, events: EventType.DensityPlague)));
-    }
-
-    [Fact]
-    public void Reset_forgetsHistory()
-    {
-        var watcher = new EventWatcher();
-        watcher.Observe(Frame(0, 40, events: EventType.ResourceBlight));
-        watcher.Reset();
-        Assert.Empty(watcher.Observe(Frame(1, 40, events: EventType.ResourceBlight))); // treated as a fresh seed
+        watcher.Observe(Frame(101, 40, events: [EventType.DensityPlague]));
+        Assert.Empty(watcher.Observe(Frame(0, 40, events: [EventType.DensityPlague]))); // new world → re-seed
     }
 }

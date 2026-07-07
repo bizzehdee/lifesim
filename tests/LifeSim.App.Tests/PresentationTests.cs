@@ -137,6 +137,37 @@ public class PresentationTests
     }
 
     [Fact]
+    public void NeatGraphLayout_placesChainedHiddenNodesInSeparateDepthColumns()
+    {
+        // input → h2 → h3 → output: the two hidden nodes are at different feed-forward depths, so the
+        // effective-network layout must put them in distinct columns and report depth 3 (lifesim.md §18).
+        var brain = new NeatGenome
+        {
+            Nodes =
+            [
+                new NodeGene { Id = 0, Type = NodeType.Input },
+                new NodeGene { Id = 1, Type = NodeType.Output },
+                new NodeGene { Id = 2, Type = NodeType.Hidden },
+                new NodeGene { Id = 3, Type = NodeType.Hidden },
+            ],
+            Connections =
+            [
+                new ConnectionGene { InnovationId = 1, From = 0, To = 2, Weight = 0.5, Enabled = true },
+                new ConnectionGene { InnovationId = 2, From = 2, To = 3, Weight = 0.5, Enabled = true },
+                new ConnectionGene { InnovationId = 3, From = 3, To = 1, Weight = 0.5, Enabled = true },
+            ],
+        };
+
+        NeatGraph graph = NeatGraphLayout.Build(brain);
+
+        Assert.Equal(3, graph.Depth);
+        double h2 = graph.Nodes.First(n => n.Id == 2).X;
+        double h3 = graph.Nodes.First(n => n.Id == 3).X;
+        Assert.True(h2 < h3, "A deeper hidden node should sit further right.");
+        Assert.All(graph.Edges, e => Assert.False(e.Recurrent)); // the whole chain is feed-forward
+    }
+
+    [Fact]
     public void NeatGraphLayout_flagsBackwardEdgesAsRecurrent()
     {
         var brain = new NeatGenome

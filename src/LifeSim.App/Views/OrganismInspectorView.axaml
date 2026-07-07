@@ -113,8 +113,10 @@
             <TextBlock Text="Brain" FontWeight="SemiBold" />
             <TextBlock FontSize="12" Text="{Binding NetworkType, StringFormat='network: {0}'}" />
             <TextBlock FontSize="12" Text="{Binding NodeCount, StringFormat='nodes: {0}'}" />
+            <TextBlock FontSize="12" Text="{Binding HiddenNodeCount, StringFormat='hidden nodes: {0}'}" />
             <TextBlock FontSize="12" Text="{Binding EnabledConnectionCount, StringFormat='connections (enabled): {0}'}" />
-            <Border Height="200" CornerRadius="4" Background="#12141A">
+            <TextBlock FontSize="12" Text="{Binding NetworkDepth, StringFormat='effective depth: {0} layers'}" />
+            <Border Height="220" CornerRadius="4" Background="#12141A">
                 <views:NeatGraphControl Graph="{Binding BrainGraph}" />
             </Border>
         </StackPanel>

@@ -90,9 +90,13 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
     // Brain.
     public string NetworkType => Organism.Brain.NetworkType;
     public int NodeCount => Organism.Brain.Nodes.Count;
+    public int HiddenNodeCount => Organism.Brain.Nodes.Count(n => n.Type == NodeType.Hidden);
     public int ConnectionCount => Organism.Brain.Connections.Count;
     public int EnabledConnectionCount => Organism.Brain.Connections.Count(c => c.Enabled);
     public NeatGraph BrainGraph { get; private init; } = new([], []);
+
+    /// <summary>Effective feed-forward depth of the evolved network (layers from input to output).</summary>
+    public int NetworkDepth => BrainGraph.Depth;
 
     /// <summary>Builds the inspector for organism <paramref name="organismId"/>, or null if it isn't in the snapshot.</summary>
     public static OrganismInspectorViewModel? Create(WorldSnapshot snapshot, long organismId)

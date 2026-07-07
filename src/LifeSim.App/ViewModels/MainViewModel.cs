@@ -78,9 +78,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _cooperationEnabled = true;
 
-    /// <summary>Optional aging model (lifesim.md §17); off by default. When on, old organisms pay a growing metabolic tax.</summary>
+    /// <summary>Aging model (lifesim.md §17); on by default. When on, old organisms pay a growing metabolic tax.</summary>
     [ObservableProperty]
-    private bool _senescenceEnabled;
+    private bool _senescenceEnabled = true;
 
     /// <summary>The full simulation configuration as JSON — pre-filled with the defaults, editable so any starting constant can be set (same block as <c>sim new --config</c>).</summary>
     [ObservableProperty]

@@ -511,7 +511,7 @@ Speed capacity lets an organism cross several tiles per tick, but the one-organi
 Sensing is **ranged** (`env_radius` / `org_radius` can span many tiles) while the action space is deliberately **local**: `Move N/S/E/W` (cardinal only, no diagonals in v1), `Harvest-Self`, `Harvest-N/S/E/W`, `Stay Idle`, `Reproduce` (11 outputs; see §4). The gap between "sees far, acts near" is what forces pursuit and navigation to evolve rather than being free. This asymmetry is a design choice, not an oversight.
 
 ### Age & Senescence
-No hard lifespan by default — organisms are immortal until starvation or predation, and turnover already emerges from the famine/predation cycles (§5.3). The optional `senescence` config knob (default **off**, selectable per world at genesis) turns on a simple aging model: past `senescence_onset_age` ticks an organism pays a metabolic tax that grows linearly with age (`senescence_cost_per_tick` per tick beyond the onset), so old individuals eventually starve however much they hoard. The tax is a deterministic function of `age` — no new randomness — and layers onto the metabolism phase (§3) alongside the crowding cost.
+The `senescence` config knob (default **on**, selectable per world at genesis) applies a simple aging model: past `senescence_onset_age` ticks an organism pays a metabolic tax that grows linearly with age (`senescence_cost_per_tick` per tick beyond the onset), so old individuals eventually starve however much they hoard and no lineage is immortal. The tax is a deterministic function of `age` — no new randomness — and layers onto the metabolism phase (§3) alongside the crowding cost. Disable it to fall back to the alternative regime: no hard lifespan, with turnover left entirely to the famine/predation cycles (§5.3).
 
 ### Reproduction Cadence
 An organism may produce **at most one offspring per tick**, and is gated by `reproduction_cooldown_ticks` (default 3) between births. This prevents a degenerate single-tick "flood-fill" while still allowing r-strategist bursts spread across consecutive ticks — the §5 narrative holds, just spread over time.
@@ -689,7 +689,7 @@ The `configuration` block centralizes every coupled constant so experiments tune
 *   `plague_density_threshold` — crowding level that triggers density-dependent drain.
 *   `corpse_energy_fraction` — fraction of a non-predation death's energy deposited to the tile.
 *   `initial_population` — genesis organism count (default ~200).
-*   `senescence` — optional aging model (default off).
+*   `senescence` — aging model (default on).
 
 ### Naming (§19)
 *   `name_adjective_list` — reference + version of the adjective word list (default size ~1,000).

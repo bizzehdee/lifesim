@@ -355,7 +355,7 @@ These extend the model beyond the v1 blueprint (`lifesim.md` §1–§19, which e
 **Balance / options follow-up (evolvable generosity, toggles, senescence):**
 - [x] **Generosity is an evolvable genome trait (§20):** `Genome.ShareFraction` ∈ `[0,1]` — a Share donates the donor's *own* evolved fraction, so lineages can drift toward hoarding (→0) or over-sharing (→1). Founders seed from `cooperation.share_fraction` (now only the genesis value); the trait mutates/inherits like any other and its population mean is a new metric + histogram (`avg_share_fraction`). Shown as "Generosity" in the inspector and lineage detail. Schema/config bumped to 1.1 (new required `share_fraction` genome field).
 - [x] **Cooperation toggle (§20):** `cooperation.enabled` (default on), selectable per world at genesis — off makes Share actions inert and skips the kin-predation penalty. Exposed as a setup-screen checkbox.
-- [x] **Senescence toggle + aging model (§17):** the previously-inert `senescence` flag now drives a real cost — `Metabolism.SenescenceTax(age)` adds `senescence_cost_per_tick` per tick beyond `senescence_onset_age`, so no lineage is immortal. Deterministic (age-based, no PRNG). Exposed as a setup-screen checkbox (default off).
+- [x] **Senescence toggle + aging model (§17):** the previously-inert `senescence` flag now drives a real cost — `Metabolism.SenescenceTax(age)` adds `senescence_cost_per_tick` per tick beyond `senescence_onset_age`, so no lineage is immortal. Deterministic (age-based, no PRNG). Exposed as a setup-screen checkbox (default on).
 - [x] **Verification:** `SenescenceTax`/`CrowdingTax` unit tests; genesis seeds founder generosity; share amount is genome-driven (selfish pop transfers 0, generous pop transfers energy, mutation frozen); cooperation-off transfers nothing; senescence caps lifespan vs an ageless world. Determinism (14) + calibration (9) still green — the trait-diversity calibration check was made robust (whole-genome diversity, not one brittle trait) since adding a genome trait shifts every seed's PRNG trajectory.
 
 **Judgment calls worth flagging:**
@@ -413,5 +413,4 @@ These hold at every phase, not just one:
 Tracked here so they are not mistaken for gaps (Plan §4, §8, §9):
 - Sexual reproduction & NEAT crossover (innovation ids are already recorded to enable it later) (Plan §4, §8).
 - Fixed-point numeric migration (only if cross-platform replay drift appears) (Plan §9).
-- Senescence / lifespan (config knob exists, default off) (Plan §17).
 - Active name-collision avoidance via registry/Bloom filter (Plan §19).

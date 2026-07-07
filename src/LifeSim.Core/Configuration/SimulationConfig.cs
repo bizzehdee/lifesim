@@ -31,11 +31,11 @@ public sealed record SimulationConfig
     public int InitialPopulation { get; init; } = 200;
 
     /// <summary>
-    /// Optional aging model (lifesim.md §17), selectable per world at genesis. When enabled, organisms
-    /// past <see cref="MetabolismConfig.SenescenceOnsetAge"/> pay a growing metabolic tax so no lineage
-    /// is immortal by hoarding energy; off by default, leaving turnover to famine and predation.
+    /// Aging model (lifesim.md §17), selectable per world at genesis. When enabled, organisms past
+    /// <see cref="MetabolismConfig.SenescenceOnsetAge"/> pay a growing metabolic tax so no lineage is
+    /// immortal by hoarding energy; on by default. Disable it to leave turnover to famine and predation.
     /// </summary>
-    public bool Senescence { get; init; }
+    public bool Senescence { get; init; } = true;
 
     public static SimulationConfig Default => new();
 }

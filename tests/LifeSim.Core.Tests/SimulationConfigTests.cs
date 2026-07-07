@@ -11,7 +11,7 @@ public class SimulationConfigTests
         SimulationConfig config = SimulationConfig.Default;
 
         Assert.Equal(200, config.InitialPopulation);
-        Assert.False(config.Senescence);
+        Assert.True(config.Senescence); // aging on by default (lifesim.md §17)
         Assert.Equal(3, config.Reproduction.ReproductionCooldownTicks);
         Assert.Equal(20.0, config.Events.TemperatureAnomalyMagnitude);
     }

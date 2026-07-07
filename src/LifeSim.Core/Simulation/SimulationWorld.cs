@@ -236,23 +236,25 @@ public sealed class SimulationWorld
         //    reproducible, so the input build runs across up to MaxDegreeOfParallelism threads with
         //    byte-identical results for any thread count (and across save/reload, since the seed comes
         //    from the restored stream).
+        // The organism set is fixed from here through the Death & Transfer phase — offspring are only
+        // reserved during Intent Resolution and not inserted into the live index until Birth Commit — so
+        // every phase in between shares one id list (ascending, the priority order) and keys its
+        // per-organism scratch by array position instead of re-snapshotting the key set and re-hashing by
+        // id in each phase.
+        long[] tickIds = _organisms.Keys.ToArray();
+        int organismCount = tickIds.Length;
+
         double globalStress = _environment.GlobalStress;
         double temperatureOffset = _environment.TemperatureOffset;
         ulong sensoryNoiseSeed = _prngStreams[PrngStream.SensoryNoise].NextULong();
-        long[] sensingIds = _organisms.Keys.ToArray();
-        var sensedInputs = new double[sensingIds.Length][];
-        RunPhase(sensingIds.Length, i =>
+        var sensoryInputs = new double[organismCount][];
+        RunPhase(organismCount, i =>
         {
-            long id = sensingIds[i];
+            long id = tickIds[i];
             var noise = new Prng(SplitMix64.Finalize(sensoryNoiseSeed + (ulong)id));
-            sensedInputs[i] = _sensoryInputBuilder.Build(
+            sensoryInputs[i] = _sensoryInputBuilder.Build(
                 _organisms[id], _organisms, currentTick, noise, globalStress, temperatureOffset);
         });
-        var sensoryInputs = new Dictionary<long, double[]>(sensingIds.Length);
-        for (int i = 0; i < sensingIds.Length; i++)
-        {
-            sensoryInputs[sensingIds[i]] = sensedInputs[i];
-        }
 
         // 3. Decision Phase. Per-organism NEAT evaluation is independent of every other organism
         //    (each reads only its own cached inputs and its own prior brain state). The expensive
@@ -265,19 +267,17 @@ public sealed class SimulationWorld
         // reasons more deeply before acting; a single cell runs one step (the base model).
         Prng behavior = _prngStreams[PrngStream.Behavior];
         MulticellularConfig decisionMc = Config.Multicellular;
-        long[] decisionIds = _organisms.Keys.ToArray();
-        var propagations = new NeatPropagation[decisionIds.Length];
-        RunPhase(decisionIds.Length, i => propagations[i] = Decide(decisionIds[i], sensoryInputs, decisionMc));
+        var propagations = new NeatPropagation[organismCount];
+        RunPhase(organismCount, i => propagations[i] = Decide(tickIds[i], sensoryInputs[i], decisionMc));
 
-        var actions = new Dictionary<long, OrganismAction>(_organisms.Count);
-        for (int i = 0; i < decisionIds.Length; i++)
+        var actions = new OrganismAction[organismCount];
+        for (int i = 0; i < organismCount; i++)
         {
-            long id = decisionIds[i];
-            Organism organism = _organisms[id];
+            Organism organism = _organisms[tickIds[i]];
             OrganismAction action = NeatBrain.SelectAction(propagations[i].Probabilities, behavior);
             organism.UpdateBrain(propagations[i].Genome);
             organism.RecordAction(action);
-            actions[id] = action;
+            actions[i] = action;
         }
 
         // 4. Intent Resolution Phase: movement, harvest (grazing/predation), and reproduction
@@ -287,21 +287,21 @@ public sealed class SimulationWorld
         //    charged, id allocated) — actual insertion into the live index happens in the Birth
         //    Commit phase below.
         var counters = new TickCounters();
-        var distanceTraveled = new Dictionary<long, double>(_organisms.Count);
+        var distanceTraveled = new double[organismCount];
         var pendingBirths = new List<PendingBirth>();
-        foreach (long id in _organisms.Keys)
+        for (int i = 0; i < organismCount; i++)
         {
-            Organism organism = _organisms[id];
+            Organism organism = _organisms[tickIds[i]];
             if (!organism.IsAlive)
             {
                 // Killed by an earlier (lower-id) organism's predation this same tick; a corpse
                 // doesn't get to act.
-                distanceTraveled[id] = 0.0;
+                distanceTraveled[i] = 0.0;
                 continue;
             }
 
-            (double distance, ActionResult result) = ResolveIntent(organism, actions[id], currentTick, behavior, pendingBirths, counters);
-            distanceTraveled[id] = distance;
+            (double distance, ActionResult result) = ResolveIntent(organism, actions[i], currentTick, behavior, pendingBirths, counters);
+            distanceTraveled[i] = distance;
             organism.RecordActionResult(result);
         }
 
@@ -312,22 +312,16 @@ public sealed class SimulationWorld
         //    Each organism's cost is a pure function of read-only state (terrain, occupancy, its own
         //    genome/age, its own movement) and it writes only its own energy/age — no PRNG, no shared
         //    writes — so the body runs across up to MaxDegreeOfParallelism threads with byte-identical
-        //    results for any thread count. The pre-metabolism energy is captured in a cheap serial pass
-        //    first (the Death & Transfer phase reads it for corpse energy) so the parallel body writes no
-        //    shared collection.
+        //    results for any thread count. Each captures its own pre-metabolism energy first (the Death &
+        //    Transfer phase reads it for corpse energy) into a slot only it owns.
         double temperatureShift = _environment.TemperatureOffset;
         bool plagueActive = _environment.PlagueActive;
-        long[] metabolismIds = _organisms.Keys.ToArray();
-        var energyBeforeMetabolism = new Dictionary<long, double>(metabolismIds.Length);
-        foreach (long id in metabolismIds)
-        {
-            energyBeforeMetabolism[id] = _organisms[id].Energy;
-        }
+        var energyBeforeMetabolism = new double[organismCount];
 
-        RunPhase(metabolismIds.Length, index =>
+        RunPhase(organismCount, index =>
         {
-            long id = metabolismIds[index];
-            Organism organism = _organisms[id];
+            Organism organism = _organisms[tickIds[index]];
+            energyBeforeMetabolism[index] = organism.Energy;
 
             double tileTemperature = _terrain.TemperatureCelsiusAt(organism.X, organism.Y) + temperatureShift;
             double friction = Config.Biomes.For(_terrain.BiomeAt(organism.X, organism.Y)).Friction;
@@ -345,7 +339,7 @@ public sealed class SimulationWorld
                 + Morphology.MulticellularOverhead(g, perCellBase, mc)
                 + (Metabolism.ThermalStress(g, tileTemperature, Config.Metabolism) * Morphology.ThermalStressFactor(g, mc))
                 + Metabolism.SensoryTax(g, Config.Metabolism)
-                + (Metabolism.LocomotionTax(distanceTraveled[id], g.SpeedCapacity, friction, Config.MovementCombat) * Morphology.LocomotionFactor(g, mc))
+                + (Metabolism.LocomotionTax(distanceTraveled[index], g.SpeedCapacity, friction, Config.MovementCombat) * Morphology.LocomotionFactor(g, mc))
                 + Metabolism.CrowdingTax(localDensity - 1, Config.Metabolism); // density-dependent overpopulation cost
 
             if (Config.Senescence)
@@ -367,15 +361,16 @@ public sealed class SimulationWorld
         //    the energy they had *before* the fatal Metabolism deduction — a predation victim is
         //    already at exactly 0 by this point, so it correctly contributes no corpse energy
         //   .
-        foreach (long id in _organisms.Keys.ToArray())
+        for (int i = 0; i < organismCount; i++)
         {
+            long id = tickIds[i];
             Organism organism = _organisms[id];
             if (organism.IsAlive)
             {
                 continue;
             }
 
-            double corpseEnergy = energyBeforeMetabolism[id] * Config.Events.CorpseEnergyFraction;
+            double corpseEnergy = energyBeforeMetabolism[i] * Config.Events.CorpseEnergyFraction;
             if (corpseEnergy > 0.0)
             {
                 _groundEnergy.Deposit(organism.X, organism.Y, corpseEnergy);
@@ -750,10 +745,10 @@ public sealed class SimulationWorld
     /// <see cref="Morphology.BrainSteps"/> recurrent steps (more for a larger body). Reads only its own
     /// organism and cached inputs and writes no shared state, so it is safe to run concurrently.
     /// </summary>
-    private NeatPropagation Decide(long id, IReadOnlyDictionary<long, double[]> sensoryInputs, MulticellularConfig mc)
+    private NeatPropagation Decide(long id, double[] inputs, MulticellularConfig mc)
     {
         Organism organism = _organisms[id];
-        return NeatBrain.Propagate(organism.Brain, sensoryInputs[id], Morphology.BrainSteps(organism.Genome, mc));
+        return NeatBrain.Propagate(organism.Brain, inputs, Morphology.BrainSteps(organism.Genome, mc));
     }
 
     /// <summary>

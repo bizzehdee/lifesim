@@ -34,7 +34,7 @@
         <!-- Physical state -->
         <StackPanel Spacing="4">
             <TextBlock Text="Physical" FontWeight="SemiBold" />
-            <TextBlock FontSize="12" Text="{Binding X, StringFormat='position ({0},'}" />
+            <TextBlock FontSize="12" Text="{Binding Position, StringFormat='position {0}'}" />
             <TextBlock FontSize="12" Text="{Binding Biome, StringFormat='biome {0}'}" />
             <TextBlock FontSize="12" Text="{Binding Energy, StringFormat='energy {0:F1}'}" />
             <ProgressBar Minimum="0" Maximum="{Binding EnergyCeiling}" Value="{Binding Energy}" />

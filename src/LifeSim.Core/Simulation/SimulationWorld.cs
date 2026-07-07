@@ -261,6 +261,11 @@ public sealed class SimulationWorld
                 + Metabolism.LocomotionTax(distanceTraveled[id], organism.Genome.SpeedCapacity, friction, Config.MovementCombat)
                 + Metabolism.CrowdingTax(localDensity - 1, Config.Metabolism); // density-dependent overpopulation cost (lifesim.md §3, §6)
 
+            if (Config.Senescence)
+            {
+                cost += Metabolism.SenescenceTax(organism.Age, Config.Metabolism); // optional aging model (lifesim.md §17)
+            }
+
             if (plagueActive && localDensity >= Config.Events.PlagueDensityThreshold)
             {
                 cost += Config.Events.PlagueEnergyDrainPerTick;
@@ -458,7 +463,10 @@ public sealed class SimulationWorld
                 if (Kinship.Relatedness(organism.Genome, victim.Genome, Config.TraitBounds) >= Config.Cooperation.KinRelatednessThreshold)
                 {
                     counters.KinPredation++;
-                    organism.SpendEnergy(Config.Cooperation.KinPredationPenalty);
+                    if (Config.Cooperation.Enabled)
+                    {
+                        organism.SpendEnergy(Config.Cooperation.KinPredationPenalty);
+                    }
                 }
 
                 return ActionResult.Killed;
@@ -495,6 +503,11 @@ public sealed class SimulationWorld
     /// </summary>
     private ActionResult ResolveShare(Organism organism, int dx, int dy, Prng behaviorStream, TickCounters counters)
     {
+        if (!Config.Cooperation.Enabled)
+        {
+            return ActionResult.NoOp; // cooperation disabled for this world (lifesim.md §20)
+        }
+
         int x = organism.X + dx;
         int y = organism.Y + dy;
 
@@ -516,7 +529,7 @@ public sealed class SimulationWorld
             return ActionResult.Failed; // cooperation declined (scaled by relatedness)
         }
 
-        double donated = organism.SpendEnergy(organism.Energy * coop.ShareFraction);
+        double donated = organism.SpendEnergy(organism.Energy * organism.Genome.ShareFraction);
         recipient.AddEnergy(donated * coop.ShareEfficiency);
         counters.SuccessfulShare++;
         counters.EnergyShared += donated;
@@ -580,7 +593,8 @@ public sealed class SimulationWorld
     private void ScatterGenesisPopulation()
     {
         Prng genesis = _prngStreams[PrngStream.Genesis];
-        Genome genome = Genome.MidRange(Config.TraitBounds);
+        // Founders start at the configured genesis generosity (lifesim.md §20); the trait evolves from there.
+        Genome genome = Genome.MidRange(Config.TraitBounds) with { ShareFraction = Config.Cooperation.ShareFraction };
 
         int maxAttempts = Math.Max(10_000, World.Width * World.Height * 4);
 
@@ -656,7 +670,7 @@ public sealed class SimulationWorld
         TraitBounds bounds = Config.TraitBounds;
 
         double energyMin = 0.0, energyMax = 0.0, energySum = 0.0;
-        double sumSize = 0, sumSpeed = 0, sumThermalC = 0, sumThermalW = 0, sumEnv = 0, sumOrg = 0, sumAcuity = 0;
+        double sumSize = 0, sumSpeed = 0, sumThermalC = 0, sumThermalW = 0, sumEnv = 0, sumOrg = 0, sumAcuity = 0, sumShare = 0;
 
         var biomeCounts = new Dictionary<Biome, long>
         {
@@ -673,6 +687,7 @@ public sealed class SimulationWorld
         var envRadiusBuckets = new int[HistogramBucketCount];
         var orgRadiusBuckets = new int[HistogramBucketCount];
         var acuityBuckets = new int[HistogramBucketCount];
+        var shareBuckets = new int[HistogramBucketCount];
 
         bool first = true;
         foreach (Organism organism in _organisms.Values)
@@ -699,6 +714,7 @@ public sealed class SimulationWorld
             sumEnv += g.EnvRadius;
             sumOrg += g.OrgRadius;
             sumAcuity += g.SensoryAcuity;
+            sumShare += g.ShareFraction;
 
             biomeCounts[_terrain.BiomeAt(organism.X, organism.Y)]++;
 
@@ -709,6 +725,7 @@ public sealed class SimulationWorld
             envRadiusBuckets[BucketIndex(g.EnvRadius, bounds.EnvRadius)]++;
             orgRadiusBuckets[BucketIndex(g.OrgRadius, bounds.OrgRadius)]++;
             acuityBuckets[BucketIndex(g.SensoryAcuity, bounds.SensoryAcuity)]++;
+            shareBuckets[BucketIndex(g.ShareFraction, bounds.ShareFraction)]++;
         }
 
         double Average(double sum) => population > 0 ? sum / population : 0.0;
@@ -760,6 +777,7 @@ public sealed class SimulationWorld
                 EnvRadius = Average(sumEnv),
                 OrgRadius = Average(sumOrg),
                 SensoryAcuity = Average(sumAcuity),
+                ShareFraction = Average(sumShare),
             },
             TraitHistograms =
             [
@@ -770,6 +788,7 @@ public sealed class SimulationWorld
                 Histogram("env_radius", bounds.EnvRadius, envRadiusBuckets),
                 Histogram("org_radius", bounds.OrgRadius, orgRadiusBuckets),
                 Histogram("sensory_acuity", bounds.SensoryAcuity, acuityBuckets),
+                Histogram("share_fraction", bounds.ShareFraction, shareBuckets),
             ],
             PopulationByBiome =
             [

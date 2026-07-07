@@ -74,6 +74,14 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private decimal _population = 80;
 
+    /// <summary>Cooperation feature set (lifesim.md §20); on by default. Toggles Share actions + kin-predation deterrence for the new world.</summary>
+    [ObservableProperty]
+    private bool _cooperationEnabled = true;
+
+    /// <summary>Optional aging model (lifesim.md §17); off by default. When on, old organisms pay a growing metabolic tax.</summary>
+    [ObservableProperty]
+    private bool _senescenceEnabled;
+
     /// <summary>The full simulation configuration as JSON — pre-filled with the defaults, editable so any starting constant can be set (same block as <c>sim new --config</c>).</summary>
     [ObservableProperty]
     private string _configJson = SnapshotSerializer.SaveConfig(SimulationConfig.Default);
@@ -143,7 +151,13 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         SimulationConfig config;
         try
         {
-            config = SnapshotSerializer.LoadConfig(ConfigJson) with { InitialPopulation = (int)Population };
+            SimulationConfig parsed = SnapshotSerializer.LoadConfig(ConfigJson);
+            config = parsed with
+            {
+                InitialPopulation = (int)Population,
+                Senescence = SenescenceEnabled,
+                Cooperation = parsed.Cooperation with { Enabled = CooperationEnabled },
+            };
         }
         catch (SnapshotValidationException ex)
         {

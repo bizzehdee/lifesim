@@ -17,6 +17,15 @@ public sealed record Genome
     public double OrgRadius { get; init; }
     public double SensoryAcuity { get; init; }
 
+    /// <summary>
+    /// Evolvable generosity (lifesim.md §20): the fraction of its own energy the organism donates
+    /// when it performs a Share action. Under selection this drifts freely — lineages can evolve
+    /// toward hoarding (→ 0) or over-sharing (→ 1), whichever the local kin economy favours. The
+    /// brain still decides <em>whether</em> to share and relatedness gates <em>whether it lands</em>
+    /// (§20); this trait sets <em>how much</em>.
+    /// </summary>
+    public double ShareFraction { get; init; }
+
     /// <summary>Clamps every trait to its hard min/max (lifesim.md §3, §8).</summary>
     public Genome Clamped(TraitBounds bounds) => this with
     {
@@ -27,9 +36,14 @@ public sealed record Genome
         EnvRadius = Clamp(EnvRadius, bounds.EnvRadius),
         OrgRadius = Clamp(OrgRadius, bounds.OrgRadius),
         SensoryAcuity = Clamp(SensoryAcuity, bounds.SensoryAcuity),
+        ShareFraction = Clamp(ShareFraction, bounds.ShareFraction),
     };
 
-    /// <summary>Mid-range genome for genesis organisms (lifesim.md §17): the midpoint of every bound.</summary>
+    /// <summary>
+    /// Mid-range genome for genesis organisms (lifesim.md §17): the midpoint of every bound.
+    /// Genesis <see cref="ShareFraction"/> is seeded separately from <c>CooperationConfig.ShareFraction</c>
+    /// (§20) rather than the bound midpoint, so the starting generosity is a tunable constant.
+    /// </summary>
     public static Genome MidRange(TraitBounds bounds) => new()
     {
         Size = Midpoint(bounds.Size),
@@ -39,6 +53,7 @@ public sealed record Genome
         EnvRadius = Midpoint(bounds.EnvRadius),
         OrgRadius = Midpoint(bounds.OrgRadius),
         SensoryAcuity = Midpoint(bounds.SensoryAcuity),
+        ShareFraction = Midpoint(bounds.ShareFraction),
     };
 
     private static double Clamp(double value, TraitBounds.Range range) =>

@@ -55,6 +55,7 @@ public sealed record GenomeSnapshot
     public double EnvRadius { get; init; }
     public double OrgRadius { get; init; }
     public double SensoryAcuity { get; init; }
+    public double ShareFraction { get; init; }
 
     public static GenomeSnapshot From(Organisms.Genome genome) => new()
     {
@@ -65,6 +66,7 @@ public sealed record GenomeSnapshot
         EnvRadius = genome.EnvRadius,
         OrgRadius = genome.OrgRadius,
         SensoryAcuity = genome.SensoryAcuity,
+        ShareFraction = genome.ShareFraction,
     };
 
     public Organisms.Genome ToGenome() => new()
@@ -76,5 +78,6 @@ public sealed record GenomeSnapshot
         EnvRadius = EnvRadius,
         OrgRadius = OrgRadius,
         SensoryAcuity = SensoryAcuity,
+        ShareFraction = ShareFraction,
     };
 }

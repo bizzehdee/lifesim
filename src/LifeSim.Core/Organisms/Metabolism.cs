@@ -32,6 +32,17 @@ public static class Metabolism
         return crowded * config.CrowdingCostPerNeighbour;
     }
 
+    /// <summary>
+    /// Optional senescence tax (lifesim.md §17): extra metabolism that grows linearly with age once an
+    /// organism is older than <see cref="MetabolismConfig.SenescenceOnsetAge"/>. Zero for the young and
+    /// zero entirely unless the aging model is enabled by the caller.
+    /// </summary>
+    public static double SenescenceTax(long age, MetabolismConfig config)
+    {
+        long agedTicks = Math.Max(0L, age - config.SenescenceOnsetAge);
+        return agedTicks * config.SenescenceCostPerTick;
+    }
+
     /// <summary>The full base-metabolism equation: base + thermal stress + sensory tax (lifesim.md §3).</summary>
     public static double Total(Genome genome, double tileTemperature, MetabolismConfig config) =>
         BaseMetabolism(genome, config)

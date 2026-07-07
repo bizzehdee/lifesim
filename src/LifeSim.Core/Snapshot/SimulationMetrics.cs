@@ -121,6 +121,9 @@ public sealed record TraitAverages
     public double EnvRadius { get; init; }
     public double OrgRadius { get; init; }
     public double SensoryAcuity { get; init; }
+
+    /// <summary>Mean evolvable generosity (lifesim.md §20) — tracks whether the population drifts toward hoarding or over-sharing.</summary>
+    public double ShareFraction { get; init; }
 }
 
 /// <summary>

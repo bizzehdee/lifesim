@@ -60,6 +60,7 @@ public class GenomeMutatorTests
             EnvRadius = Bounds.EnvRadius.Max,
             OrgRadius = Bounds.OrgRadius.Max,
             SensoryAcuity = Bounds.SensoryAcuity.Max,
+            ShareFraction = Bounds.ShareFraction.Max,
         };
 
         for (var seed = 1UL; seed <= 50; seed++)
@@ -73,6 +74,7 @@ public class GenomeMutatorTests
             Assert.InRange(mutated.EnvRadius, Bounds.EnvRadius.Min, Bounds.EnvRadius.Max);
             Assert.InRange(mutated.OrgRadius, Bounds.OrgRadius.Min, Bounds.OrgRadius.Max);
             Assert.InRange(mutated.SensoryAcuity, Bounds.SensoryAcuity.Min, Bounds.SensoryAcuity.Max);
+            Assert.InRange(mutated.ShareFraction, Bounds.ShareFraction.Min, Bounds.ShareFraction.Max);
         }
     }
 

@@ -61,9 +61,9 @@ public partial class WorldViewModel : ViewModelBase
     [ObservableProperty]
     private decimal _maxParentGens = 3;
 
-    /// <summary>How many descendant generations to show below the focus organism (default 32).</summary>
+    /// <summary>How many descendant generations to show below the focus organism (default 3).</summary>
     [ObservableProperty]
-    private decimal _maxChildGens = 32;
+    private decimal _maxChildGens = 3;
 
     private long? _lineageFocusId;
 

@@ -342,6 +342,103 @@ public class SimulationWorldTests
         Assert.True(totalShared > 0.0, "Expected energy to be transferred by sharing.");
     }
 
+    [Fact]
+    public void CreateGenesis_seedsFounderGenerosityFromConfig()
+    {
+        // Founders start at the configured genesis generosity; the trait evolves from there (lifesim.md §20).
+        var config = SimulationConfig.Default with
+        {
+            InitialPopulation = 20,
+            Cooperation = SimulationConfig.Default.Cooperation with { ShareFraction = 0.37 },
+        };
+        var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), config);
+
+        Assert.All(world.Organisms.Values, o => Assert.Equal(0.37, o.Genome.ShareFraction, precision: 10));
+        Assert.Equal(0.37, world.Metrics.TraitAverages.ShareFraction, precision: 10);
+    }
+
+    [Fact]
+    public void Advance_shareAmountIsDrivenByTheEvolvableGenerosityTrait()
+    {
+        // Same seed, same brains, same relatedness rolls — only genesis generosity differs, and trait
+        // drift is frozen so every organism keeps its founder value forever. A selfish population (0)
+        // transfers nothing; a generous one (0.5) transfers energy. Proves the donated amount is the
+        // donor's own evolvable trait, not a global constant (lifesim.md §20).
+        static double TotalSharedWith(double generosity)
+        {
+            var config = SimulationConfig.Default with
+            {
+                InitialPopulation = 40,
+                Mutation = SimulationConfig.Default.Mutation with { TraitMutationRate = 0.0 },
+                Cooperation = SimulationConfig.Default.Cooperation with { ShareFraction = generosity },
+            };
+            var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), config);
+
+            double totalShared = 0.0;
+            for (int i = 0; i < 150 && !world.Extinct; i++)
+            {
+                world.Advance();
+                totalShared += world.Metrics.EnergyShared;
+            }
+
+            return totalShared;
+        }
+
+        Assert.Equal(0.0, TotalSharedWith(0.0));
+        Assert.True(TotalSharedWith(0.5) > 0.0, "A generous population should transfer energy.");
+    }
+
+    [Fact]
+    public void Advance_withCooperationDisabled_transfersNoEnergyAndFiresNoShares()
+    {
+        // The genesis cooperation toggle (lifesim.md §20): with it off, Share actions are inert no-ops.
+        var config = SimulationConfig.Default with
+        {
+            InitialPopulation = 40,
+            Cooperation = SimulationConfig.Default.Cooperation with { Enabled = false },
+        };
+        var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), config);
+
+        double totalShared = 0.0;
+        long shareEvents = 0;
+        for (int i = 0; i < 150 && !world.Extinct; i++)
+        {
+            world.Advance();
+            totalShared += world.Metrics.EnergyShared;
+            shareEvents += world.Metrics.SuccessfulShare + world.Metrics.FailedShare;
+        }
+
+        Assert.Equal(0, shareEvents);
+        Assert.Equal(0.0, totalShared);
+    }
+
+    [Fact]
+    public void Advance_withSenescenceEnabled_capsOrganismLifespan()
+    {
+        // The optional aging model (lifesim.md §17): with an early, steep senescence curve, the
+        // per-tick tax eventually exceeds any energy budget, so no organism can grow arbitrarily old —
+        // unlike the immortal-until-starvation default.
+        static long MaxAge(bool senescence)
+        {
+            var config = SimulationConfig.Default with
+            {
+                InitialPopulation = 60,
+                Senescence = senescence,
+                Metabolism = SimulationConfig.Default.Metabolism with { SenescenceOnsetAge = 20, SenescenceCostPerTick = 0.5 },
+            };
+            var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 4242), config);
+            for (int i = 0; i < 300 && !world.Extinct; i++)
+            {
+                world.Advance();
+            }
+
+            return world.Organisms.Count == 0 ? 0 : world.Organisms.Values.Max(o => o.Age);
+        }
+
+        Assert.True(MaxAge(senescence: true) < MaxAge(senescence: false),
+            "Senescence should keep the oldest survivor younger than an ageless world does.");
+    }
+
     // --- Phase 9: environmental stochasticity & events (lifesim.md §6) ---
 
     private static EventsConfig NoEvents() => new EventsConfig() with

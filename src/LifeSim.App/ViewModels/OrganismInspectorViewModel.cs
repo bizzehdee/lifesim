@@ -55,6 +55,9 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
     // Physical state.
     public int X => Organism.X;
     public int Y => Organism.Y;
+
+    /// <summary>Grid coordinate as "(x, y)" — a single binding source so both components render (lifesim.md §18).</summary>
+    public string Position => $"({X}, {Y})";
     public Biome Biome { get; private init; }
     public double Energy => Organism.Energy;
     public double EnergyCeiling => Core.Organisms.Organism.EnergyCeiling;
@@ -138,6 +141,7 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
                 new TraitReading("Env Radius", genome.EnvRadius, bounds.EnvRadius.Min, bounds.EnvRadius.Max),
                 new TraitReading("Org Radius", genome.OrgRadius, bounds.OrgRadius.Min, bounds.OrgRadius.Max),
                 new TraitReading("Sensory Acuity", genome.SensoryAcuity, bounds.SensoryAcuity.Min, bounds.SensoryAcuity.Max),
+                new TraitReading("Generosity", genome.ShareFraction, bounds.ShareFraction.Min, bounds.ShareFraction.Max),
             ],
             Economy = new EconomyBreakdown(
                 Metabolism.BaseMetabolism(genome, config.Metabolism),

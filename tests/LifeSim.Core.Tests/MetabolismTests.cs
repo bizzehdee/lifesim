@@ -30,6 +30,16 @@ public class MetabolismTests
     }
 
     [Fact]
+    public void SenescenceTax_isZeroBeforeOnset_thenScalesWithAge()
+    {
+        // Defaults: onset 400 ticks, 0.02 per tick beyond it.
+        Assert.Equal(0.0, Metabolism.SenescenceTax(0, Metabolic));
+        Assert.Equal(0.0, Metabolism.SenescenceTax(400, Metabolic));       // exactly at onset — still free
+        Assert.Equal(0.02, Metabolism.SenescenceTax(401, Metabolic), precision: 10);
+        Assert.Equal(2.0, Metabolism.SenescenceTax(500, Metabolic), precision: 10); // (500-400)*0.02
+    }
+
+    [Fact]
     public void BaseMetabolism_isSizeTimesConfiguredBase()
     {
         Genome genome = NewGenome();

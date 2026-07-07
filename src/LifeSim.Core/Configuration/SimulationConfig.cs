@@ -30,7 +30,11 @@ public sealed record SimulationConfig
     /// <summary>Genesis organism count (lifesim.md §17).</summary>
     public int InitialPopulation { get; init; } = 200;
 
-    /// <summary>Optional aging model; off in v1 (lifesim.md §17).</summary>
+    /// <summary>
+    /// Optional aging model (lifesim.md §17), selectable per world at genesis. When enabled, organisms
+    /// past <see cref="MetabolismConfig.SenescenceOnsetAge"/> pay a growing metabolic tax so no lineage
+    /// is immortal by hoarding energy; off by default, leaving turnover to famine and predation.
+    /// </summary>
     public bool Senescence { get; init; }
 
     public static SimulationConfig Default => new();
@@ -54,6 +58,16 @@ public sealed record MetabolismConfig
 
     /// <summary>Neighbours tolerated before the crowding cost applies (a kin pair is free).</summary>
     public int CrowdingFreeNeighbours { get; init; } = 1;
+
+    /// <summary>
+    /// Age (in ticks) at which senescence begins to add metabolic cost, when the optional aging model
+    /// is enabled (<see cref="SimulationConfig.Senescence"/>, lifesim.md §17). Below this age there is
+    /// no senescence tax at all.
+    /// </summary>
+    public long SenescenceOnsetAge { get; init; } = 400;
+
+    /// <summary>Extra metabolism per tick of age beyond <see cref="SenescenceOnsetAge"/> (aging model only).</summary>
+    public double SenescenceCostPerTick { get; init; } = 0.02;
 }
 
 /// <summary>Movement &amp; combat constants (lifesim.md §3, §5, Appendix A).</summary>
@@ -67,7 +81,19 @@ public sealed record MovementCombatConfig
 /// <summary>Cooperation controls (lifesim.md §20): energy sharing and optional kin-predation deterrence.</summary>
 public sealed record CooperationConfig
 {
-    /// <summary>Fraction of the donor's energy transferred by a Share action.</summary>
+    /// <summary>
+    /// Master switch for the whole cooperation feature set (lifesim.md §20), selectable per world at
+    /// genesis. When false, Share actions are inert no-ops and the kin-predation penalty is not charged,
+    /// so a run can be observed with cooperation entirely absent. The kin-relatedness sensory input
+    /// remains available either way — it is cheap information, not cooperation itself.
+    /// </summary>
+    public bool Enabled { get; init; } = true;
+
+    /// <summary>
+    /// Genesis generosity: the <see cref="Genome.ShareFraction"/> every founder starts with. From here
+    /// the per-organism generosity trait evolves freely (§20), so this is only the starting point, not
+    /// a global constant — the actual amount donated by any Share is the donor's own evolved trait.
+    /// </summary>
     public double ShareFraction { get; init; } = 0.25;
 
     /// <summary>Fraction of the shared energy the recipient actually receives (&lt; 1 keeps altruism costly).</summary>
@@ -165,6 +191,9 @@ public sealed record TraitBounds
     public Range EnvRadius { get; init; } = new(0.0, 20.0);
     public Range OrgRadius { get; init; } = new(0.0, 20.0);
     public Range SensoryAcuity { get; init; } = new(0.0, 1.0);
+
+    /// <summary>Generosity bounds (lifesim.md §20): 0 = never donates, 1 = donates all of its energy per Share.</summary>
+    public Range ShareFraction { get; init; } = new(0.0, 1.0);
 
     public sealed record Range(double Min, double Max);
 }

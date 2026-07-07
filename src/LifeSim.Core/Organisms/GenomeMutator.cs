@@ -31,6 +31,7 @@ public static class GenomeMutator
             EnvRadius = Drift(genome.EnvRadius, bounds.EnvRadius, config, mutationStream),
             OrgRadius = Drift(genome.OrgRadius, bounds.OrgRadius, config, mutationStream),
             SensoryAcuity = Drift(genome.SensoryAcuity, bounds.SensoryAcuity, config, mutationStream),
+            ShareFraction = Drift(genome.ShareFraction, bounds.ShareFraction, config, mutationStream),
         }.Clamped(bounds);
     }
 

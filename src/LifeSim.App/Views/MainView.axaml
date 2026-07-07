@@ -76,6 +76,17 @@
                                            Minimum="1" Maximum="1000000" Increment="1" FormatString="0" ParsingNumberStyle="Integer" />
                         </Grid>
 
+                        <StackPanel Spacing="6">
+                            <CheckBox IsChecked="{Binding CooperationEnabled}"
+                                      Content="Cooperation (kin recognition &amp; energy sharing)" />
+                            <TextBlock Opacity="0.6" FontSize="12" Margin="28,0,0,0" TextWrapping="Wrap"
+                                       Text="Organisms can share energy and evolve how generous to be. Off = no sharing at all." />
+                            <CheckBox IsChecked="{Binding SenescenceEnabled}"
+                                      Content="Senescence (aging)" Margin="0,4,0,0" />
+                            <TextBlock Opacity="0.6" FontSize="12" Margin="28,0,0,0" TextWrapping="Wrap"
+                                       Text="Old organisms pay a growing metabolic cost so no lineage is immortal. Off = death only by starvation or predation." />
+                        </StackPanel>
+
                         <Expander Header="Advanced: full configuration (JSON)">
                             <StackPanel Spacing="6">
                                 <TextBlock Opacity="0.7" FontSize="12" TextWrapping="Wrap"

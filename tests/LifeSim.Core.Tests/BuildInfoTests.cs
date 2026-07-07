@@ -5,9 +5,10 @@ namespace LifeSim.Core.Tests;
 public class BuildInfoTests
 {
     [Fact]
-    public void SchemaAndConfigVersions_areSemver_1_0()
+    public void SchemaAndConfigVersions_areSemver_1_1()
     {
-        Assert.Equal("1.0", BuildInfo.SchemaVersion);
-        Assert.Equal("1.0", BuildInfo.ConfigVersion);
+        // 1.1: share_fraction genome trait + cooperation toggle / senescence knobs (lifesim.md §17, §20).
+        Assert.Equal("1.1", BuildInfo.SchemaVersion);
+        Assert.Equal("1.1", BuildInfo.ConfigVersion);
     }
 }

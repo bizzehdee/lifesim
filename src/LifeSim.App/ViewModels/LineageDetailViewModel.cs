@@ -63,5 +63,6 @@ public sealed class LineageDetailViewModel : ViewModelBase
         new TraitReading("Env Radius", g.EnvRadius, bounds.EnvRadius.Min, bounds.EnvRadius.Max),
         new TraitReading("Org Radius", g.OrgRadius, bounds.OrgRadius.Min, bounds.OrgRadius.Max),
         new TraitReading("Sensory Acuity", g.SensoryAcuity, bounds.SensoryAcuity.Min, bounds.SensoryAcuity.Max),
+        new TraitReading("Generosity", g.ShareFraction, bounds.ShareFraction.Min, bounds.ShareFraction.Max),
     ];
 }

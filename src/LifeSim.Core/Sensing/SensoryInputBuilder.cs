@@ -73,8 +73,8 @@ public sealed class SensoryInputBuilder
             _ => 0.0, // ActionResult.None
         };
 
-        // Reproduction cost scales with whole-body mass and needs germ cells (lifesim.md §21), matching ResolveReproduce.
-        double reproductionCost = _config.Reproduction.ReproductionBaseCost * Morphology.Mass(self.Genome, _config.Multicellular);
+        // Reproduction cost (division-of-labour-discounted mass) and germ gate, matching ResolveReproduce (lifesim.md §21).
+        double reproductionCost = _config.Reproduction.ReproductionBaseCost * Morphology.ReproductionMass(self.Genome, _config.Multicellular);
         bool offCooldown = self.LastBirthTick is null
             || currentTick - self.LastBirthTick.Value >= _config.Reproduction.ReproductionCooldownTicks;
         bool fertile = Morphology.CanReproduce(self.Genome, _config.Multicellular);

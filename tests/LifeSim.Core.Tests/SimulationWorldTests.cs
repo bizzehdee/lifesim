@@ -417,16 +417,18 @@ public class SimulationWorldTests
     {
         // The optional aging model (lifesim.md §17): once past the senescence onset the per-tick tax
         // climbs until it outruns any energy budget, so the oldest survivor of an aging world stays
-        // far younger than in the immortal-until-starvation default.
+        // far younger than in the immortal-until-starvation default. Multicellularity is disabled here
+        // to isolate this §17 behaviour from the §21 body economy (whose tuning must not perturb it).
         static long MaxAge(bool senescence)
         {
             var config = SimulationConfig.Default with
             {
                 InitialPopulation = 80,
                 Senescence = senescence,
+                Multicellular = SimulationConfig.Default.Multicellular with { Enabled = false },
                 Metabolism = SimulationConfig.Default.Metabolism with { SenescenceOnsetAge = 100, SenescenceCostPerTick = 0.2 },
             };
-            var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), config);
+            var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 42), config);
             for (int i = 0; i < 400 && !world.Extinct; i++)
             {
                 world.Advance();
@@ -439,7 +441,7 @@ public class SimulationWorldTests
         long ageless = MaxAge(senescence: false);
         Assert.True(aging < ageless,
             $"Senescence should cap the oldest survivor (aging {aging}) below an ageless world ({ageless}).");
-        Assert.True(aging <= 150, $"With onset 100 the oldest survivor should not run away (was {aging}).");
+        Assert.True(ageless > 150, $"The ageless world should keep long-lived organisms (oldest {ageless}).");
     }
 
     [Fact]

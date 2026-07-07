@@ -608,8 +608,9 @@ public sealed class SimulationWorld
             return ActionResult.Failed;
         }
 
-        // Cost scales with whole-body mass (cells × size): a bigger body is dearer to reproduce (lifesim.md §21).
-        double cost = Config.Reproduction.ReproductionBaseCost * Morphology.Mass(organism.Genome, Config.Multicellular);
+        // Cost scales with body mass, but division of labour sheds the size penalty (lifesim.md §21),
+        // so a well-differentiated body reproduces almost as cheaply as a single cell.
+        double cost = Config.Reproduction.ReproductionBaseCost * Morphology.ReproductionMass(organism.Genome, Config.Multicellular);
         if (organism.Energy < cost)
         {
             return ActionResult.Failed;

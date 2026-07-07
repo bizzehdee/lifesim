@@ -664,7 +664,12 @@ Six jobs, each a *bonus for emphasising that type above the ⅙ generalist basel
 
 A body of `N` cells has `fraction_type · N` cells of each type — many cells per job, not one-of-each — so specialisation is a matter of *how much* of the body is devoted to each.
 
-**Division of labour is rewarded.** A body drawing on several *distinct* specialist types (fractions above the ⅙ baseline) waives up to `division_of_labour_discount` of its multicellular overhead — the extra-cell upkeep and coordination — scaling linearly to full effect at `division_of_labour_target` distinct specialists. So a well-differentiated body is far cheaper to run than a lopsided (single-specialist) or generalist body of the same size, which is what makes specialised multicellularity — not just being bigger — the thing selection favours. The square-cube law still caps the eventual size.
+**Division of labour outweighs the square-cube law.** How fully a body has divided its labour — its *labour reach*, 0→1, driven by the number of *distinct* specialist types (fractions above the ⅙ baseline), full at `division_of_labour_target` — is the master lever, and it lifts every square-cube limit in proportion:
+- **Overhead** (extra-cell upkeep + coordination) is waived by up to `division_of_labour_discount` of labour reach.
+- **Intake** stops being surface-bound: the grazing exponent rises from N^⅔ toward N^1 (linear) at full reach, so interior cells can feed too.
+- **Reproduction cost** sheds its size penalty: a fully-differentiated body buds at nearly single-cell cost instead of whole-body-mass cost.
+
+So a lopsided (single-specialist) or generalist body is still hard-capped small by the square-cube law, but a *well-differentiated* body escapes it and can grow large — specialised multicellularity, not mere size, is what selection rewards. (This makes big bodies K-strategists: fewer, larger, cheaper-per-cell individuals rather than many single cells.)
 
 ### The square-cube law (why bodies stay small)
 Body **mass** is `cell_count · size`; metabolism and combat scale with it. The size limit is emergent, not a hard cap: **maintenance scales with volume (∝ N)** — every cell must be fed, plus a per-cell `coordination_cost` — while **grazing intake is capped by surface area (∝ N^⅔)** (`intake_surface_coeff · N^⅔`), because only surface cells exchange with the environment. The ratio of sustainable intake to upkeep therefore *falls* as the body grows (∝ N^{−⅓}), so beyond an optimal size a body runs a permanent deficit and starves. This — the classic square-cube constraint — is what keeps `cell_count` bounded well below its hard limit under selection, and why specialisation (feeder efficiency, store buffering) is what makes a larger body pay off.

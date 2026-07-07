@@ -92,21 +92,25 @@ public static class Morphology
     }
 
     /// <summary>
-    /// Division-of-labour efficiency in <c>[0, DivisionOfLabourDiscount]</c> (lifesim.md §21): the
-    /// fraction of a body's multicellular overhead waived because its work is split across several
-    /// distinct specialist types. Zero for a single-specialist or generalist body; full at
-    /// <see cref="MulticellularConfig.DivisionOfLabourTarget"/> distinct specialists.
+    /// How fully a body has divided its labour, in <c>[0, 1]</c> (lifesim.md §21): 0 for a
+    /// single-specialist or generalist body, 1 at <see cref="MulticellularConfig.DivisionOfLabourTarget"/>
+    /// distinct specialist types. This single measure drives every division-of-labour advantage — the
+    /// overhead discount, surface intake, and cheaper reproduction — so a well-differentiated body can
+    /// outgrow the square-cube limits a lopsided one cannot.
     /// </summary>
-    public static double LaborEfficiency(Genome genome, MulticellularConfig config)
+    public static double LaborReach(Genome genome, MulticellularConfig config)
     {
         if (!config.Enabled || config.DivisionOfLabourTarget <= 1)
         {
             return 0.0;
         }
 
-        double reach = Math.Clamp((SpecialistCount(genome, config) - 1.0) / (config.DivisionOfLabourTarget - 1.0), 0.0, 1.0);
-        return config.DivisionOfLabourDiscount * reach;
+        return Math.Clamp((SpecialistCount(genome, config) - 1.0) / (config.DivisionOfLabourTarget - 1.0), 0.0, 1.0);
     }
+
+    /// <summary>Fraction of multicellular overhead waived by division of labour: <see cref="LaborReach"/> × the configured discount.</summary>
+    public static double LaborEfficiency(Genome genome, MulticellularConfig config) =>
+        config.DivisionOfLabourDiscount * LaborReach(genome, config);
 
     /// <summary>
     /// A body's multicellular overhead per tick (lifesim.md §21): the extra-cell metabolic upkeep
@@ -124,11 +128,39 @@ public static class Morphology
         return raw * (1.0 - LaborEfficiency(genome, config));
     }
 
-    /// <summary>Max energy absorbable from grazing per tick — surface exchange, ∝ N^⅔ (the square-cube ceiling on intake).</summary>
-    public static double MaxGrazingIntake(Genome genome, MulticellularConfig config) =>
-        config.Enabled
-            ? config.IntakeSurfaceCoeff * Math.Pow(CellCount(genome, config), 2.0 / 3.0)
-            : double.PositiveInfinity;
+    /// <summary>
+    /// Max energy absorbable from grazing per tick (lifesim.md §21). A generalist body is surface-
+    /// limited (∝ N^⅔, the square-cube ceiling), but division of labour lets interior cells take part
+    /// in exchange, raising the exponent toward 1 (∝ N, no penalty) at full <see cref="LaborReach"/>.
+    /// </summary>
+    public static double MaxGrazingIntake(Genome genome, MulticellularConfig config)
+    {
+        if (!config.Enabled)
+        {
+            return double.PositiveInfinity;
+        }
+
+        double exponent = (2.0 / 3.0) + (LaborReach(genome, config) * (1.0 / 3.0));
+        return config.IntakeSurfaceCoeff * Math.Pow(CellCount(genome, config), exponent);
+    }
+
+    /// <summary>
+    /// Effective mass for reproduction cost (lifesim.md §21). Normally the whole-body mass (cells ×
+    /// size), so bigger bodies are dearer to bud — but division of labour sheds that size penalty in
+    /// proportion to <see cref="LaborReach"/>, so a well-differentiated body reproduces almost as
+    /// cheaply as a single cell. Equals <see cref="Mass"/> for a generalist or unicellular body.
+    /// </summary>
+    public static double ReproductionMass(Genome genome, MulticellularConfig config)
+    {
+        double cells = CellCount(genome, config);
+        if (!config.Enabled || cells <= 1.0)
+        {
+            return genome.Size * cells;
+        }
+
+        double extraCells = (cells - 1.0) * (1.0 - LaborReach(genome, config));
+        return genome.Size * (1.0 + extraCells);
+    }
 
     /// <summary>Grazing yield multiplier from Feeder emphasis (1 for a generalist body).</summary>
     public static double FeedMultiplier(Genome genome, MulticellularConfig config) =>

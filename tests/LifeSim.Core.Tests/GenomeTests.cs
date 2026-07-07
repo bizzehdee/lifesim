@@ -1,10 +1,42 @@
 using LifeSim.Core.Configuration;
+using LifeSim.Core.Determinism;
 using LifeSim.Core.Organisms;
 
 namespace LifeSim.Core.Tests;
 
 public class GenomeTests
 {
+    [Fact]
+    public void Random_drawsEveryTraitWithinBounds_asAUnicellularFounder()
+    {
+        var bounds = new TraitBounds();
+        var prng = new Prng(123);
+
+        for (int i = 0; i < 50; i++)
+        {
+            Genome g = Genome.Random(bounds, prng);
+            Assert.Equal(1.0, g.CellCount); // founders are unicellular
+            Assert.InRange(g.Size, bounds.Size.Min, bounds.Size.Max);
+            Assert.InRange(g.ThermalCenter, bounds.ThermalCenter.Min, bounds.ThermalCenter.Max);
+            Assert.InRange(g.SensoryAcuity, bounds.SensoryAcuity.Min, bounds.SensoryAcuity.Max);
+            Assert.InRange(g.ShareFraction, bounds.ShareFraction.Min, bounds.ShareFraction.Max);
+        }
+    }
+
+    [Fact]
+    public void Random_producesAVariedGenePool_notCloneCopies()
+    {
+        var bounds = new TraitBounds();
+        var prng = new Prng(7);
+        var sizes = new HashSet<double>();
+        for (int i = 0; i < 20; i++)
+        {
+            sizes.Add(Genome.Random(bounds, prng).Size);
+        }
+
+        Assert.True(sizes.Count > 1, "Successive random founders should differ.");
+    }
+
     [Fact]
     public void MidRange_sitsAtTheMidpointOfEveryBound()
     {

@@ -104,7 +104,7 @@
           "name": { "type": "string", "minLength": 1 },
           "x": { "type": "integer" },
           "y": { "type": "integer" },
-          "energy": { "type": "number", "minimum": 0, "maximum": 100 },
+          "energy": { "type": "number", "minimum": 0 },
           "age": { "type": "integer", "minimum": 0 },
           "genome": {
             "type": "object",

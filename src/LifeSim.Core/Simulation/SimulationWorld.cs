@@ -96,14 +96,22 @@ public sealed class SimulationWorld
     /// Builds Tick 0: scatters <see cref="SimulationConfig.InitialPopulation"/>
     /// mid-range-genome organisms across Grassland tiles via the genesis PRNG stream.
     /// </summary>
-    public static SimulationWorld CreateGenesis(WorldState world, SimulationConfig config)
+    /// <summary>
+    /// Builds Tick 0. Terrain is always seeded from <see cref="WorldState.Seed"/> (the map is
+    /// deterministic), but the gameplay PRNG streams — behaviour, mutation, combat, events, genesis —
+    /// are seeded from <paramref name="simulationSeed"/> when supplied, else from the world seed. Pass
+    /// an entropy value for a run whose life differs every time on the same map; pass nothing (or the
+    /// world seed) for a fully reproducible run. Either way the stream state is captured in snapshots,
+    /// so save/reload/replay of a created world still hold.
+    /// </summary>
+    public static SimulationWorld CreateGenesis(WorldState world, SimulationConfig config, ulong? simulationSeed = null)
     {
         ArgumentNullException.ThrowIfNull(world);
         ArgumentNullException.ThrowIfNull(config);
 
         var terrain = new TerrainSampler(world.Seed, config);
         var groundEnergy = new GroundEnergyGrid(terrain, config);
-        var prngStreams = PrngStreams.FromSeed(world.Seed);
+        var prngStreams = PrngStreams.FromSeed(simulationSeed ?? world.Seed);
         var idAllocator = new OrganismIdAllocator(0);
         var innovationIdAllocator = new InnovationIdAllocator(NeatTopology.ReservedInnovationIdCount);
         var environment = new EnvironmentState();
@@ -723,9 +731,6 @@ public sealed class SimulationWorld
     private void ScatterGenesisPopulation()
     {
         Prng genesis = _prngStreams[PrngStream.Genesis];
-        // Founders start at the configured genesis generosity; the trait evolves from there.
-        Genome genome = Genome.MidRange(Config.TraitBounds) with { ShareFraction = Config.Cooperation.ShareFraction };
-
         int maxAttempts = Math.Max(10_000, World.Width * World.Height * 4);
 
         for (int i = 0; i < Config.InitialPopulation; i++)
@@ -741,6 +746,17 @@ public sealed class SimulationWorld
                     continue;
                 }
 
+                // Each founder gets its own randomised genome — a varied founding gene pool, not a
+                // clone army — so the population is diverse from the start. Thermal preferences are
+                // kept comfortable at the grassland they spawn on (a wide band centred near grassland
+                // temperature, with spread) so the founding population isn't wiped out before it can
+                // evolve; every other trait is fully random, and thermal range expands later by mutation.
+                TraitBounds bounds = Config.TraitBounds;
+                double thermalWidth = Math.Max(bounds.ThermalWidth.Min, 16.0);
+                thermalWidth += genesis.NextDouble() * (bounds.ThermalWidth.Max - thermalWidth);
+                double slack = Math.Max(0.0, (thermalWidth / 2.0) - 3.0);
+                double thermalCenter = Config.Biomes.Grassland.Temperature + (((genesis.NextDouble() * 2.0) - 1.0) * slack);
+                Genome genome = Genome.Random(bounds, genesis) with { ThermalCenter = thermalCenter, ThermalWidth = thermalWidth };
                 long id = _idAllocator.Allocate();
                 NeatGenome brain = NeatGenomeFactory.CreateMinimalFullyConnected(genesis);
                 Organism organism = OrganismFactory.Create(

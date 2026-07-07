@@ -2,8 +2,11 @@
 
 A plain-language tour of the laws that govern the world — the high-level "rules of the game".
 
-Everything below is **deterministic**: the same seed and settings always produce exactly the same
-run, tick for tick, on any machine and at any thread count.
+By default everything is **reproducible**: the same seed and settings replay exactly, tick for tick,
+on any machine and at any thread count. (You can opt into **entropy mode**, where the map is still
+seeded but each run's *life* — behaviour, mutation, combat, events — is drawn fresh, so the same seed
+gives the same world with different history every time.) Either way, organism behaviour itself is
+genuinely random: actions are sampled, mutation is random, combat is a roll — nothing is scripted.
 
 ---
 
@@ -14,6 +17,7 @@ run, tick for tick, on any machine and at any thread count.
 
 ## 2. Organisms
 - An organism occupies **one tile**. It has a **genome** (its inherited traits), a **brain** (an evolvable neural network), and an **energy budget**.
+- The founding population is a **varied gene pool** — each founder is spawned with randomised traits (kept viable for its starting biome), not identical clones — so the world is diverse and unpredictable from the first tick.
 - Energy runs from 0 to a ceiling (100 by default). **Energy hits zero → the organism dies** and is removed. There is no other automatic death unless aging is switched on (see rule 7).
 - Traits include body **size**, **speed**, a **thermal comfort band** (centre ± width), **sensing radii** and **acuity**, **generosity**, and a multicellular **body plan** (see rule 9).
 

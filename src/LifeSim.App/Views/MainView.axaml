@@ -96,6 +96,10 @@
                                       Content="Multicellularity (differentiated bodies)" Margin="0,4,0,0" />
                             <TextBlock Opacity="0.6" FontSize="12" Margin="28,0,0,0" TextWrapping="Wrap"
                                        Text="Bodies can evolve many cells specialised to jobs (germ, feeder, store, defender, mover, sensor). Bigger bodies cost more but store more; the square-cube law caps size. Off = every organism is a single cell." />
+                            <CheckBox IsChecked="{Binding EntropyBehaviour}"
+                                      Content="Entropy (unrepeatable life)" Margin="0,4,0,0" />
+                            <TextBlock Opacity="0.6" FontSize="12" Margin="28,0,0,0" TextWrapping="Wrap"
+                                       Text="Seed gameplay randomness from entropy: the same seed gives the same map but different life every run. Off = fully reproducible from the seed. (A created run still saves/reloads exactly either way.)" />
                         </StackPanel>
 
                         <Expander Header="Advanced: all simulation settings">

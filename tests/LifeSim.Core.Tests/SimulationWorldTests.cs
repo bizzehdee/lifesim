@@ -35,6 +35,36 @@ public class SimulationWorldTests
     }
 
     [Fact]
+    public void CreateGenesis_producesAVariedFoundingGenePool()
+    {
+        var world = SimulationWorld.CreateGenesis(NewWorldState(), SmallPopulation());
+
+        int distinct = world.Organisms.Values
+            .Select(o => (o.Genome.Size, o.Genome.ThermalCenter, o.Genome.SpeedCapacity))
+            .Distinct()
+            .Count();
+
+        Assert.True(distinct > 1, "Founders should be a varied gene pool, not identical clones.");
+    }
+
+    [Fact]
+    public void CreateGenesis_entropySeedVariesLifeWhileTheWorldSeedStillReplays()
+    {
+        var state = NewWorldState(seed: 909090);
+        SimulationConfig config = SmallPopulation();
+
+        // Same map (world seed), different gameplay seed → different founders/behaviour.
+        string a = SnapshotSerializer.Save(SimulationWorld.CreateGenesis(state, config, simulationSeed: 111).ToSnapshot());
+        string b = SnapshotSerializer.Save(SimulationWorld.CreateGenesis(state, config, simulationSeed: 222).ToSnapshot());
+        Assert.NotEqual(a, b);
+
+        // No simulation seed == using the world seed (fully reproducible default).
+        string c = SnapshotSerializer.Save(SimulationWorld.CreateGenesis(state, config).ToSnapshot());
+        string d = SnapshotSerializer.Save(SimulationWorld.CreateGenesis(state, config, simulationSeed: state.Seed).ToSnapshot());
+        Assert.Equal(c, d);
+    }
+
+    [Fact]
     public void Advance_incrementsTick()
     {
         var world = SimulationWorld.CreateGenesis(NewWorldState(), SmallPopulation());
@@ -254,7 +284,7 @@ public class SimulationWorldTests
             world.Advance();
             foreach (Organism organism in world.Organisms.Values)
             {
-                Assert.True(organism.Energy <= Organism.EnergyCeiling);
+                Assert.True(organism.Energy <= organism.EnergyCapacity); // per-body ceiling (Store cells can raise it above 100)
             }
         }
 
@@ -343,34 +373,28 @@ public class SimulationWorldTests
     }
 
     [Fact]
-    public void CreateGenesis_seedsFounderGenerosityFromConfig()
+    public void CreateGenesis_givesFoundersVariedGenerosity()
     {
-        // Founders start at the configured genesis generosity; the trait evolves from there.
-        var config = SimulationConfig.Default with
-        {
-            InitialPopulation = 20,
-            Cooperation = SimulationConfig.Default.Cooperation with { ShareFraction = 0.37 },
-        };
-        var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), config);
+        // Founder generosity is randomised like every other trait — a varied gene pool, not a constant.
+        var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), SimulationConfig.Default with { InitialPopulation = 20 });
 
-        Assert.All(world.Organisms.Values, o => Assert.Equal(0.37, o.Genome.ShareFraction, precision: 10));
-        Assert.Equal(0.37, world.Metrics.TraitAverages.ShareFraction, precision: 10);
+        int distinct = world.Organisms.Values.Select(o => o.Genome.ShareFraction).Distinct().Count();
+        Assert.True(distinct > 1, "Founders should have varied generosity, not all the same value.");
     }
 
     [Fact]
     public void Advance_shareAmountIsDrivenByTheEvolvableGenerosityTrait()
     {
-        // Same seed, same brains, same relatedness rolls — only genesis generosity differs, and trait
-        // drift is frozen so every organism keeps its founder value forever. A selfish population (0)
-        // transfers nothing; a generous one (0.5) transfers energy. Proves the donated amount is the
-        // donor's own evolvable trait, not a global constant.
+        // Pin every organism's generosity by collapsing its trait bound to a single value (and freezing
+        // drift), so a selfish population (0) transfers nothing while a generous one (0.5) transfers
+        // energy — proving the donated amount is the donor's own trait, not a global constant.
         static double TotalSharedWith(double generosity)
         {
             var config = SimulationConfig.Default with
             {
                 InitialPopulation = 40,
                 Mutation = SimulationConfig.Default.Mutation with { TraitMutationRate = 0.0 },
-                Cooperation = SimulationConfig.Default.Cooperation with { ShareFraction = generosity },
+                TraitBounds = SimulationConfig.Default.TraitBounds with { ShareFraction = new TraitBounds.Range(generosity, generosity) },
             };
             var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), config);
 

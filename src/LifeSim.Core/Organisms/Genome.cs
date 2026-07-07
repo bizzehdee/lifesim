@@ -1,4 +1,5 @@
 using LifeSim.Core.Configuration;
+using LifeSim.Core.Determinism;
 
 namespace LifeSim.Core.Organisms;
 
@@ -63,11 +64,9 @@ public sealed record Genome
     };
 
     /// <summary>
-    /// Mid-range genome for genesis organisms: the midpoint of every bound, with two
-    /// deliberate exceptions. <see cref="ShareFraction"/> is seeded separately from
-    /// <c>CooperationConfig.ShareFraction</c> (§20). <see cref="CellCount"/> starts at 1 (unicellular,
-    /// not the bound midpoint) so founders begin the multicellular transition from a single cell (§21);
-    /// the equal specialisation-weight midpoints make that cell a generalist.
+    /// Mid-range genome: the midpoint of every bound, except <see cref="CellCount"/> which starts at 1
+    /// (unicellular, not the bound midpoint) with equal specialisation-weight midpoints, so the single
+    /// cell is a generalist. Used as a neutral baseline; genesis founders use <see cref="Random"/>.
     /// </summary>
     public static Genome MidRange(TraitBounds bounds) => new()
     {
@@ -87,6 +86,39 @@ public sealed record Genome
         MoverWeight = Midpoint(bounds.MoverWeight),
         SensorWeight = Midpoint(bounds.SensorWeight),
     };
+
+    /// <summary>
+    /// A fully randomised genome — each trait drawn uniformly within its bounds — for a *varied*
+    /// founding gene pool rather than a clone army of identical <see cref="MidRange"/> founders, so
+    /// the world feels alive and diverse from tick 0. Cell count is forced to 1 (founders are
+    /// unicellular and evolve up). Draws come from the supplied PRNG in a fixed trait order.
+    /// </summary>
+    public static Genome Random(TraitBounds bounds, Prng prng)
+    {
+        ArgumentNullException.ThrowIfNull(bounds);
+        ArgumentNullException.ThrowIfNull(prng);
+
+        return new Genome
+        {
+            Size = Sample(bounds.Size, prng),
+            SpeedCapacity = Sample(bounds.SpeedCapacity, prng),
+            ThermalCenter = Sample(bounds.ThermalCenter, prng),
+            ThermalWidth = Sample(bounds.ThermalWidth, prng),
+            EnvRadius = Sample(bounds.EnvRadius, prng),
+            OrgRadius = Sample(bounds.OrgRadius, prng),
+            SensoryAcuity = Sample(bounds.SensoryAcuity, prng),
+            ShareFraction = Sample(bounds.ShareFraction, prng),
+            CellCount = 1.0,
+            GermWeight = Sample(bounds.GermWeight, prng),
+            FeederWeight = Sample(bounds.FeederWeight, prng),
+            StoreWeight = Sample(bounds.StoreWeight, prng),
+            DefenderWeight = Sample(bounds.DefenderWeight, prng),
+            MoverWeight = Sample(bounds.MoverWeight, prng),
+            SensorWeight = Sample(bounds.SensorWeight, prng),
+        };
+    }
+
+    private static double Sample(TraitBounds.Range range, Prng prng) => range.Min + (prng.NextDouble() * (range.Max - range.Min));
 
     private static double Clamp(double value, TraitBounds.Range range) =>
         Math.Clamp(value, range.Min, range.Max);

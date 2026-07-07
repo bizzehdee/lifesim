@@ -90,13 +90,6 @@ public sealed record CooperationConfig
     /// </summary>
     public bool Enabled { get; init; } = true;
 
-    /// <summary>
-    /// Genesis generosity: the <see cref="Genome.ShareFraction"/> every founder starts with. From here
-    /// the per-organism generosity trait evolves freely (§20), so this is only the starting point, not
-    /// a global constant — the actual amount donated by any Share is the donor's own evolved trait.
-    /// </summary>
-    public double ShareFraction { get; init; } = 0.25;
-
     /// <summary>Fraction of the shared energy the recipient actually receives (&lt; 1 keeps altruism costly).</summary>
     public double ShareEfficiency { get; init; } = 0.8;
 

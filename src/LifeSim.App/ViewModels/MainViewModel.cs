@@ -88,6 +88,14 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _multicellularEnabled = true;
 
+    /// <summary>
+    /// When true, gameplay randomness (behaviour, mutation, combat, events) is seeded from entropy, so
+    /// the same seed gives the same <em>map</em> but different <em>life</em> every run. Off = fully
+    /// reproducible from the seed. Either way a created run still saves/reloads and replays identically.
+    /// </summary>
+    [ObservableProperty]
+    private bool _entropyBehaviour;
+
     /// <summary>Brain-evaluation threads: 1..<see cref="MaxThreads"/>. Execution-only — results are identical for any value.</summary>
     [ObservableProperty]
     private decimal _threadCount = 1;
@@ -187,7 +195,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        TryCreateWorld((ulong)Seed, (int)Width, (int)Height, config, out _);
+        // Entropy mode seeds the gameplay streams from OS randomness (same map, different life each run).
+        ulong? simulationSeed = EntropyBehaviour ? unchecked((ulong)Random.Shared.NextInt64()) : null;
+        TryCreateWorld((ulong)Seed, (int)Width, (int)Height, config, out _, simulationSeed);
     }
 
     /// <summary>Pick a fresh random seed for the new world (the run stays deterministic once created).</summary>
@@ -207,6 +217,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             ["cooperation"] = CooperationEnabled,
             ["senescence"] = SenescenceEnabled,
             ["multicellular"] = MulticellularEnabled,
+            ["entropy"] = EntropyBehaviour,
             ["config"] = JsonNode.Parse(AdvancedConfig.ToJson()),
         };
 
@@ -236,11 +247,12 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         CooperationEnabled = options["cooperation"]!.GetValue<bool>();
         SenescenceEnabled = options["senescence"]!.GetValue<bool>();
         MulticellularEnabled = options["multicellular"]!.GetValue<bool>();
+        EntropyBehaviour = options["entropy"]?.GetValue<bool>() ?? false;
         Status = "Loaded starting options — ready to create the world.";
     }
 
-    /// <summary>Builds a genesis world from explicit parameters; returns false (with <paramref name="error"/>) on invalid input.</summary>
-    public bool TryCreateWorld(ulong seed, int width, int height, SimulationConfig config, out string? error)
+    /// <summary>Builds a genesis world from explicit parameters; returns false (with <paramref name="error"/>) on invalid input. A non-null <paramref name="simulationSeed"/> seeds gameplay randomness from it (entropy mode) instead of the world seed.</summary>
+    public bool TryCreateWorld(ulong seed, int width, int height, SimulationConfig config, out string? error, ulong? simulationSeed = null)
     {
         ArgumentNullException.ThrowIfNull(config);
 
@@ -260,7 +272,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
         try
         {
-            var world = SimulationWorld.CreateGenesis(new WorldState { Seed = seed, Width = width, Height = height }, config);
+            var world = SimulationWorld.CreateGenesis(new WorldState { Seed = seed, Width = width, Height = height }, config, simulationSeed);
 
             // Give the fresh timeline a root identity so later interventions are traceable to it.
             WorldSnapshot rooted = SnapshotProvenance.Root(world.ToSnapshot(), NewId("branch"), NewId("snap"));

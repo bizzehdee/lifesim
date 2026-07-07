@@ -5,8 +5,9 @@ using LifeSim.Core.Snapshot;
 namespace LifeSim.Console.Cli;
 
 /// <summary>
-/// <c>sim new --out state.json [--seed S] [--width W] [--height H] [--population P] [--config file]</c>
-/// — creates an initial (tick 0) world from config + seed and writes it as a snapshot.
+/// <c>sim new --out state.json [--seed S] [--width W] [--height H] [--population P] [--config file] [--random]</c>
+/// — creates an initial (tick 0) world from config + seed and writes it as a snapshot. <c>--random</c>
+/// seeds the gameplay randomness from entropy (same map, different life each time) instead of the seed.
 /// </summary>
 public static class NewCommand
 {
@@ -27,8 +28,9 @@ public static class NewCommand
         // --population overrides whatever the config (or default) specified.
         config = config with { InitialPopulation = args.GetInt("population", config.InitialPopulation) };
 
+        ulong? simulationSeed = args.HasFlag("random") ? unchecked((ulong)Random.Shared.NextInt64()) : null;
         var world = SimulationWorld.CreateGenesis(
-            new WorldState { Seed = seed, Width = width, Height = height }, config);
+            new WorldState { Seed = seed, Width = width, Height = height }, config, simulationSeed);
 
         File.WriteAllText(outPath, SnapshotSerializer.Save(world.ToSnapshot()));
         output.WriteLine(

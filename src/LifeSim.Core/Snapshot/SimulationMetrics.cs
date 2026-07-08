@@ -147,6 +147,9 @@ public sealed record TraitAverages
     public double Evasion { get; init; }
     public double Toxicity { get; init; }
 
+    /// <summary>Mean neural plasticity — tracks whether the population is evolving within-life learning.</summary>
+    public double Plasticity { get; init; }
+
     /// <summary>Mean evolvable generosity — tracks whether the population drifts toward hoarding or over-sharing.</summary>
     public double ShareFraction { get; init; }
 

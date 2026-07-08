@@ -190,6 +190,7 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
                 new TraitReading("Armour", genome.Armour, bounds.Armour.Min, bounds.Armour.Max),
                 new TraitReading("Evasion", genome.Evasion, bounds.Evasion.Min, bounds.Evasion.Max),
                 new TraitReading("Toxicity", genome.Toxicity, bounds.Toxicity.Min, bounds.Toxicity.Max),
+                new TraitReading("Plasticity", genome.Plasticity, bounds.Plasticity.Min, bounds.Plasticity.Max),
                 new TraitReading("Generosity", genome.ShareFraction, bounds.ShareFraction.Min, bounds.ShareFraction.Max),
             ],
             Economy = new EconomyBreakdown(

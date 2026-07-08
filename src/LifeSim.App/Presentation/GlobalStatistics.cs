@@ -104,6 +104,7 @@ public static class GlobalStatistics
                 new StatRow("Armour", Num(m.TraitAverages.Armour)),
                 new StatRow("Evasion", Num(m.TraitAverages.Evasion)),
                 new StatRow("Toxicity", Num(m.TraitAverages.Toxicity)),
+                new StatRow("Plasticity", Num(m.TraitAverages.Plasticity)),
                 new StatRow("Generosity", Num(m.TraitAverages.ShareFraction)),
             ]));
         }

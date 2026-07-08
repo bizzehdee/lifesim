@@ -290,6 +290,15 @@ public sealed class SimulationWorld
         var counters = new TickCounters();
         var distanceTraveled = new double[organismCount];
         var pendingBirths = new List<PendingBirth>();
+
+        // Energy at the start of the tick (before intent), used as the reward signal for within-life
+        // learning: net energy change over the tick tells a plastic brain whether its behaviour paid off.
+        var tickStartEnergy = new double[organismCount];
+        for (int i = 0; i < organismCount; i++)
+        {
+            tickStartEnergy[i] = _organisms[tickIds[i]].Energy;
+        }
+
         for (int i = 0; i < organismCount; i++)
         {
             Organism organism = _organisms[tickIds[i]];
@@ -343,6 +352,7 @@ public sealed class SimulationWorld
                 + Morphology.MulticellularOverhead(g, perCellBase, mc)
                 + Metabolism.SensoryTax(g, Config.Metabolism)
                 + Metabolism.DefenseTax(g, Config.Metabolism)
+                + Metabolism.PlasticityTax(g, Config.Metabolism)
                 + (Metabolism.LocomotionTax(distanceTraveled[index], g.SpeedCapacity, friction, Config.MovementCombat) * Morphology.LocomotionFactor(g, mc));
 
             // Thermal stress and crowding are externally imposed (climate, neighbours), not self-generated
@@ -363,6 +373,15 @@ public sealed class SimulationWorld
 
             organism.SpendEnergy(cost);
             organism.Tick();
+
+            // Within-life learning: nudge the live brain's weights toward what was active when this
+            // tick's net energy reward arrived. Deterministic and per-organism (writes only its own
+            // brain), so it stays thread-count-safe. Only plastic, still-living organisms learn.
+            if (g.Plasticity > 0.0 && organism.IsAlive)
+            {
+                double reward = organism.Energy - tickStartEnergy[index];
+                organism.UpdateBrain(HebbianLearning.Apply(organism.Brain, reward, g.Plasticity, Config.Learning));
+            }
         });
 
         // 6. Death & Transfer Phase. Predation transfer already happened in Intent Resolution;
@@ -972,7 +991,7 @@ public sealed class SimulationWorld
 
         double energyMin = 0.0, energyMax = 0.0, energySum = 0.0;
         double sumSize = 0, sumSpeed = 0, sumThermalC = 0, sumThermalW = 0, sumEnv = 0, sumOrg = 0, sumAcuity = 0, sumEfficiency = 0, sumShare = 0, sumCells = 0;
-        double sumArmour = 0, sumEvasion = 0, sumToxicity = 0, sumHelp = 0;
+        double sumArmour = 0, sumEvasion = 0, sumToxicity = 0, sumHelp = 0, sumPlasticity = 0;
 
         var biomeCounts = new Dictionary<Biome, long>
         {
@@ -993,6 +1012,7 @@ public sealed class SimulationWorld
         var armourBuckets = new int[HistogramBucketCount];
         var evasionBuckets = new int[HistogramBucketCount];
         var toxicityBuckets = new int[HistogramBucketCount];
+        var plasticityBuckets = new int[HistogramBucketCount];
         var shareBuckets = new int[HistogramBucketCount];
         var cellBuckets = new int[HistogramBucketCount];
 
@@ -1026,6 +1046,7 @@ public sealed class SimulationWorld
             sumArmour += g.Armour;
             sumEvasion += g.Evasion;
             sumToxicity += g.Toxicity;
+            sumPlasticity += g.Plasticity;
             sumShare += g.ShareFraction;
             sumCells += Morphology.CellCount(g, Config.Multicellular);
 
@@ -1042,6 +1063,7 @@ public sealed class SimulationWorld
             armourBuckets[BucketIndex(g.Armour, bounds.Armour)]++;
             evasionBuckets[BucketIndex(g.Evasion, bounds.Evasion)]++;
             toxicityBuckets[BucketIndex(g.Toxicity, bounds.Toxicity)]++;
+            plasticityBuckets[BucketIndex(g.Plasticity, bounds.Plasticity)]++;
             shareBuckets[BucketIndex(g.ShareFraction, bounds.ShareFraction)]++;
             cellBuckets[BucketIndex(Morphology.CellCount(g, Config.Multicellular), bounds.CellCount)]++;
         }
@@ -1103,6 +1125,7 @@ public sealed class SimulationWorld
                 Armour = Average(sumArmour),
                 Evasion = Average(sumEvasion),
                 Toxicity = Average(sumToxicity),
+                Plasticity = Average(sumPlasticity),
                 ShareFraction = Average(sumShare),
                 CellCount = Average(sumCells),
             },
@@ -1119,6 +1142,7 @@ public sealed class SimulationWorld
                 Histogram("armour", bounds.Armour, armourBuckets),
                 Histogram("evasion", bounds.Evasion, evasionBuckets),
                 Histogram("toxicity", bounds.Toxicity, toxicityBuckets),
+                Histogram("plasticity", bounds.Plasticity, plasticityBuckets),
                 Histogram("share_fraction", bounds.ShareFraction, shareBuckets),
                 Histogram("cell_count", bounds.CellCount, cellBuckets),
             ],

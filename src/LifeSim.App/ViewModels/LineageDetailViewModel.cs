@@ -67,6 +67,7 @@ public sealed class LineageDetailViewModel : ViewModelBase
         new TraitReading("Armour", g.Armour, bounds.Armour.Min, bounds.Armour.Max),
         new TraitReading("Evasion", g.Evasion, bounds.Evasion.Min, bounds.Evasion.Max),
         new TraitReading("Toxicity", g.Toxicity, bounds.Toxicity.Min, bounds.Toxicity.Max),
+        new TraitReading("Plasticity", g.Plasticity, bounds.Plasticity.Min, bounds.Plasticity.Max),
         new TraitReading("Generosity", g.ShareFraction, bounds.ShareFraction.Min, bounds.ShareFraction.Max),
     ];
 }

@@ -60,6 +60,10 @@ public static class Metabolism
         (Math.Clamp(genome.Armour, 0.0, 1.0) + Math.Clamp(genome.Evasion, 0.0, 1.0) + Math.Clamp(genome.Toxicity, 0.0, 1.0))
         * config.DefenseUpkeep;
 
+    /// <summary>Per-tick upkeep for maintaining a plastic (learning) brain, proportional to the <c>plasticity</c> trait.</summary>
+    public static double PlasticityTax(Genome genome, MetabolismConfig config) =>
+        Math.Clamp(genome.Plasticity, 0.0, 1.0) * config.PlasticityUpkeep;
+
     /// <summary>
     /// Multiplier applied to grazing yield — the rate–yield trade-off for <c>metabolic_efficiency</c>.
     /// Ranges from 1 (full yield) down to <c>1 − EfficiencyIntakePenalty</c> at maximal frugality, so a

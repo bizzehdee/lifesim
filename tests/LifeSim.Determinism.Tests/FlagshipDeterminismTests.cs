@@ -124,6 +124,30 @@ public class FlagshipDeterminismTests
         Assert.Equal(SnapshotSerializer.Save(serial), SnapshotSerializer.Save(parallel));
     }
 
+    /// <summary>
+    /// Within-life learning writes each organism's own brain weights inside the parallel metabolism
+    /// phase, so it must also be byte-identical across thread counts. Pin plasticity high so learning is
+    /// exercised on every organism.
+    /// </summary>
+    [Theory]
+    [InlineData(2)]
+    [InlineData(8)]
+    public void ThreadCount_doesNotChangeTheResult_withLearning(int threads)
+    {
+        static SimulationConfig LearningConfig() => NewConfig() with
+        {
+            TraitBounds = SimulationConfig.Default.TraitBounds with { Plasticity = new TraitBounds.Range(1.0, 1.0) },
+        };
+
+        WorldSnapshot serial = RunTicks(SimulationWorld.CreateGenesis(NewWorldState(), LearningConfig()), Ticks);
+
+        SimulationWorld parallelWorld = SimulationWorld.CreateGenesis(NewWorldState(), LearningConfig());
+        parallelWorld.MaxDegreeOfParallelism = threads;
+        WorldSnapshot parallel = RunTicks(parallelWorld, Ticks);
+
+        Assert.Equal(SnapshotSerializer.Save(serial), SnapshotSerializer.Save(parallel));
+    }
+
     private static WorldSnapshot RunTicks(SimulationWorld world, int ticks)
     {
         for (int i = 0; i < ticks && !world.Extinct; i++)

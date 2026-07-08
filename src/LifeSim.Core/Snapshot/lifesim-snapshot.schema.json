@@ -124,6 +124,7 @@
               "armour": { "type": "number" },
               "evasion": { "type": "number" },
               "toxicity": { "type": "number" },
+              "plasticity": { "type": "number" },
               "share_fraction": { "type": "number" },
               "cell_count": { "type": "number" },
               "germ_weight": { "type": "number" },

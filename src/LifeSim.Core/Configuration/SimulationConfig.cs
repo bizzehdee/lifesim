@@ -13,6 +13,7 @@ public sealed record SimulationConfig
 {
     public MetabolismConfig Metabolism { get; init; } = new();
     public MovementCombatConfig MovementCombat { get; init; } = new();
+    public LearningConfig Learning { get; init; } = new();
     public CooperationConfig Cooperation { get; init; } = new();
     public MulticellularConfig Multicellular { get; init; } = new();
     public BiomesConfig Biomes { get; init; } = new();
@@ -63,6 +64,16 @@ public sealed record BrainTypeSpec
     public int Count { get; init; }
 }
 
+/// <summary>Within-life (Hebbian) learning coefficients, applied when an organism has non-zero <c>plasticity</c>.</summary>
+public sealed record LearningConfig
+{
+    /// <summary>Scales the reward-modulated Hebbian weight change (with the organism's plasticity and its per-tick energy reward).</summary>
+    public double LearnRate { get; init; } = 0.02;
+
+    /// <summary>Hard bound (±) on a learned connection weight, so learning can't blow weights up.</summary>
+    public double WeightClamp { get; init; } = 8.0;
+}
+
 /// <summary>Metabolism &amp; sensory-tax coefficients.</summary>
 public sealed record MetabolismConfig
 {
@@ -92,6 +103,13 @@ public sealed record MetabolismConfig
     /// discounts. Set to 0 for free defences.
     /// </summary>
     public double DefenseUpkeep { get; init; } = 0.06;
+
+    /// <summary>
+    /// Per-tick metabolic upkeep charged on the <c>plasticity</c> trait — maintaining a plastic brain
+    /// costs energy, so within-life learning only pays off in variable enough environments. Part of the
+    /// self-generated cost that metabolic efficiency discounts. Set to 0 for free learning.
+    /// </summary>
+    public double PlasticityUpkeep { get; init; } = 0.05;
 
     /// <summary>
     /// Density-dependent crowding cost: extra metabolism per neighbouring organism
@@ -346,6 +364,9 @@ public sealed record TraitBounds
 
     /// <summary>Toxicity (contact damage to attackers): 0 = none, 1 = maximal. Founders start at 0.</summary>
     public Range Toxicity { get; init; } = new(0.0, 1.0);
+
+    /// <summary>Neural plasticity (within-life learning rate): 0 = fixed brain, 1 = maximal. Founders start at 0.</summary>
+    public Range Plasticity { get; init; } = new(0.0, 1.0);
 
     /// <summary>Generosity bounds: 0 = never donates, 1 = donates all of its energy per Share.</summary>
     public Range ShareFraction { get; init; } = new(0.0, 1.0);

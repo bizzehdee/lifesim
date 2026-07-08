@@ -406,6 +406,29 @@ public class SimulationWorldTests
     }
 
     [Fact]
+    public void Advance_withPlasticity_learnsWithinLife_withoutTouchingTheGermline()
+    {
+        // Pin plasticity high (bounds collapsed, mutation frozen) so every organism learns; after a few
+        // ticks a live brain's weights should diverge from its germline — while the germline stays the
+        // inherited weights (Darwinian: learning is not written back to the germline).
+        var config = SimulationConfig.Default with
+        {
+            InitialPopulation = 40,
+            Mutation = SimulationConfig.Default.Mutation with { TraitMutationRate = 0.0 },
+            TraitBounds = SimulationConfig.Default.TraitBounds with { Plasticity = new TraitBounds.Range(1.0, 1.0) },
+        };
+        var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 4242), config);
+
+        for (int i = 0; i < 20 && !world.Extinct; i++)
+        {
+            world.Advance();
+        }
+
+        Assert.Contains(world.Organisms.Values, o =>
+            !o.Brain.Connections.Select(c => c.Weight).SequenceEqual(o.Germline.Connections.Select(c => c.Weight)));
+    }
+
+    [Fact]
     public void Advance_accountsForInclusiveFitness_overALongAbundantRun()
     {
         // Every successful share is classified exactly once (kin-directed vs non-kin) and credits the

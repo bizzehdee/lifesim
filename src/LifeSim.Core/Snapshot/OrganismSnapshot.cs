@@ -71,6 +71,7 @@ public sealed record GenomeSnapshot
     public double Armour { get; init; }
     public double Evasion { get; init; }
     public double Toxicity { get; init; }
+    public double Plasticity { get; init; }
     public double ShareFraction { get; init; }
     public double CellCount { get; init; } = 1.0;
     public double GermWeight { get; init; }
@@ -93,6 +94,7 @@ public sealed record GenomeSnapshot
         Armour = genome.Armour,
         Evasion = genome.Evasion,
         Toxicity = genome.Toxicity,
+        Plasticity = genome.Plasticity,
         ShareFraction = genome.ShareFraction,
         CellCount = genome.CellCount,
         GermWeight = genome.GermWeight,
@@ -116,6 +118,7 @@ public sealed record GenomeSnapshot
         Armour = Armour,
         Evasion = Evasion,
         Toxicity = Toxicity,
+        Plasticity = Plasticity,
         ShareFraction = ShareFraction,
         CellCount = CellCount,
         GermWeight = GermWeight,

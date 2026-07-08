@@ -51,6 +51,16 @@ public sealed record Genome
     public double Toxicity { get; init; }
 
     /// <summary>
+    /// Evolvable neural plasticity in [0, 1]: the learning rate for within-life, reward-modulated
+    /// Hebbian weight change. 0 is a fixed brain (learning is evolved in, so a no-learning baseline is
+    /// always available); higher values let the live brain adapt faster during life. Not inherited as
+    /// learned weights — offspring inherit the germline (Darwinian; see <see cref="Organism.Germline"/>)
+    /// — but the <em>capacity</em> to learn is heritable, so the Baldwin effect can operate. Costs
+    /// metabolic upkeep (see <see cref="Metabolism.PlasticityTax"/>).
+    /// </summary>
+    public double Plasticity { get; init; }
+
+    /// <summary>
     /// Evolvable generosity: the fraction of its own energy the organism donates
     /// when it performs a Share action. Under selection this drifts freely — lineages can evolve
     /// toward hoarding (→ 0) or over-sharing (→ 1), whichever the local kin economy favours. The
@@ -89,6 +99,7 @@ public sealed record Genome
         Armour = Clamp(Armour, bounds.Armour),
         Evasion = Clamp(Evasion, bounds.Evasion),
         Toxicity = Clamp(Toxicity, bounds.Toxicity),
+        Plasticity = Clamp(Plasticity, bounds.Plasticity),
         ShareFraction = Clamp(ShareFraction, bounds.ShareFraction),
         CellCount = Clamp(CellCount, bounds.CellCount),
         GermWeight = Clamp(GermWeight, bounds.GermWeight),
@@ -103,7 +114,7 @@ public sealed record Genome
     /// Mid-range genome: the midpoint of every bound, except <see cref="CellCount"/> which starts at 1
     /// (unicellular, not the bound midpoint) with equal specialisation-weight midpoints, so the single
     /// cell is a generalist, and the evolved-in capabilities (metabolic efficiency, armour, evasion,
-    /// toxicity) which start at their baseline (min) so they are earned by selection, not endowed. Used
+    /// toxicity, plasticity) which start at their baseline (min) so they are earned by selection. Used
     /// as a neutral baseline; genesis founders use <see cref="Random"/>.
     /// </summary>
     public static Genome MidRange(TraitBounds bounds) => new()
@@ -119,6 +130,7 @@ public sealed record Genome
         Armour = bounds.Armour.Min,
         Evasion = bounds.Evasion.Min,
         Toxicity = bounds.Toxicity.Min,
+        Plasticity = bounds.Plasticity.Min,
         ShareFraction = Midpoint(bounds.ShareFraction),
         CellCount = bounds.CellCount.Min,
         GermWeight = Midpoint(bounds.GermWeight),
@@ -134,7 +146,7 @@ public sealed record Genome
     /// founding gene pool rather than a clone army of identical <see cref="MidRange"/> founders, so
     /// the world feels alive and diverse from tick 0. Cell count is forced to 1 (founders are
     /// unicellular and evolve up) and the evolved-in capabilities (metabolic efficiency, armour, evasion,
-    /// toxicity) to baseline 0 — earned by selection, not endowed. Draws come from the supplied PRNG in a
+    /// toxicity, plasticity) to baseline 0 — earned by selection. Draws come from the supplied PRNG in a
     /// fixed trait order.
     /// </summary>
     public static Genome Random(TraitBounds bounds, Prng prng)
@@ -155,6 +167,7 @@ public sealed record Genome
             Armour = bounds.Armour.Min,
             Evasion = bounds.Evasion.Min,
             Toxicity = bounds.Toxicity.Min,
+            Plasticity = bounds.Plasticity.Min,
             ShareFraction = Sample(bounds.ShareFraction, prng),
             CellCount = 1.0,
             GermWeight = Sample(bounds.GermWeight, prng),

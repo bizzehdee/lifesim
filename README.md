@@ -13,17 +13,18 @@ For the full plain-language rules of the world, see [`rules.md`](./rules.md).
 
 ---
 
-## Running LifeSim
+## Getting LifeSim
 
-LifeSim is a desktop app (Windows/Linux). With the [.NET SDK](https://dotnet.microsoft.com/download)
-installed:
+Grab the latest build for your operating system from the **Releases** page, unzip it anywhere, and
+launch it:
 
-```bash
-dotnet run --project src/LifeSim.App.Desktop
-```
+- **Windows** — run `LifeSim.exe`
+- **Linux** — run the `LifeSim` executable (`chmod +x LifeSim` first if needed)
 
-There's also a constrained in-browser demo (WASM) for showing off a world without installing anything —
-see [For developers](#for-developers).
+No installation and nothing else to set up — it's a self-contained desktop app. (There's also a
+try-it-in-your-browser demo linked from the Releases page.)
+
+> Building from source instead? See [For developers](#for-developers).
 
 ---
 

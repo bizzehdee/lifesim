@@ -12,6 +12,14 @@ public sealed class LineageEntry
     /// <summary>Null for genesis organisms.</summary>
     public long? ParentId { get; }
 
+    /// <summary>
+    /// The co-parent for an offspring produced by sexual reproduction, else null (genesis and asexual
+    /// clones have a single parent). <see cref="LineageId"/> still follows <see cref="ParentId"/> (the
+    /// initiator), so the lineage tree and descendant score are unchanged; this records the other parent
+    /// for kin accounting and inspection.
+    /// </summary>
+    public long? SecondParentId { get; }
+
     /// <summary>The founding ancestor's <see cref="OrganismId"/> — genesis organisms found their own lineage; offspring inherit it unchanged (asexual reproduction).</summary>
     public long LineageId { get; }
 
@@ -34,7 +42,7 @@ public sealed class LineageEntry
 
     public LineageEntry(
         long organismId, long? parentId, long lineageId, long birthTick, int generationDepth, Genome birthTraits,
-        string foundingType = "Generic")
+        string foundingType = "Generic", long? secondParentId = null)
     {
         ArgumentNullException.ThrowIfNull(birthTraits);
         ArgumentNullException.ThrowIfNull(foundingType);
@@ -45,6 +53,7 @@ public sealed class LineageEntry
         GenerationDepth = generationDepth;
         BirthTraits = birthTraits;
         FoundingType = foundingType;
+        SecondParentId = secondParentId;
     }
 
     public void RecordDeath(long deathTick, Genome deathTraits)

@@ -445,7 +445,8 @@ public sealed class SimulationWorld
             _organisms[offspring.Id] = offspring;
             _lineageRecords[offspring.Id] = new LineageEntry(
                 offspring.Id, birth.ParentId, birth.LineageId, birth.BirthTick, birth.GenerationDepth, offspring.Genome,
-                foundingType: _lineageRecords[birth.LineageId].FoundingType); // heritable, breeds true down the lineage
+                foundingType: _lineageRecords[birth.LineageId].FoundingType, // heritable, breeds true down the lineage
+                secondParentId: birth.SecondParentId);
             _birthsByLineage[birth.LineageId] = _birthsByLineage.GetValueOrDefault(birth.LineageId) + 1;
         }
 

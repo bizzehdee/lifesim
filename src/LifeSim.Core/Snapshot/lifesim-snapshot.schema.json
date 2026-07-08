@@ -186,6 +186,7 @@
         "properties": {
           "organism_id": { "type": "integer", "minimum": 0 },
           "parent_id": { "type": ["integer", "null"], "minimum": 0 },
+          "second_parent_id": { "type": ["integer", "null"], "minimum": 0 },
           "lineage_id": { "type": "integer", "minimum": 0 },
           "birth_tick": { "type": "integer", "minimum": 0 },
           "death_tick": { "type": ["integer", "null"], "minimum": 0 },

@@ -49,7 +49,7 @@ Every tick resolves in a fixed order: **sense → decide → act → pay metabol
   - **Counterattack (inherent)**: a victim that survives an attack strikes back automatically, using its own combat mass — a large or well-armed target can kill its attacker. No trait needed; everyone fights back.
   - **Armour (evolvable)**: passive toughness that adds *defensive* mass to the kill formula (lowers the chance of being killed) without boosting your own attacks.
   - **Evasion (evolvable)**: an agility dodge that multiplicatively cuts a predator's kill chance, up to a cap.
-  - **Toxicity (evolvable)**: any predator that attacks a toxic organism takes contact damage — win or lose — so toxic prey are costly to eat (predators can't sense toxicity directly, so avoidance has to evolve the hard way).
+  - **Toxicity (evolvable)**: any predator that attacks a toxic organism takes contact damage — win or lose — so toxic prey are costly to eat. Toxicity is an **honest warning signal**: a predator can sense the nearest organism's toxicity, so predators can evolve to *avoid* toxic prey (aposematism) rather than only learning by being poisoned.
   - Each of armour, evasion, and toxicity starts at zero and must be evolved, and each costs metabolic upkeep to maintain — so defence trades off against everything else energy buys.
 
 ## 7. Life cycle & evolution

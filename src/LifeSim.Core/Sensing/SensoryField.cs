@@ -27,4 +27,10 @@ public enum SensoryField
 
     /// <summary>Genome relatedness (0..1) to the closest organism — the kin-recognition signal.</summary>
     ClosestOrganismRelatedness = 17,
+
+    /// <summary>
+    /// The closest organism's toxicity (0..1) — an honest aposematic warning signal. Lets a predator
+    /// evolve to avoid attacking toxic prey rather than only learning by being poisoned.
+    /// </summary>
+    ClosestOrganismToxicity = 18,
 }

@@ -43,6 +43,19 @@ public class SensoryInputBuilderTests
     }
 
     [Fact]
+    public void Build_surfacesTheClosestOrganismsToxicity_asAWarningSignal()
+    {
+        (SensoryInputBuilder builder, _, _) = NewBuilder();
+        Organism self = NewOrganism(1, 20, 20);
+        Organism toxicNeighbour = NewOrganism(2, 21, 20, genome: PristineGenome() with { Toxicity = 0.8 });
+        var organisms = new Dictionary<long, Organism> { [self.Id] = self, [toxicNeighbour.Id] = toxicNeighbour };
+
+        double[] values = builder.Build(self, organisms, 1, new Prng(1), 0.0, 0.0);
+
+        Assert.Equal(0.8, values[(int)SensoryField.ClosestOrganismToxicity], precision: 10);
+    }
+
+    [Fact]
     public void Build_energyAndAge_matchExpectedNormalization()
     {
         (SensoryInputBuilder builder, _, _) = NewBuilder();

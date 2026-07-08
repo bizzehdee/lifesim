@@ -58,6 +58,7 @@ public sealed class SensoryInputBuilder
         values[(int)SensoryField.ClosestOrganismDirectionY] = closest.DirectionY;
         values[(int)SensoryField.ClosestOrganismSizeDelta] = closest.NormalizedSizeDelta;
         values[(int)SensoryField.ClosestOrganismRelatedness] = closest.Relatedness;
+        values[(int)SensoryField.ClosestOrganismToxicity] = closest.Toxicity;
 
         NeighborCounts neighbors = CountNeighbors(self, allOrganisms);
         values[(int)SensoryField.NearbySmallerCount] = Math.Tanh(neighbors.Smaller / NearbyCountSaturation);
@@ -170,14 +171,14 @@ public sealed class SensoryInputBuilder
     }
 
     private readonly record struct ClosestOrganismInfo(
-        double NormalizedDistance, double DirectionX, double DirectionY, double NormalizedSizeDelta, double Relatedness);
+        double NormalizedDistance, double DirectionX, double DirectionY, double NormalizedSizeDelta, double Relatedness, double Toxicity);
 
     private ClosestOrganismInfo FindClosestOrganism(Organism self, IReadOnlyDictionary<long, Organism> allOrganisms)
     {
         int radius = (int)Math.Floor(self.Genome.OrgRadius);
         if (radius < 1)
         {
-            return new ClosestOrganismInfo(0.0, 0.0, 0.0, 0.0, 0.0);
+            return new ClosestOrganismInfo(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         }
 
         Organism? best = null;
@@ -208,7 +209,7 @@ public sealed class SensoryInputBuilder
 
         if (best is null)
         {
-            return new ClosestOrganismInfo(0.0, 0.0, 0.0, 0.0, 0.0);
+            return new ClosestOrganismInfo(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         }
 
         double dirLength = bestDistance;
@@ -219,7 +220,7 @@ public sealed class SensoryInputBuilder
         double sizeDelta = sizeBoundWidth > 0.0 ? (best.Genome.Size - self.Genome.Size) / sizeBoundWidth : 0.0;
         double relatedness = Kinship.Relatedness(self.Genome, best.Genome, _config.TraitBounds);
 
-        return new ClosestOrganismInfo(bestDistance / radius, dirX, dirY, sizeDelta, relatedness);
+        return new ClosestOrganismInfo(bestDistance / radius, dirX, dirY, sizeDelta, relatedness, Math.Clamp(best.Genome.Toxicity, 0.0, 1.0));
     }
 
     private readonly record struct NeighborCounts(int Smaller, int Larger, int Total);

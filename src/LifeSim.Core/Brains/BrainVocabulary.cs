@@ -33,6 +33,7 @@ public static class BrainVocabulary
         ["kin_near"] = new(SensoryField.ClosestOrganismRelatedness, 1.0),
         ["stranger_near"] = new(SensoryField.ClosestOrganismRelatedness, -1.0),
         ["prey_near"] = new(SensoryField.NearbySmallerCount, 1.0),
+        ["toxic_prey_near"] = new(SensoryField.ClosestOrganismToxicity, 1.0), // aposematic warning signal
         ["stressed"] = new(SensoryField.GlobalStressLevel, 1.0),
     };
 

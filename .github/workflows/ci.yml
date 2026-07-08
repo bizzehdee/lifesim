@@ -90,6 +90,53 @@ jobs:
           gh release delete ci --cleanup-tag --yes || echo "No existing 'ci' release to delete."
           gh release create ci dist/*.zip \
             --target "$GITHUB_SHA" \
+            --latest \
             --title "CI build (latest main)" \
-            --prerelease \
-            --notes "Rolling build of the latest \`main\` (commit ${GITHUB_SHA:0:7}). Download the zip for your OS, unzip, and run LifeSim. Unstable — replaced on every push to main."
+            --notes "Rolling build of the latest \`main\` (commit ${GITHUB_SHA:0:7}). Download the zip for your OS, unzip, and run LifeSim. Replaced on every push to main."
+
+  # Publishes the WASM demo to GitHub Pages (the live, no-install browser demo). The app is
+  # single-threaded, so it needs no COOP/COEP headers — plain static hosting works, and every asset is
+  # referenced relatively so it runs fine from the project sub-path (user.github.io/<repo>/).
+  deploy-pages:
+    needs: build-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Publish browser (WASM) demo
+        run: dotnet publish src/LifeSim.App.Browser -c Release -o artifacts/wasm
+
+      # Pages runs Jekyll by default, which strips underscore-prefixed dirs — but the .NET runtime lives
+      # in _framework/. .nojekyll disables that so the runtime is served intact.
+      - name: Disable Jekyll
+        run: touch artifacts/wasm/wwwroot/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: artifacts/wasm/wwwroot
+
+      - name: Deploy to Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

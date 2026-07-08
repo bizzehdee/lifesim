@@ -21,8 +21,10 @@ launch it:
 - **Windows** — run `LifeSim.exe`
 - **Linux** — run the `LifeSim` executable (`chmod +x LifeSim` first if needed)
 
-No installation and nothing else to set up — it's a self-contained desktop app. (There's also a
-try-it-in-your-browser demo linked from the Releases page.)
+No installation and nothing else to set up — it's a self-contained desktop app.
+
+**Prefer not to download?** A live, no-install **in-browser demo** runs on GitHub Pages (see the
+repository's Pages link) — a constrained build for a quick look.
 
 > Building from source instead? See [For developers](#for-developers).
 

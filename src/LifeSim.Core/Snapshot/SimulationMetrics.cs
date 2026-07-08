@@ -49,6 +49,9 @@ public sealed record SimulationMetrics
     /// <summary>Births attributed to each currently-living lineage.</summary>
     public List<LineageReproduction> ReproductionByLineage { get; init; } = [];
 
+    /// <summary>Live population broken down by seeded brain type — the "which type is winning" scoreboard.</summary>
+    public List<FoundingTypePopulation> PopulationByFoundingType { get; init; } = [];
+
     /// <summary>The event types active this tick.</summary>
     public List<EventType> ActiveEvents { get; init; } = [];
 
@@ -76,6 +79,7 @@ public sealed record SimulationMetrics
         && TraitHistograms.SequenceEqual(other.TraitHistograms)
         && PopulationByBiome.SequenceEqual(other.PopulationByBiome)
         && ReproductionByLineage.SequenceEqual(other.ReproductionByLineage)
+        && PopulationByFoundingType.SequenceEqual(other.PopulationByFoundingType)
         && ActiveEvents.SequenceEqual(other.ActiveEvents);
 
     public override int GetHashCode()
@@ -98,6 +102,11 @@ public sealed record SimulationMetrics
         }
 
         foreach (LineageReproduction entry in ReproductionByLineage)
+        {
+            hash.Add(entry);
+        }
+
+        foreach (FoundingTypePopulation entry in PopulationByFoundingType)
         {
             hash.Add(entry);
         }
@@ -177,4 +186,11 @@ public sealed record LineageReproduction
 {
     public long LineageId { get; init; }
     public long Births { get; init; }
+}
+
+/// <summary>Live population descended from founders seeded with a given brain type.</summary>
+public sealed record FoundingTypePopulation
+{
+    public string Name { get; init; } = "Generic";
+    public long Count { get; init; }
 }

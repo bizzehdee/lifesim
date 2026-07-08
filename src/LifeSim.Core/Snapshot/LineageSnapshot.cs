@@ -11,6 +11,9 @@ public sealed record LineageSnapshot
     public long BirthTick { get; init; }
     public long? DeathTick { get; init; }
     public int GenerationDepth { get; init; }
+
+    /// <summary>The lineage's seeded brain type; defaults to "Generic" so pre-typed snapshots still load.</summary>
+    public string FoundingType { get; init; } = "Generic";
     public GenomeSnapshot BirthTraits { get; init; } = new();
     public GenomeSnapshot? DeathTraits { get; init; }
 
@@ -22,13 +25,14 @@ public sealed record LineageSnapshot
         BirthTick = entry.BirthTick,
         DeathTick = entry.DeathTick,
         GenerationDepth = entry.GenerationDepth,
+        FoundingType = entry.FoundingType,
         BirthTraits = GenomeSnapshot.From(entry.BirthTraits),
         DeathTraits = entry.DeathTraits is null ? null : GenomeSnapshot.From(entry.DeathTraits),
     };
 
     public LineageEntry ToEntry()
     {
-        var entry = new LineageEntry(OrganismId, ParentId, LineageId, BirthTick, GenerationDepth, BirthTraits.ToGenome());
+        var entry = new LineageEntry(OrganismId, ParentId, LineageId, BirthTick, GenerationDepth, BirthTraits.ToGenome(), FoundingType);
         if (DeathTick is not null && DeathTraits is not null)
         {
             entry.RecordDeath(DeathTick.Value, DeathTraits.ToGenome());

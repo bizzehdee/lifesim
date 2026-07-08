@@ -15,6 +15,13 @@ public sealed class LineageEntry
     /// <summary>The founding ancestor's <see cref="OrganismId"/> — genesis organisms found their own lineage; offspring inherit it unchanged (asexual reproduction).</summary>
     public long LineageId { get; }
 
+    /// <summary>
+    /// The brain "type" the founding ancestor was seeded with (e.g. "Selfish", "Generic"). A cosmetic,
+    /// heritable label — offspring inherit it unchanged, so it stays constant down a lineage even as the
+    /// brain itself evolves — used only to report which seeded types are winning. Never affects the sim.
+    /// </summary>
+    public string FoundingType { get; }
+
     public long BirthTick { get; }
 
     public int GenerationDepth { get; }
@@ -25,15 +32,19 @@ public sealed class LineageEntry
 
     public Genome? DeathTraits { get; private set; }
 
-    public LineageEntry(long organismId, long? parentId, long lineageId, long birthTick, int generationDepth, Genome birthTraits)
+    public LineageEntry(
+        long organismId, long? parentId, long lineageId, long birthTick, int generationDepth, Genome birthTraits,
+        string foundingType = "Generic")
     {
         ArgumentNullException.ThrowIfNull(birthTraits);
+        ArgumentNullException.ThrowIfNull(foundingType);
         OrganismId = organismId;
         ParentId = parentId;
         LineageId = lineageId;
         BirthTick = birthTick;
         GenerationDepth = generationDepth;
         BirthTraits = birthTraits;
+        FoundingType = foundingType;
     }
 
     public void RecordDeath(long deathTick, Genome deathTraits)

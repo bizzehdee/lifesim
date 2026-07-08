@@ -1,3 +1,4 @@
+using LifeSim.Core.Brains;
 using LifeSim.Core.Configuration;
 using LifeSim.Core.Determinism;
 using LifeSim.Core.Events;
@@ -419,7 +420,8 @@ public sealed class SimulationWorld
                 Morphology.Capacity(offspringGenome, Config.Multicellular));
             _organisms[offspring.Id] = offspring;
             _lineageRecords[offspring.Id] = new LineageEntry(
-                offspring.Id, birth.ParentId, birth.LineageId, birth.BirthTick, birth.GenerationDepth, offspring.Genome);
+                offspring.Id, birth.ParentId, birth.LineageId, birth.BirthTick, birth.GenerationDepth, offspring.Genome,
+                foundingType: _lineageRecords[birth.LineageId].FoundingType); // heritable, breeds true down the lineage
             _birthsByLineage[birth.LineageId] = _birthsByLineage.GetValueOrDefault(birth.LineageId) + 1;
         }
 
@@ -794,7 +796,7 @@ public sealed class SimulationWorld
         Prng genesis = _prngStreams[PrngStream.Genesis];
         int maxAttempts = Math.Max(10_000, World.Width * World.Height * 4);
 
-        for (int i = 0; i < Config.InitialPopulation; i++)
+        foreach ((NeatGenome? scriptedBrain, string foundingType) in BuildFounderPlan())
         {
             bool placed = false;
             for (int attempt = 0; attempt < maxAttempts && !placed; attempt++)
@@ -819,13 +821,17 @@ public sealed class SimulationWorld
                 double thermalCenter = Config.Biomes.Grassland.Temperature + (((genesis.NextDouble() * 2.0) - 1.0) * slack);
                 Genome genome = Genome.Random(bounds, genesis) with { ThermalCenter = thermalCenter, ThermalWidth = thermalWidth };
                 long id = _idAllocator.Allocate();
-                NeatGenome brain = NeatGenomeFactory.CreateMinimalFullyConnected(genesis);
+
+                // A scripted type seeds an author-chosen brain (all founders of that type share the same
+                // seed); a generic founder draws a fresh random brain. Either way the body is randomised
+                // and the brain evolves from here. Generic keeps the exact prior genesis-stream draws.
+                NeatGenome brain = scriptedBrain ?? NeatGenomeFactory.CreateMinimalFullyConnected(genesis);
                 Organism organism = OrganismFactory.Create(
                     id, genome, Config.Naming, Organism.EnergyCeiling, x, y, brain,
                     Morphology.Capacity(genome, Config.Multicellular));
                 _organisms[id] = organism;
                 _occupancy.Set(x, y, id);
-                _lineageRecords[id] = new LineageEntry(id, parentId: null, lineageId: id, birthTick: 0, generationDepth: 0, birthTraits: genome);
+                _lineageRecords[id] = new LineageEntry(id, parentId: null, lineageId: id, birthTick: 0, generationDepth: 0, birthTraits: genome, foundingType: foundingType);
                 placed = true;
             }
 
@@ -833,6 +839,45 @@ public sealed class SimulationWorld
             {
                 throw new InvalidOperationException(
                     "Unable to place a genesis organism on a free Grassland tile within the attempt budget.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// The ordered list of founders to place: one entry per organism, carrying its seed brain (null =
+    /// generic random brain) and its founding-type label. Driven by
+    /// <see cref="SimulationConfig.FoundingComposition"/> when it specifies any positive count, else a
+    /// flat run of <see cref="SimulationConfig.InitialPopulation"/> generic founders (the historic
+    /// behaviour, byte-identical). Scripted types are compiled once each; a bad script throws here, at
+    /// world creation, with the parser's message.
+    /// </summary>
+    private IEnumerable<(NeatGenome? Brain, string FoundingType)> BuildFounderPlan()
+    {
+        IReadOnlyList<BrainTypeSpec> composition = Config.FoundingComposition;
+        if (composition.Count == 0 || composition.All(s => s.Count <= 0))
+        {
+            for (int i = 0; i < Config.InitialPopulation; i++)
+            {
+                yield return (null, "Generic");
+            }
+
+            yield break;
+        }
+
+        foreach (BrainTypeSpec spec in composition)
+        {
+            if (spec.Count <= 0)
+            {
+                continue;
+            }
+
+            NeatGenome? brain = string.IsNullOrWhiteSpace(spec.Script)
+                ? null
+                : BrainTemplateCompiler.Compile(BrainScriptParser.ParseTemplate(spec.Script));
+
+            for (int i = 0; i < spec.Count; i++)
+            {
+                yield return (brain, spec.Name);
             }
         }
     }
@@ -958,6 +1003,15 @@ public sealed class SimulationWorld
             .Select(lineageId => new LineageReproduction { LineageId = lineageId, Births = _birthsByLineage.GetValueOrDefault(lineageId) })
             .ToList();
 
+        // Living headcount per seeded brain type — the scoreboard for "which type is winning". Ordinal
+        // sort keeps the output order deterministic.
+        var populationByFoundingType = new SortedDictionary<string, long>(StringComparer.Ordinal);
+        foreach (long id in _organisms.Keys)
+        {
+            string foundingType = _lineageRecords[id].FoundingType;
+            populationByFoundingType[foundingType] = populationByFoundingType.GetValueOrDefault(foundingType) + 1;
+        }
+
         return new SimulationMetrics
         {
             Population = population,
@@ -1009,6 +1063,9 @@ public sealed class SimulationWorld
                 new BiomePopulation { Biome = Biome.IceSheet, Count = biomeCounts[Biome.IceSheet] },
             ],
             ReproductionByLineage = reproductionByLineage,
+            PopulationByFoundingType = populationByFoundingType
+                .Select(kv => new FoundingTypePopulation { Name = kv.Key, Count = kv.Value })
+                .ToList(),
             ActiveEvents = _environment.Modifiers.Select(m => m.Type).ToList(),
         };
     }

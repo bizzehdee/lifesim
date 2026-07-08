@@ -28,8 +28,16 @@ public sealed record SimulationConfig
     /// <summary>Temperature noise layer.</summary>
     public NoiseConfig TemperatureNoise { get; init; } = NoiseConfig.Default;
 
-    /// <summary>Genesis organism count.</summary>
+    /// <summary>Genesis organism count. Ignored when <see cref="FoundingComposition"/> seeds the world by type.</summary>
     public int InitialPopulation { get; init; } = 200;
+
+    /// <summary>
+    /// Optional breakdown of the founding population by brain "type". When any entry has a positive
+    /// count, genesis seeds exactly these organisms (and <see cref="InitialPopulation"/> is ignored);
+    /// otherwise it falls back to <see cref="InitialPopulation"/> generic organisms. Every type competes
+    /// and evolves from tick 0 — a scripted type is only a seed, not a fixed strategy.
+    /// </summary>
+    public IReadOnlyList<BrainTypeSpec> FoundingComposition { get; init; } = [];
 
     /// <summary>
     /// Aging model, selectable per world at genesis. When enabled, organisms past
@@ -39,6 +47,20 @@ public sealed record SimulationConfig
     public bool Senescence { get; init; } = true;
 
     public static SimulationConfig Default => new();
+}
+
+/// <summary>
+/// One slice of the founding population: <see cref="Count"/> organisms seeded with a brain "type".
+/// A null/blank <see cref="Script"/> seeds generic evolved brains (random minimal networks); otherwise
+/// the weighted-preference <see cref="Script"/> is compiled to a seed brain (see
+/// <c>LifeSim.Core.Brains</c>). <see cref="Name"/> labels the lineage's founding type for metrics/UI.
+/// Bodies are always randomised and every type evolves normally from tick 0.
+/// </summary>
+public sealed record BrainTypeSpec
+{
+    public string Name { get; init; } = "Generic";
+    public string? Script { get; init; }
+    public int Count { get; init; }
 }
 
 /// <summary>Metabolism &amp; sensory-tax coefficients.</summary>

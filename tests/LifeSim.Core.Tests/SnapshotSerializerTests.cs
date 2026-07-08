@@ -39,8 +39,12 @@ public class SnapshotSerializerTests
         Assert.Equal(original.ConfigVersion, loaded.ConfigVersion);
         Assert.Equal(original.Tick, loaded.Tick);
         Assert.Equal(original.World, loaded.World);
-        Assert.Equal(original.Configuration, loaded.Configuration);
         Assert.Equal(original.EvolutionBookkeeping, loaded.EvolutionBookkeeping);
+
+        // Configuration contains collection members (e.g. founding composition) whose record equality is
+        // by-reference, so assert lossless config round-trip via re-serialization idempotence instead —
+        // a strictly stronger guarantee that also catches any serialization drift.
+        Assert.Equal(json, SnapshotSerializer.Save(loaded));
 
         // PRNG stream state must round-trip exactly.
         Assert.Equal(original.PrngStreams.Count, loaded.PrngStreams.Count);

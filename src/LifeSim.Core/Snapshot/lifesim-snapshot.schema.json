@@ -182,6 +182,7 @@
           "birth_tick": { "type": "integer", "minimum": 0 },
           "death_tick": { "type": ["integer", "null"], "minimum": 0 },
           "generation_depth": { "type": "integer", "minimum": 0 },
+          "founding_type": { "type": "string" },
           "birth_traits": { "type": "object" },
           "death_traits": { "type": ["object", "null"] }
         }

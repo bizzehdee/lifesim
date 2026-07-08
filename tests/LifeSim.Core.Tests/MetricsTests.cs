@@ -12,6 +12,22 @@ public class MetricsTests
     private static WorldState NewWorldState(ulong seed = 909090) => new() { Seed = seed, Width = 48, Height = 48 };
 
     [Fact]
+    public void Metrics_surfaceMeanPlasticity_andItsHistogram()
+    {
+        // Pin plasticity so the mean is exactly known; the metric must report it and expose a histogram
+        // (the readout that lets you watch within-life learning evolve — the Baldwin effect over time).
+        var config = SimulationConfig.Default with
+        {
+            InitialPopulation = 20,
+            TraitBounds = SimulationConfig.Default.TraitBounds with { Plasticity = new TraitBounds.Range(0.5, 0.5) },
+        };
+        var world = SimulationWorld.CreateGenesis(NewWorldState(), config);
+
+        Assert.Equal(0.5, world.Metrics.TraitAverages.Plasticity, precision: 9);
+        Assert.Contains(world.Metrics.TraitHistograms, h => h.Trait == "plasticity");
+    }
+
+    [Fact]
     public void Metrics_snapshotFields_areInternallyConsistentWithLivePopulation()
     {
         var config = SimulationConfig.Default with { InitialPopulation = 30 };

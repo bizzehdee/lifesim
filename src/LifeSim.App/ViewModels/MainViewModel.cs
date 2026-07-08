@@ -153,7 +153,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
     }
 
-    public MainViewModel(bool liveEngine, bool autoStart, Action<Action>? post)
+    public MainViewModel(bool liveEngine, bool autoStart, Action<Action>? post, bool constrained = false)
     {
         _liveCapable = liveEngine;
         _autoStart = autoStart;
@@ -163,6 +163,15 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             ? "Configure a new world, or load / connect to a stream."
             : "Load a snapshot or connect to a sim serve stream.";
         Mode = _liveCapable ? SessionMode.Live : SessionMode.Streaming;
+
+        // The browser runs single-threaded WASM, so default to a small world there — a big grid is
+        // painfully slow to tick. Desktop keeps the roomier default.
+        if (constrained)
+        {
+            Width = 48;
+            Height = 48;
+            Population = 25;
+        }
 
         // Fresh random seed each launch so a new world is different by default (still deterministic
         // once chosen — the user can pin any seed for reproducible runs).

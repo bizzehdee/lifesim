@@ -33,7 +33,7 @@ public partial class App : Application
             // Play a small local world, load a snapshot, or connect to a sim serve stream.
             singleView.MainView = new MainView
             {
-                DataContext = new MainViewModel(liveEngine: true, autoStart: false, Post),
+                DataContext = new MainViewModel(liveEngine: true, autoStart: false, Post, constrained: true),
             };
         }
 

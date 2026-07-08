@@ -231,11 +231,14 @@ dotnet run --project src/LifeSim.App.Desktop
 dotnet run --project src/LifeSim.Console -- new --out world.json --seed 42 --width 128 --height 128
 dotnet run --project src/LifeSim.Console -- run --in world.json --out out.json --ticks 1000 --metrics m.csv --metrics-format csv
 
-# Publish the browser (WASM) demo. -p:WasmBuildNative=true relinks the runtime to include SkiaSharp's
-# native lib (Avalonia's renderer) — without it the page dies with a SkiaSharp TypeInitialization error.
-# Needs the wasm-tools workload: run `dotnet workload install wasm-tools` once if publish complains.
+# Publish the browser (WASM) demo. -p:RunAOTCompilation=true compiles the managed code to WebAssembly
+# (the mono interpreter is ~10× slower, so the sim crawls without it) and relinks the native runtime so
+# SkiaSharp's renderer is included. Needs the wasm-tools workload: `dotnet workload install wasm-tools`.
 # Serve artifacts/wasm/wwwroot over any static HTTP server — the app is single-threaded, so no COOP/COEP.
-dotnet publish src/LifeSim.App.Browser -c Release -p:WasmBuildNative=true -o artifacts/wasm
+dotnet publish src/LifeSim.App.Browser -c Release -p:RunAOTCompilation=true -o artifacts/wasm
+
+# Quicker to build for a dev inner loop (skips AOT), but the sim runs slowly (interpreter):
+#   dotnet publish src/LifeSim.App.Browser -c Release -p:WasmBuildNative=true -o artifacts/wasm
 
 # Formatting (CI enforces this)
 dotnet format LifeSim.slnx --verify-no-changes

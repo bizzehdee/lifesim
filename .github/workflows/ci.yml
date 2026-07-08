@@ -60,9 +60,9 @@ jobs:
         with:
           global-json-file: global.json
 
-      # SkiaSharp (Avalonia's browser renderer) is a native library shipped as a NativeFileReference; the
-      # WASM bundle only runs if the runtime is relinked to include libSkiaSharp (-p:WasmBuildNative=true
-      # on the browser publish below), and that relink needs the wasm-tools workload / Emscripten toolchain.
+      # The browser publish uses -p:RunAOTCompilation=true (below): it compiles the managed code to
+      # WebAssembly (vastly faster at runtime than the mono interpreter) and, as a side effect, relinks
+      # the native runtime so SkiaSharp's libSkiaSharp is included. Both need the wasm-tools workload.
       - name: Install wasm-tools workload
         run: dotnet workload install wasm-tools
 
@@ -76,10 +76,10 @@ jobs:
       - name: Publish desktop (macOS arm64)
         run: dotnet publish src/LifeSim.App.Desktop -c Release -r osx-arm64 --self-contained -o artifacts/desktop/osx-arm64
 
-      # -p:WasmBuildNative=true relinks the runtime so libSkiaSharp is compiled into dotnet.native.wasm;
-      # without it SkiaSharp throws a TypeInitialization error at runtime in the browser.
+      # AOT-compile the managed code to WASM (fast runtime, not the interpreter). This also relinks the
+      # native runtime, so libSkiaSharp is included and SkiaSharp works. Slower to build, much faster to run.
       - name: Publish browser (WASM) demo
-        run: dotnet publish src/LifeSim.App.Browser -c Release -p:WasmBuildNative=true -o artifacts/wasm
+        run: dotnet publish src/LifeSim.App.Browser -c Release -p:RunAOTCompilation=true -o artifacts/wasm
 
       - name: Package zips
         run: |
@@ -127,13 +127,13 @@ jobs:
         with:
           global-json-file: global.json
 
-      # SkiaSharp (Avalonia's browser renderer) is a native library; the WASM bundle only runs if the
-      # runtime is relinked to include libSkiaSharp (-p:WasmBuildNative=true below), which needs this workload.
+      # AOT-compile the managed code to WASM for a fast live demo (the interpreter is ~10× slower). AOT
+      # also relinks the native runtime so SkiaSharp's libSkiaSharp is included. Needs the wasm-tools workload.
       - name: Install wasm-tools workload
         run: dotnet workload install wasm-tools
 
       - name: Publish browser (WASM) demo
-        run: dotnet publish src/LifeSim.App.Browser -c Release -p:WasmBuildNative=true -o artifacts/wasm
+        run: dotnet publish src/LifeSim.App.Browser -c Release -p:RunAOTCompilation=true -o artifacts/wasm
 
       # Pages runs Jekyll by default, which strips underscore-prefixed dirs — but the .NET runtime lives
       # in _framework/. .nojekyll disables that so the runtime is served intact.

@@ -119,6 +119,24 @@ public partial class WorldViewModel : ViewModelBase
 
     public bool HasSelection => Inspector is not null;
 
+    // Founding-type composition-over-time: accumulated every frame (independent of the stats overlay
+    // being open) so opening it shows the trend, and reset when a new/loaded world rewinds the tick.
+    private const int MaxFoundingHistory = 300;
+    private readonly List<FoundingTypeSample> _foundingHistory = [];
+    private long _lastFoundingTick = long.MinValue;
+
+    /// <summary>The live scoreboard: each seeded brain type's current headcount and share, biggest first.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<FoundingTypeStanding> _foundingTypeStandings = [];
+
+    /// <summary>Stacked-area chart of each type's population share over recent frames (null until there's a trend).</summary>
+    [ObservableProperty]
+    private CompositionChart? _foundingTypeChart;
+
+    /// <summary>True when the breakdown is worth showing — more than one type, or a single non-generic type.</summary>
+    [ObservableProperty]
+    private bool _hasFoundingTypeBreakdown;
+
     private readonly EventWatcher _eventWatcher = new();
 
     /// <summary>Whether in-app notifications are shown; toggleable live during a run. When off, frames are still folded into the watcher (so no backlog piles up), but nothing is raised.</summary>
@@ -185,6 +203,44 @@ public partial class WorldViewModel : ViewModelBase
 
     private void RebuildStatistics() => Statistics = Snapshot is null ? [] : GlobalStatistics.Build(Snapshot);
 
+    // Accumulate the founding-type breakdown into a bounded history and refresh the scoreboard + chart.
+    private void UpdateFoundingTypes(WorldSnapshot? value)
+    {
+        IReadOnlyList<FoundingTypeStanding> standings = value is null ? [] : FoundingTypeComposition.Standings(value);
+        FoundingTypeStandings = standings;
+        HasFoundingTypeBreakdown = standings.Count > 1 || (standings.Count == 1 && standings[0].Name != "Generic");
+
+        if (value?.Metrics is null)
+        {
+            _foundingHistory.Clear();
+            _lastFoundingTick = long.MinValue;
+            FoundingTypeChart = null;
+            return;
+        }
+
+        // A rewound tick (new world or a loaded file) starts a fresh trend.
+        if (value.Tick < _lastFoundingTick)
+        {
+            _foundingHistory.Clear();
+        }
+
+        // One sample per distinct tick, so repeated frames of the same tick don't pile up.
+        if (value.Tick != _lastFoundingTick)
+        {
+            _foundingHistory.Add(new FoundingTypeSample(
+                value.Tick,
+                value.Metrics.PopulationByFoundingType.ToDictionary(p => p.Name, p => p.Count)));
+            if (_foundingHistory.Count > MaxFoundingHistory)
+            {
+                _foundingHistory.RemoveAt(0);
+            }
+
+            _lastFoundingTick = value.Tick;
+        }
+
+        FoundingTypeChart = FoundingTypeComposition.Chart(_foundingHistory);
+    }
+
     private void RebuildLineageGraph()
     {
         LineageGraph = Snapshot is null || _lineageFocusId is not { } id
@@ -235,6 +291,8 @@ public partial class WorldViewModel : ViewModelBase
         {
             RebuildStatistics(); // keep the open statistics panel live as the sim advances
         }
+
+        UpdateFoundingTypes(value);
 
         OnPropertyChanged(nameof(Tick));
         OnPropertyChanged(nameof(Population));

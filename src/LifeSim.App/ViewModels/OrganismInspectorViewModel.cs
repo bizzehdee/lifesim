@@ -45,6 +45,9 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
     public string Name => Organism.Name;
     public long OrganismId => Organism.OrganismId;
     public long LineageId { get; private init; }
+
+    /// <summary>The brain "type" this organism's lineage was founded from (e.g. "Selfish", "Generic").</summary>
+    public string FoundingType { get; private init; } = "Generic";
     public long? ParentId { get; private init; }
     public string? ParentName { get; private init; }
     public bool ParentAlive { get; private init; }
@@ -161,6 +164,7 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
                 new CellTypeReading("Sensor", fr.Sensor * cells, fr.Sensor),
             ],
             LineageId = lineage?.LineageId ?? organismId,
+            FoundingType = lineage?.FoundingType ?? "Generic",
             ParentId = lineage?.ParentId,
             ParentName = parentName,
             GenerationDepth = lineage?.GenerationDepth ?? 0,

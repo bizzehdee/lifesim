@@ -13,6 +13,8 @@
         <!-- Identity & lineage -->
         <StackPanel Spacing="2">
             <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="16" />
+            <TextBlock FontSize="12" FontWeight="SemiBold" Opacity="0.9"
+                       Text="{Binding FoundingType, StringFormat='type: {0}'}" />
             <TextBlock FontSize="12" Opacity="0.75"
                        Text="{Binding OrganismId, StringFormat='id {0}'}" />
             <TextBlock FontSize="12" Opacity="0.75"

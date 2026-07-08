@@ -214,6 +214,29 @@
                         <TextBlock Text="Global statistics" FontWeight="Bold" FontSize="16" VerticalAlignment="Center" />
                         <Button Grid.Column="1" Content="Close" Command="{Binding CloseStatisticsCommand}" />
                     </Grid>
+
+                    <!-- Founding-type composition: share-over-time chart + live scoreboard (only when types were seeded) -->
+                    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,14" IsVisible="{Binding HasFoundingTypeBreakdown}">
+                        <TextBlock Text="Population by type — share over time" FontWeight="SemiBold" FontSize="13" Opacity="0.85" />
+                        <Border CornerRadius="4" ClipToBounds="True" Height="110" Background="{DynamicResource SystemChromeLowColor}">
+                            <views:CompositionChartControl Chart="{Binding FoundingTypeChart}" />
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding FoundingTypeStandings}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="pres:FoundingTypeStanding">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,1" ColumnSpacing="6">
+                                        <Border Grid.Column="0" Width="12" Height="12" CornerRadius="2" VerticalAlignment="Center" Background="{Binding Swatch}" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="12" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2" FontSize="12" VerticalAlignment="Center">
+                                            <Run Text="{Binding Count}" FontWeight="SemiBold" />
+                                            <Run Text="{Binding SharePercent, StringFormat=' ({0:F0}%)'}" />
+                                        </TextBlock>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
                     <ScrollViewer Padding="0">
                         <ItemsControl ItemsSource="{Binding Statistics}" Margin="0,0,16,0">
                             <ItemsControl.ItemTemplate>

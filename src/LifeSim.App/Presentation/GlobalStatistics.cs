@@ -76,6 +76,14 @@ public static class GlobalStatistics
                 new StatRow("Energy shared", Num(m.EnergyShared)),
             ]));
 
+            // Inclusive fitness: is sharing kin-biased (kin selection at work) or indiscriminate?
+            sections.Add(new StatSection("Kin selection",
+            [
+                new StatRow("Shares this tick (kin / non-kin)", $"{m.KinDirectedShares} / {m.NonKinShares}"),
+                new StatRow("Kin-directed share", KinShareFraction(m)),
+                new StatRow("Mean indirect fitness (lifetime)", Num(m.MeanHelpGiven)),
+            ]));
+
             sections.Add(new StatSection("Energy",
             [
                 new StatRow("Min", Num(m.EnergyMin)),
@@ -243,6 +251,12 @@ public static class GlobalStatistics
         EventType.ClimaticAnomaly => "Climatic anomaly",
         _ => type.ToString(),
     };
+
+    private static string KinShareFraction(SimulationMetrics m)
+    {
+        long total = m.KinDirectedShares + m.NonKinShares;
+        return total > 0 ? Percent((double)m.KinDirectedShares / total) : "—";
+    }
 
     private static string Int(long value) => value.ToString(CultureInfo.InvariantCulture);
 

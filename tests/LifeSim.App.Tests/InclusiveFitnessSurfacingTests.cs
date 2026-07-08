@@ -32,4 +32,17 @@ public class InclusiveFitnessSurfacingTests
         Assert.NotNull(inspector);
         Assert.Equal(helper.HelpGiven, inspector!.HelpGiven);
     }
+
+    [Fact]
+    public void GlobalStatistics_hasAKinSelectionSection()
+    {
+        var world = SimulationWorld.CreateGenesis(
+            new WorldState { Seed = 1, Width = 48, Height = 48 },
+            SimulationConfig.Default with { InitialPopulation = 10 });
+
+        StatSection kin = GlobalStatistics.Build(world.ToSnapshot()).First(s => s.Title == "Kin selection");
+
+        Assert.Contains(kin.Rows, r => r.Label == "Shares this tick (kin / non-kin)");
+        Assert.Contains(kin.Rows, r => r.Label == "Mean indirect fitness (lifetime)");
+    }
 }

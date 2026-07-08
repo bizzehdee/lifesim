@@ -223,6 +223,8 @@ public class WorldViewTests
         Assert.NotNull(inspector);
         Assert.Equal(organism.Name, inspector.Name);
         Assert.Equal(15, inspector.Traits.Count); // + Sexuality
+        // Founders start at Sexuality 0, so the derived mode is never sexual/mixed here.
+        Assert.True(inspector.ReproductionMode is "Asexual (clones)" or "Sterile (soma)", inspector.ReproductionMode);
 
         // Body composition stats (multicellularity): cell count + one entry per cell type.
         Assert.True(inspector.CellCount >= 1.0);

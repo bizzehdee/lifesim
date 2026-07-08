@@ -51,6 +51,7 @@
             <TextBlock FontSize="12" Text="{Binding Biome, StringFormat='biome {0}'}" />
             <TextBlock FontSize="12" Text="{Binding Energy, StringFormat='energy {0:F1}'}" />
             <ProgressBar Minimum="0" Maximum="{Binding EnergyCeiling}" Value="{Binding Energy}" />
+            <TextBlock FontSize="12" FontWeight="SemiBold" Text="{Binding ReproductionMode, StringFormat='reproduction: {0}'}" />
             <TextBlock FontSize="12" Text="{Binding ReproductiveReady, StringFormat='reproductive-ready: {0}'}" />
             <TextBlock FontSize="12" Text="{Binding CooldownRemaining, StringFormat='cooldown {0} ticks'}" />
         </StackPanel>

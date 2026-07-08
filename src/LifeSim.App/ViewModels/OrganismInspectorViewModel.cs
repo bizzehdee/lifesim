@@ -82,6 +82,14 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
     public bool ReproductiveReady { get; private init; }
     public long CooldownRemaining { get; private init; }
 
+    /// <summary>
+    /// Plain-language reproduction mode, derived from fertility and the <c>sexuality</c> trait:
+    /// "Sterile" (soma — can't reproduce at all), "Asexual" (sexuality 0 — always clones), "Sexual"
+    /// (sexuality 1 — always seeks a mate, cloning only when none is adjacent), or "Mixed" (in between —
+    /// attempts a mate part of the time, otherwise clones).
+    /// </summary>
+    public string ReproductionMode { get; private init; } = "Asexual";
+
     // Genome vs bounds.
     public IReadOnlyList<TraitReading> Traits { get; private init; } = [];
 
@@ -163,6 +171,7 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
             Multicellular = mc.Enabled,
             CellCount = cells,
             Fertile = Morphology.CanReproduce(genome, mc),
+            ReproductionMode = DescribeReproductionMode(Morphology.CanReproduce(genome, mc), genome.Sexuality),
             BrainSteps = Morphology.BrainSteps(genome, mc),
             CellComposition =
             [
@@ -218,4 +227,12 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
 
     private static bool IsMove(OrganismAction? action) => action is OrganismAction.MoveNorth
         or OrganismAction.MoveSouth or OrganismAction.MoveEast or OrganismAction.MoveWest;
+
+    private static string DescribeReproductionMode(bool fertile, double sexuality) => (fertile, sexuality) switch
+    {
+        (false, _) => "Sterile (soma)",
+        (_, <= 0.0) => "Asexual (clones)",
+        (_, >= 1.0) => "Sexual (seeks a mate; clones if none)",
+        _ => $"Mixed (~{sexuality:P0} sexual)",
+    };
 }

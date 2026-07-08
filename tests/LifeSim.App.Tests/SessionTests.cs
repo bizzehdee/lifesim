@@ -43,6 +43,31 @@ public class SessionTests
     }
 
     [Fact]
+    public void Play_isIdempotent_andGatesTheButtonsByPlayState()
+    {
+        MainViewModel session = CreatedSession();
+
+        Assert.True(session.CanPlay);
+        Assert.False(session.CanPause);
+        Assert.False(session.IsPlaying);
+
+        session.Play();
+        Assert.True(session.IsPlaying);
+        Assert.False(session.CanPlay); // can't be triggered again while running
+        Assert.True(session.CanPause);
+
+        session.Play(); // second click is a no-op, not a second driver
+        Assert.True(session.IsPlaying);
+
+        session.Pause();
+        Assert.False(session.IsPlaying);
+        Assert.True(session.CanPlay);
+        Assert.False(session.CanPause);
+
+        session.Dispose();
+    }
+
+    [Fact]
     public void EngineRunner_emitsInitialFrame_thenPlayPauseStepControlTheTick()
     {
         long lastTick = -1;

@@ -44,6 +44,14 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private CancellationTokenSource? _streamCts;
     private WorldSnapshot? _current;
 
+    // Frame coalescing: the engine/stream produce frames on a background thread, but rendering one
+    // (rebuild scene + inspector + charts + notifications) can cost more than the ~30 fps frame budget
+    // on a large world. Without this, every produced frame is posted to the UI thread and they pile up
+    // faster than they drain — the app falls progressively further behind ("huge lag"). Instead we keep
+    // only the latest frame and post a single drain; intermediate frames are dropped, never queued.
+    private WorldSnapshot? _pendingFrame;
+    private int _frameQueued;
+
     [ObservableProperty]
     private SessionMode _mode = SessionMode.Live;
 
@@ -121,6 +129,24 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     public bool LiveCapable => _liveCapable;
 
+    /// <summary>Play is available only for a live world that isn't already running (so it can't be double-triggered).</summary>
+    public bool CanPlay => HasWorld && LiveCapable && !IsPlaying;
+
+    /// <summary>Pause is available only while a live world is actually running.</summary>
+    public bool CanPause => HasWorld && LiveCapable && IsPlaying;
+
+    partial void OnIsPlayingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanPlay));
+        OnPropertyChanged(nameof(CanPause));
+    }
+
+    partial void OnHasWorldChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanPlay));
+        OnPropertyChanged(nameof(CanPause));
+    }
+
     /// <summary>Design-time / default: live-capable, showing the setup screen.</summary>
     public MainViewModel()
         : this(liveEngine: true, autoStart: false, post: null)
@@ -184,7 +210,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     public void Play()
     {
-        if (_runner is null)
+        if (_runner is null || IsPlaying)
         {
             return;
         }
@@ -490,11 +516,31 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         HasWorld = true;
     }
 
-    private void PublishFrame(WorldSnapshot snapshot) => _post(() =>
+    private void PublishFrame(WorldSnapshot snapshot)
     {
+        // Keep only the newest frame; post a drain only if one isn't already pending. See the field
+        // comment on _pendingFrame — this bounds the UI-thread backlog to a single frame.
+        Volatile.Write(ref _pendingFrame, snapshot);
+        if (Interlocked.Exchange(ref _frameQueued, 1) == 0)
+        {
+            _post(DrainFrame);
+        }
+    }
+
+    private void DrainFrame()
+    {
+        // Re-arm before reading so a frame produced during this render still schedules the next drain
+        // (worst case an extra no-op drain, never a dropped final frame).
+        Interlocked.Exchange(ref _frameQueued, 0);
+        WorldSnapshot? snapshot = Interlocked.Exchange(ref _pendingFrame, null);
+        if (snapshot is null)
+        {
+            return;
+        }
+
         _current = snapshot;
         World.LoadSnapshot(snapshot);
-    });
+    }
 
     private void DisposeSources()
     {

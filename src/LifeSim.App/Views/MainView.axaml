@@ -15,8 +15,8 @@
         <!-- Control deck (chrome — follows the Fluent house rules) -->
         <Border DockPanel.Dock="Top" Padding="10,8" Background="{DynamicResource SystemChromeMediumColor}">
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <Button Content="▶ Play" Command="{Binding PlayCommand}" IsEnabled="{Binding HasWorld}" IsVisible="{Binding LiveCapable}" />
-                <Button Content="⏸ Pause" Command="{Binding PauseCommand}" IsEnabled="{Binding HasWorld}" IsVisible="{Binding LiveCapable}" />
+                <Button Content="▶ Play" Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}" IsVisible="{Binding LiveCapable}" />
+                <Button Content="⏸ Pause" Command="{Binding PauseCommand}" IsEnabled="{Binding CanPause}" IsVisible="{Binding LiveCapable}" />
                 <Button Content="⏭ Step" Command="{Binding StepCommand}" IsEnabled="{Binding HasWorld}" IsVisible="{Binding LiveCapable}" />
                 <Button Content="⟳ New…" Command="{Binding ShowSetupCommand}" />
 

@@ -67,6 +67,9 @@ jobs:
       - name: Publish desktop (Linux x64)
         run: dotnet publish src/LifeSim.App.Desktop -c Release -r linux-x64 --self-contained -o artifacts/desktop/linux-x64
 
+      - name: Publish desktop (macOS arm64)
+        run: dotnet publish src/LifeSim.App.Desktop -c Release -r osx-arm64 --self-contained -o artifacts/desktop/osx-arm64
+
       - name: Publish browser (WASM) demo
         run: dotnet publish src/LifeSim.App.Browser -c Release -o artifacts/wasm
 
@@ -75,6 +78,7 @@ jobs:
           mkdir -p dist
           (cd artifacts/desktop/win-x64 && zip -qr - .) > dist/LifeSim-win-x64.zip
           (cd artifacts/desktop/linux-x64 && zip -qr - .) > dist/LifeSim-linux-x64.zip
+          (cd artifacts/desktop/osx-arm64 && zip -qr - .) > dist/LifeSim-osx-arm64.zip
           (cd artifacts/wasm/wwwroot && zip -qr - .) > dist/LifeSim-wasm-demo.zip
           ls -lh dist
 

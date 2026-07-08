@@ -64,6 +64,9 @@ public sealed record GenomeSnapshot
     public double OrgRadius { get; init; }
     public double SensoryAcuity { get; init; }
     public double MetabolicEfficiency { get; init; }
+    public double Armour { get; init; }
+    public double Evasion { get; init; }
+    public double Toxicity { get; init; }
     public double ShareFraction { get; init; }
     public double CellCount { get; init; } = 1.0;
     public double GermWeight { get; init; }
@@ -83,6 +86,9 @@ public sealed record GenomeSnapshot
         OrgRadius = genome.OrgRadius,
         SensoryAcuity = genome.SensoryAcuity,
         MetabolicEfficiency = genome.MetabolicEfficiency,
+        Armour = genome.Armour,
+        Evasion = genome.Evasion,
+        Toxicity = genome.Toxicity,
         ShareFraction = genome.ShareFraction,
         CellCount = genome.CellCount,
         GermWeight = genome.GermWeight,
@@ -103,6 +109,9 @@ public sealed record GenomeSnapshot
         OrgRadius = OrgRadius,
         SensoryAcuity = SensoryAcuity,
         MetabolicEfficiency = MetabolicEfficiency,
+        Armour = Armour,
+        Evasion = Evasion,
+        Toxicity = Toxicity,
         ShareFraction = ShareFraction,
         CellCount = CellCount,
         GermWeight = GermWeight,

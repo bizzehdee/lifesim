@@ -342,6 +342,7 @@ public sealed class SimulationWorld
             double selfCost = perCellBase
                 + Morphology.MulticellularOverhead(g, perCellBase, mc)
                 + Metabolism.SensoryTax(g, Config.Metabolism)
+                + Metabolism.DefenseTax(g, Config.Metabolism)
                 + (Metabolism.LocomotionTax(distanceTraveled[index], g.SpeedCapacity, friction, Config.MovementCombat) * Morphology.LocomotionFactor(g, mc));
 
             // Thermal stress and crowding are externally imposed (climate, neighbours), not self-generated
@@ -550,11 +551,9 @@ public sealed class SimulationWorld
         if (_occupancy.TryGet(x, y, out long targetId) && targetId != organism.Id
             && _organisms.TryGetValue(targetId, out Organism? victim))
         {
-            // Combat scales with effective body mass (cells × size), boosted by Defender cells.
-            double killProbability = Combat.KillProbability(
-                Morphology.CombatMass(organism.Genome, Config.Multicellular),
-                Morphology.CombatMass(victim.Genome, Config.Multicellular));
-            bool killed = behaviorStream.NextDouble() < killProbability;
+            // A strike weighs the attacker's combat mass (cells × size, boosted by Defender cells)
+            // against the victim's defences — armour, evasion, and toxicity — resolved in ResolveStrike.
+            bool killed = ResolveStrike(organism, victim, behaviorStream);
 
             if (killed)
             {
@@ -577,9 +576,21 @@ public sealed class SimulationWorld
                 return ActionResult.Killed;
             }
 
+            // The attack failed: the predator pays the failed-combat penalty, and — inherently — the
+            // survived victim strikes back. A large, armed, or toxic victim can turn the tables and kill
+            // its attacker (whose own armour/evasion/toxicity now apply, defending the counter).
             organism.SpendEnergy(Config.MovementCombat.FailedCombatPenalty);
             organism.RecordPredationLoss();
             counters.FailedPredation++;
+
+            if (ResolveStrike(victim, organism, behaviorStream))
+            {
+                double attackerEnergy = organism.SpendEnergy(organism.Energy);
+                victim.AddEnergy(attackerEnergy * Config.MovementCombat.PredationTransferFraction);
+                victim.RecordPredationWin();
+                counters.SuccessfulPredation++;
+            }
+
             return ActionResult.Failed;
         }
 
@@ -887,6 +898,30 @@ public sealed class SimulationWorld
     /// measure a density plague drains against. An integer count, so it is
     /// order-independent and safe to read from settled post-movement occupancy.
     /// </summary>
+    /// <summary>
+    /// Resolves one predatory strike. First the defender's toxicity is charged to the attacker as
+    /// contact damage (win or lose), then a kill is rolled from the attacker's combat mass against the
+    /// defender's mass modified by its armour (toughness) and evasion (dodge). Draws exactly one value
+    /// from the behaviour stream, so per-tick stream consumption stays deterministic. Shared by the
+    /// initial attack and the victim's inherent counterattack.
+    /// </summary>
+    private bool ResolveStrike(Organism attacker, Organism defender, Prng behaviorStream)
+    {
+        MovementCombatConfig combat = Config.MovementCombat;
+        double toxin = Combat.ToxinContactDamage(defender.Genome, combat);
+        if (toxin > 0.0)
+        {
+            attacker.SpendEnergy(toxin);
+        }
+
+        double killProbability = Combat.KillProbability(
+            Morphology.CombatMass(attacker.Genome, Config.Multicellular),
+            Morphology.CombatMass(defender.Genome, Config.Multicellular),
+            defender.Genome,
+            combat);
+        return behaviorStream.NextDouble() < killProbability;
+    }
+
     private int LocalOrganismDensity(Organism organism)
     {
         int count = 0;
@@ -925,6 +960,7 @@ public sealed class SimulationWorld
 
         double energyMin = 0.0, energyMax = 0.0, energySum = 0.0;
         double sumSize = 0, sumSpeed = 0, sumThermalC = 0, sumThermalW = 0, sumEnv = 0, sumOrg = 0, sumAcuity = 0, sumEfficiency = 0, sumShare = 0, sumCells = 0;
+        double sumArmour = 0, sumEvasion = 0, sumToxicity = 0;
 
         var biomeCounts = new Dictionary<Biome, long>
         {
@@ -942,6 +978,9 @@ public sealed class SimulationWorld
         var orgRadiusBuckets = new int[HistogramBucketCount];
         var acuityBuckets = new int[HistogramBucketCount];
         var efficiencyBuckets = new int[HistogramBucketCount];
+        var armourBuckets = new int[HistogramBucketCount];
+        var evasionBuckets = new int[HistogramBucketCount];
+        var toxicityBuckets = new int[HistogramBucketCount];
         var shareBuckets = new int[HistogramBucketCount];
         var cellBuckets = new int[HistogramBucketCount];
 
@@ -971,6 +1010,9 @@ public sealed class SimulationWorld
             sumOrg += g.OrgRadius;
             sumAcuity += g.SensoryAcuity;
             sumEfficiency += g.MetabolicEfficiency;
+            sumArmour += g.Armour;
+            sumEvasion += g.Evasion;
+            sumToxicity += g.Toxicity;
             sumShare += g.ShareFraction;
             sumCells += Morphology.CellCount(g, Config.Multicellular);
 
@@ -984,6 +1026,9 @@ public sealed class SimulationWorld
             orgRadiusBuckets[BucketIndex(g.OrgRadius, bounds.OrgRadius)]++;
             acuityBuckets[BucketIndex(g.SensoryAcuity, bounds.SensoryAcuity)]++;
             efficiencyBuckets[BucketIndex(g.MetabolicEfficiency, bounds.MetabolicEfficiency)]++;
+            armourBuckets[BucketIndex(g.Armour, bounds.Armour)]++;
+            evasionBuckets[BucketIndex(g.Evasion, bounds.Evasion)]++;
+            toxicityBuckets[BucketIndex(g.Toxicity, bounds.Toxicity)]++;
             shareBuckets[BucketIndex(g.ShareFraction, bounds.ShareFraction)]++;
             cellBuckets[BucketIndex(Morphology.CellCount(g, Config.Multicellular), bounds.CellCount)]++;
         }
@@ -1039,6 +1084,9 @@ public sealed class SimulationWorld
                 OrgRadius = Average(sumOrg),
                 SensoryAcuity = Average(sumAcuity),
                 MetabolicEfficiency = Average(sumEfficiency),
+                Armour = Average(sumArmour),
+                Evasion = Average(sumEvasion),
+                Toxicity = Average(sumToxicity),
                 ShareFraction = Average(sumShare),
                 CellCount = Average(sumCells),
             },
@@ -1052,6 +1100,9 @@ public sealed class SimulationWorld
                 Histogram("org_radius", bounds.OrgRadius, orgRadiusBuckets),
                 Histogram("sensory_acuity", bounds.SensoryAcuity, acuityBuckets),
                 Histogram("metabolic_efficiency", bounds.MetabolicEfficiency, efficiencyBuckets),
+                Histogram("armour", bounds.Armour, armourBuckets),
+                Histogram("evasion", bounds.Evasion, evasionBuckets),
+                Histogram("toxicity", bounds.Toxicity, toxicityBuckets),
                 Histogram("share_fraction", bounds.ShareFraction, shareBuckets),
                 Histogram("cell_count", bounds.CellCount, cellBuckets),
             ],

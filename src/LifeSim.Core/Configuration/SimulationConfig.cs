@@ -86,6 +86,14 @@ public sealed record MetabolismConfig
     public double EfficiencyIntakePenalty { get; init; } = 0.5;
 
     /// <summary>
+    /// Per-tick metabolic upkeep for the evolvable defences, charged on the summed <c>armour</c>,
+    /// <c>evasion</c>, and <c>toxicity</c> traits — so a well-defended body pays to maintain its
+    /// toughness, agility, and toxins. Part of the self-generated cost that metabolic efficiency
+    /// discounts. Set to 0 for free defences.
+    /// </summary>
+    public double DefenseUpkeep { get; init; } = 0.06;
+
+    /// <summary>
     /// Density-dependent crowding cost: extra metabolism per neighbouring organism
     /// in the 3×3 block beyond <see cref="CrowdingFreeNeighbours"/>. A continuous carrying-capacity
     /// pressure — dense clusters starve faster, so overpopulation is self-limiting.
@@ -112,6 +120,15 @@ public sealed record MovementCombatConfig
     public double LocomotionVelocityExponent { get; init; } = 2.0;
     public double PredationTransferFraction { get; init; } = 0.75;
     public double FailedCombatPenalty { get; init; } = 5.0;
+
+    /// <summary>Defensive combat mass added per unit of the <c>armour</c> trait (absolute toughness in the kill ratio).</summary>
+    public double ArmourScale { get; init; } = 4.0;
+
+    /// <summary>Largest fraction of a predator's kill chance that maximal <c>evasion</c> (=1) can dodge away.</summary>
+    public double MaxEvasion { get; init; } = 0.6;
+
+    /// <summary>Energy a predator loses on contact when attacking a maximally <c>toxic</c> (=1) organism, win or lose.</summary>
+    public double ToxinContactDamage { get; init; } = 8.0;
 }
 
 /// <summary>Cooperation controls: energy sharing and optional kin-predation deterrence.</summary>
@@ -320,6 +337,15 @@ public sealed record TraitBounds
 
     /// <summary>Metabolic frugality: 0 = baseline metabolism, 1 = maximally frugal. Founders start at 0 and evolve up.</summary>
     public Range MetabolicEfficiency { get; init; } = new(0.0, 1.0);
+
+    /// <summary>Passive armour (defensive toughness): 0 = none, 1 = maximal. Founders start at 0.</summary>
+    public Range Armour { get; init; } = new(0.0, 1.0);
+
+    /// <summary>Evasion (dodge): 0 = none, 1 = maximal (capped by MovementCombat.MaxEvasion). Founders start at 0.</summary>
+    public Range Evasion { get; init; } = new(0.0, 1.0);
+
+    /// <summary>Toxicity (contact damage to attackers): 0 = none, 1 = maximal. Founders start at 0.</summary>
+    public Range Toxicity { get; init; } = new(0.0, 1.0);
 
     /// <summary>Generosity bounds: 0 = never donates, 1 = donates all of its energy per Share.</summary>
     public Range ShareFraction { get; init; } = new(0.0, 1.0);

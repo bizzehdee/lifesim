@@ -184,6 +184,9 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
                 new TraitReading("Org Radius", genome.OrgRadius, bounds.OrgRadius.Min, bounds.OrgRadius.Max),
                 new TraitReading("Sensory Acuity", genome.SensoryAcuity, bounds.SensoryAcuity.Min, bounds.SensoryAcuity.Max),
                 new TraitReading("Metabolic Efficiency", genome.MetabolicEfficiency, bounds.MetabolicEfficiency.Min, bounds.MetabolicEfficiency.Max),
+                new TraitReading("Armour", genome.Armour, bounds.Armour.Min, bounds.Armour.Max),
+                new TraitReading("Evasion", genome.Evasion, bounds.Evasion.Min, bounds.Evasion.Max),
+                new TraitReading("Toxicity", genome.Toxicity, bounds.Toxicity.Min, bounds.Toxicity.Max),
                 new TraitReading("Generosity", genome.ShareFraction, bounds.ShareFraction.Min, bounds.ShareFraction.Max),
             ],
             Economy = new EconomyBreakdown(

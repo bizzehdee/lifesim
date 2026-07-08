@@ -30,6 +30,27 @@ public sealed record Genome
     public double MetabolicEfficiency { get; init; }
 
     /// <summary>
+    /// Evolvable armour in [0, 1]: passive toughness that adds <em>defensive</em> combat mass, so a
+    /// predator's kill chance drops — but, unlike simply being big, armour never boosts this organism's
+    /// own attacks. Founders start at 0 and must evolve it. Costs metabolic upkeep (see
+    /// <see cref="Metabolism.DefenseTax"/>).
+    /// </summary>
+    public double Armour { get; init; }
+
+    /// <summary>
+    /// Evolvable evasion in [0, 1]: an agility dodge that multiplicatively lowers a predator's kill
+    /// chance (independent of mass), up to a configured cap. Founders start at 0. Costs metabolic upkeep.
+    /// </summary>
+    public double Evasion { get; init; }
+
+    /// <summary>
+    /// Evolvable toxicity in [0, 1]: on contact, a predator that attacks this organism takes toxin
+    /// damage proportional to it — win or lose — so toxic prey are costly to eat (aposematism emerges by
+    /// selection, since attackers can't sense toxicity directly). Founders start at 0. Costs upkeep.
+    /// </summary>
+    public double Toxicity { get; init; }
+
+    /// <summary>
     /// Evolvable generosity: the fraction of its own energy the organism donates
     /// when it performs a Share action. Under selection this drifts freely — lineages can evolve
     /// toward hoarding (→ 0) or over-sharing (→ 1), whichever the local kin economy favours. The
@@ -65,6 +86,9 @@ public sealed record Genome
         OrgRadius = Clamp(OrgRadius, bounds.OrgRadius),
         SensoryAcuity = Clamp(SensoryAcuity, bounds.SensoryAcuity),
         MetabolicEfficiency = Clamp(MetabolicEfficiency, bounds.MetabolicEfficiency),
+        Armour = Clamp(Armour, bounds.Armour),
+        Evasion = Clamp(Evasion, bounds.Evasion),
+        Toxicity = Clamp(Toxicity, bounds.Toxicity),
         ShareFraction = Clamp(ShareFraction, bounds.ShareFraction),
         CellCount = Clamp(CellCount, bounds.CellCount),
         GermWeight = Clamp(GermWeight, bounds.GermWeight),
@@ -78,9 +102,9 @@ public sealed record Genome
     /// <summary>
     /// Mid-range genome: the midpoint of every bound, except <see cref="CellCount"/> which starts at 1
     /// (unicellular, not the bound midpoint) with equal specialisation-weight midpoints, so the single
-    /// cell is a generalist, and <see cref="MetabolicEfficiency"/> which starts at its baseline (min, no
-    /// frugality) so efficiency is an evolved gain rather than a starting endowment. Used as a neutral
-    /// baseline; genesis founders use <see cref="Random"/>.
+    /// cell is a generalist, and the evolved-in capabilities (metabolic efficiency, armour, evasion,
+    /// toxicity) which start at their baseline (min) so they are earned by selection, not endowed. Used
+    /// as a neutral baseline; genesis founders use <see cref="Random"/>.
     /// </summary>
     public static Genome MidRange(TraitBounds bounds) => new()
     {
@@ -92,6 +116,9 @@ public sealed record Genome
         OrgRadius = Midpoint(bounds.OrgRadius),
         SensoryAcuity = Midpoint(bounds.SensoryAcuity),
         MetabolicEfficiency = bounds.MetabolicEfficiency.Min,
+        Armour = bounds.Armour.Min,
+        Evasion = bounds.Evasion.Min,
+        Toxicity = bounds.Toxicity.Min,
         ShareFraction = Midpoint(bounds.ShareFraction),
         CellCount = bounds.CellCount.Min,
         GermWeight = Midpoint(bounds.GermWeight),
@@ -106,8 +133,9 @@ public sealed record Genome
     /// A fully randomised genome — each trait drawn uniformly within its bounds — for a *varied*
     /// founding gene pool rather than a clone army of identical <see cref="MidRange"/> founders, so
     /// the world feels alive and diverse from tick 0. Cell count is forced to 1 (founders are
-    /// unicellular and evolve up) and metabolic efficiency to its baseline 0 (frugality is an evolved
-    /// gain, not a founding endowment). Draws come from the supplied PRNG in a fixed trait order.
+    /// unicellular and evolve up) and the evolved-in capabilities (metabolic efficiency, armour, evasion,
+    /// toxicity) to baseline 0 — earned by selection, not endowed. Draws come from the supplied PRNG in a
+    /// fixed trait order.
     /// </summary>
     public static Genome Random(TraitBounds bounds, Prng prng)
     {
@@ -124,6 +152,9 @@ public sealed record Genome
             OrgRadius = Sample(bounds.OrgRadius, prng),
             SensoryAcuity = Sample(bounds.SensoryAcuity, prng),
             MetabolicEfficiency = bounds.MetabolicEfficiency.Min,
+            Armour = bounds.Armour.Min,
+            Evasion = bounds.Evasion.Min,
+            Toxicity = bounds.Toxicity.Min,
             ShareFraction = Sample(bounds.ShareFraction, prng),
             CellCount = 1.0,
             GermWeight = Sample(bounds.GermWeight, prng),

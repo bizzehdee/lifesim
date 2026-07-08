@@ -30,6 +30,16 @@ public class MetabolismTests
     }
 
     [Fact]
+    public void DefenseTax_chargesUpkeepOnTheSummedDefensiveTraits()
+    {
+        Genome undefended = NewGenome() with { Armour = 0, Evasion = 0, Toxicity = 0 };
+        Genome defended = NewGenome() with { Armour = 0.5, Evasion = 0.25, Toxicity = 1.0 };
+
+        Assert.Equal(0.0, Metabolism.DefenseTax(undefended, Metabolic), precision: 10);
+        Assert.Equal((0.5 + 0.25 + 1.0) * Metabolic.DefenseUpkeep, Metabolism.DefenseTax(defended, Metabolic), precision: 10);
+    }
+
+    [Fact]
     public void EfficiencyYieldMultiplier_isTheRateYieldTradeOff()
     {
         // The price of frugality: less usable energy per graze, down to 1 - EfficiencyIntakePenalty.

@@ -53,6 +53,14 @@ public static class Metabolism
         1.0 - (config.MaxMetabolicReduction * genome.MetabolicEfficiency);
 
     /// <summary>
+    /// Per-tick upkeep for the evolvable defences (armour + evasion + toxicity), so a well-defended body
+    /// pays to maintain them. Part of the self-generated cost that <c>metabolic_efficiency</c> discounts.
+    /// </summary>
+    public static double DefenseTax(Genome genome, MetabolismConfig config) =>
+        (Math.Clamp(genome.Armour, 0.0, 1.0) + Math.Clamp(genome.Evasion, 0.0, 1.0) + Math.Clamp(genome.Toxicity, 0.0, 1.0))
+        * config.DefenseUpkeep;
+
+    /// <summary>
     /// Multiplier applied to grazing yield — the rate–yield trade-off for <c>metabolic_efficiency</c>.
     /// Ranges from 1 (full yield) down to <c>1 − EfficiencyIntakePenalty</c> at maximal frugality, so a
     /// frugal metabolism extracts less usable energy per graze.

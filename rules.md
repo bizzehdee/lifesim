@@ -44,7 +44,13 @@ Every tick resolves in a fixed order: **sense → decide → act → pay metabol
 
 ## 6. Feeding and combat
 - **Harvest an empty tile** → graze its ground energy.
-- **Harvest an occupied tile** → attempt predation. The kill chance is `attacker_mass / (attacker_mass + victim_mass)` — bigger bodies win more often but never with certainty. A kill transfers most of the victim's energy; a failed attack costs the attacker a retaliation penalty.
+- **Harvest an occupied tile** → attempt predation. The base kill chance is `attacker_mass / (attacker_mass + victim_mass)` — bigger bodies win more often but never with certainty. A kill transfers most of the victim's energy; a failed attack costs the attacker a penalty.
+- **Prey can defend themselves**, not just flee:
+  - **Counterattack (inherent)**: a victim that survives an attack strikes back automatically, using its own combat mass — a large or well-armed target can kill its attacker. No trait needed; everyone fights back.
+  - **Armour (evolvable)**: passive toughness that adds *defensive* mass to the kill formula (lowers the chance of being killed) without boosting your own attacks.
+  - **Evasion (evolvable)**: an agility dodge that multiplicatively cuts a predator's kill chance, up to a cap.
+  - **Toxicity (evolvable)**: any predator that attacks a toxic organism takes contact damage — win or lose — so toxic prey are costly to eat (predators can't sense toxicity directly, so avoidance has to evolve the hard way).
+  - Each of armour, evasion, and toxicity starts at zero and must be evolved, and each costs metabolic upkeep to maintain — so defence trades off against everything else energy buys.
 
 ## 7. Life cycle & evolution
 1. **Reproduction is asexual**: it costs energy proportional to body mass, is gated by a cooldown, and places the offspring on a free adjacent tile.

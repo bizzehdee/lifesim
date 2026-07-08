@@ -64,6 +64,9 @@ public sealed class LineageDetailViewModel : ViewModelBase
         new TraitReading("Org Radius", g.OrgRadius, bounds.OrgRadius.Min, bounds.OrgRadius.Max),
         new TraitReading("Sensory Acuity", g.SensoryAcuity, bounds.SensoryAcuity.Min, bounds.SensoryAcuity.Max),
         new TraitReading("Metabolic Efficiency", g.MetabolicEfficiency, bounds.MetabolicEfficiency.Min, bounds.MetabolicEfficiency.Max),
+        new TraitReading("Armour", g.Armour, bounds.Armour.Min, bounds.Armour.Max),
+        new TraitReading("Evasion", g.Evasion, bounds.Evasion.Min, bounds.Evasion.Max),
+        new TraitReading("Toxicity", g.Toxicity, bounds.Toxicity.Min, bounds.Toxicity.Max),
         new TraitReading("Generosity", g.ShareFraction, bounds.ShareFraction.Min, bounds.ShareFraction.Max),
     ];
 }

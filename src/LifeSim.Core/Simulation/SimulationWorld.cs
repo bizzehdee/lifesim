@@ -291,6 +291,10 @@ public sealed class SimulationWorld
         var distanceTraveled = new double[organismCount];
         var pendingBirths = new List<PendingBirth>();
 
+        // Sexual reproduction consumes a partner: once an organism has mated this tick (as initiator or
+        // co-opted partner) it can't be booked again. Serial intent phase, so a plain set suffices.
+        var matedThisTick = new HashSet<long>();
+
         // Energy at the start of the tick (before intent), used as the reward signal for within-life
         // learning: net energy change over the tick tells a plastic brain whether its behaviour paid off.
         var tickStartEnergy = new double[organismCount];
@@ -310,7 +314,7 @@ public sealed class SimulationWorld
                 continue;
             }
 
-            (double distance, ActionResult result) = ResolveIntent(organism, actions[i], currentTick, behavior, pendingBirths, counters);
+            (double distance, ActionResult result) = ResolveIntent(organism, actions[i], currentTick, behavior, pendingBirths, matedThisTick, counters);
             distanceTraveled[i] = distance;
             organism.RecordActionResult(result);
         }
@@ -455,7 +459,7 @@ public sealed class SimulationWorld
 
     private (double Distance, ActionResult Result) ResolveIntent(
         Organism organism, OrganismAction action, long currentTick, Prng behaviorStream,
-        List<PendingBirth> pendingBirths, TickCounters counters)
+        List<PendingBirth> pendingBirths, HashSet<long> matedThisTick, TickCounters counters)
     {
         switch (action)
         {
@@ -485,7 +489,7 @@ public sealed class SimulationWorld
                 return (0.0, ResolveHarvest(organism, -1, 0, behaviorStream, counters));
 
             case OrganismAction.Reproduce:
-                return (0.0, ResolveReproduce(organism, currentTick, pendingBirths));
+                return (0.0, ResolveReproduce(organism, currentTick, pendingBirths, matedThisTick));
 
             case OrganismAction.ShareNorth:
                 return (0.0, ResolveShare(organism, 0, -1, behaviorStream, counters));
@@ -740,30 +744,93 @@ public sealed class SimulationWorld
     }
 
     /// <summary>Asexual reproduction gating and offspring reservation.</summary>
-    private ActionResult ResolveReproduce(Organism organism, long currentTick, List<PendingBirth> pendingBirths)
+    private ActionResult ResolveReproduce(
+        Organism organism, long currentTick, List<PendingBirth> pendingBirths, HashSet<long> matedThisTick)
     {
+        Genome g = organism.Genome;
+
         // A body with too few germ cells is sterile soma — it can support the body but not reproduce.
-        if (!Morphology.CanReproduce(organism.Genome, Config.Multicellular))
+        if (!Morphology.CanReproduce(g, Config.Multicellular))
         {
             return ActionResult.Failed;
         }
 
         // Cost scales with body mass, but division of labour sheds the size penalty,
         // so a well-differentiated body reproduces almost as cheaply as a single cell.
-        double cost = Config.Reproduction.ReproductionBaseCost * Morphology.ReproductionMass(organism.Genome, Config.Multicellular);
+        double cost = Config.Reproduction.ReproductionBaseCost * Morphology.ReproductionMass(g, Config.Multicellular);
         if (organism.Energy < cost)
         {
             return ActionResult.Failed;
         }
 
-        if (organism.LastBirthTick is not null
-            && currentTick - organism.LastBirthTick.Value < Config.Reproduction.ReproductionCooldownTicks)
+        if (IsOnReproductionCooldown(organism, currentTick) || matedThisTick.Contains(organism.Id))
         {
             return ActionResult.Failed;
         }
 
-        // Deterministic tile priority: N, S, E, W (matches the Move action ordering).
-        (int X, int Y)? freeTile = null;
+        (int X, int Y)? freeTile = FindFreeAdjacentTile(organism);
+        if (freeTile is null)
+        {
+            return ActionResult.Failed;
+        }
+
+        // Sexual vs asexual. Draw the roll only when the trait is expressed, so an all-asexual world
+        // (founders start at Sexuality 0) never touches the mating stream and stays byte-identical to the
+        // pre-sex baseline. A high-Sexuality organism that finds no willing mate falls back to cloning.
+        Organism? mate = null;
+        if (g.Sexuality > 0.0 && _prngStreams[PrngStream.Mating].NextDouble() < g.Sexuality)
+        {
+            mate = FindMate(organism, currentTick, matedThisTick);
+        }
+
+        double offspringEnergy = cost * Config.Reproduction.OffspringEnergyFraction;
+        LineageEntry parentLineage = _lineageRecords[organism.Id];
+        long offspringId = _idAllocator.Allocate();
+        _occupancy.Set(freeTile.Value.X, freeTile.Value.Y, offspringId);
+
+        if (mate is not null)
+        {
+            // Both parents pay (split → total matches an asexual birth; full → each pays the whole cost),
+            // both go on cooldown, and both are consumed for the tick. Offspring is a 50/50 blend of the
+            // two genomes with recombined germlines (mutation is applied later in the birth-commit phase).
+            bool split = Config.Reproduction.SplitReproductionCostAcrossParents;
+            double mateCost = Config.Reproduction.ReproductionBaseCost * Morphology.ReproductionMass(mate.Genome, Config.Multicellular);
+
+            organism.SpendEnergy(split ? cost / 2.0 : cost);
+            organism.RecordBirth(currentTick);
+            mate.SpendEnergy(split ? mateCost / 2.0 : mateCost);
+            mate.RecordBirth(currentTick);
+            matedThisTick.Add(organism.Id);
+            matedThisTick.Add(mate.Id);
+
+            Genome childGenome = Genome.Blend(g, mate.Genome);
+            NeatGenome childGermline = NeatCrossover.Recombine(organism.Germline, mate.Germline);
+
+            pendingBirths.Add(new PendingBirth(
+                offspringId, organism.Id, childGenome, childGermline, offspringEnergy,
+                freeTile.Value.X, freeTile.Value.Y, currentTick, parentLineage.LineageId, parentLineage.GenerationDepth + 1,
+                SecondParentId: mate.Id));
+
+            return ActionResult.Success;
+        }
+
+        // Asexual clone (either not attempted, or no willing mate in range) — exactly as before.
+        organism.SpendEnergy(cost);
+        organism.RecordBirth(currentTick);
+        pendingBirths.Add(new PendingBirth(
+            offspringId, organism.Id, organism.Genome, organism.Germline, offspringEnergy,
+            freeTile.Value.X, freeTile.Value.Y, currentTick, parentLineage.LineageId, parentLineage.GenerationDepth + 1));
+
+        return ActionResult.Success;
+    }
+
+    private bool IsOnReproductionCooldown(Organism organism, long currentTick) =>
+        organism.LastBirthTick is not null
+        && currentTick - organism.LastBirthTick.Value < Config.Reproduction.ReproductionCooldownTicks;
+
+    /// <summary>First free in-bounds tile around an organism in the fixed N, S, E, W priority.</summary>
+    private (int X, int Y)? FindFreeAdjacentTile(Organism organism)
+    {
         foreach ((int ddx, int ddy) in new (int, int)[] { (0, -1), (0, 1), (1, 0), (-1, 0) })
         {
             int x = organism.X + ddx;
@@ -773,28 +840,69 @@ public sealed class SimulationWorld
                 continue;
             }
 
-            freeTile = (x, y);
-            break;
+            return (x, y);
         }
 
-        if (freeTile is null)
+        return null;
+    }
+
+    /// <summary>
+    /// Finds a willing mate for sexual reproduction: a sexually-capable (Sexuality &gt; 0), fertile,
+    /// off-cooldown, not-already-mated neighbour within <see cref="ReproductionConfig.MateSearchRadius"/>
+    /// (Chebyshev) that can afford its share of the cost. Among all candidates the lowest organism id
+    /// wins, so the choice is deterministic regardless of scan order. Returns null if none qualifies.
+    /// </summary>
+    private Organism? FindMate(Organism initiator, long currentTick, HashSet<long> matedThisTick)
+    {
+        int radius = Config.Reproduction.MateSearchRadius;
+        bool split = Config.Reproduction.SplitReproductionCostAcrossParents;
+        Organism? best = null;
+
+        for (int dy = -radius; dy <= radius; dy++)
         {
-            return ActionResult.Failed;
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                if (dx == 0 && dy == 0)
+                {
+                    continue;
+                }
+
+                if (!_occupancy.TryGet(initiator.X + dx, initiator.Y + dy, out long id)
+                    || id == initiator.Id
+                    || matedThisTick.Contains(id))
+                {
+                    continue;
+                }
+
+                // A tile can hold an offspring reserved earlier this tick that isn't in the live index
+                // until the birth-commit phase — it isn't a valid mate, so skip ids we can't resolve.
+                if (!_organisms.TryGetValue(id, out Organism? candidate))
+                {
+                    continue;
+                }
+
+                if (!candidate.IsAlive
+                    || candidate.Genome.Sexuality <= 0.0
+                    || !Morphology.CanReproduce(candidate.Genome, Config.Multicellular)
+                    || IsOnReproductionCooldown(candidate, currentTick))
+                {
+                    continue;
+                }
+
+                double mateCost = Config.Reproduction.ReproductionBaseCost * Morphology.ReproductionMass(candidate.Genome, Config.Multicellular);
+                if (candidate.Energy < (split ? mateCost / 2.0 : mateCost))
+                {
+                    continue;
+                }
+
+                if (best is null || candidate.Id < best.Id)
+                {
+                    best = candidate;
+                }
+            }
         }
 
-        organism.SpendEnergy(cost);
-        organism.RecordBirth(currentTick);
-
-        double offspringEnergy = cost * Config.Reproduction.OffspringEnergyFraction;
-        LineageEntry parentLineage = _lineageRecords[organism.Id];
-        long offspringId = _idAllocator.Allocate();
-
-        _occupancy.Set(freeTile.Value.X, freeTile.Value.Y, offspringId);
-        pendingBirths.Add(new PendingBirth(
-            offspringId, organism.Id, organism.Genome, organism.Germline, offspringEnergy,
-            freeTile.Value.X, freeTile.Value.Y, currentTick, parentLineage.LineageId, parentLineage.GenerationDepth + 1));
-
-        return ActionResult.Success;
+        return best;
     }
 
     /// <summary>
@@ -1209,5 +1317,5 @@ public sealed class SimulationWorld
 
     private sealed record PendingBirth(
         long OffspringId, long ParentId, Genome Genome, NeatGenome Germline, double OffspringEnergy,
-        int X, int Y, long BirthTick, long LineageId, int GenerationDepth);
+        int X, int Y, long BirthTick, long LineageId, int GenerationDepth, long? SecondParentId = null);
 }

@@ -203,6 +203,47 @@ public sealed record Genome
         };
     }
 
+    /// <summary>
+    /// A 50/50 blend of two parent genomes for sexual reproduction: every continuous trait is the
+    /// arithmetic mean of the parents' values, so the offspring sits midway between them. <see
+    /// cref="CellCount"/> is the max of the two instead (mating with a unicellular partner shouldn't
+    /// halve a multicellular body plan; the usual offspring-cell-count bias and clamp are applied by the
+    /// caller afterwards). Pure and PRNG-free — mutation adds the "little randomness" downstream.
+    /// </summary>
+    public static Genome Blend(Genome a, Genome b)
+    {
+        ArgumentNullException.ThrowIfNull(a);
+        ArgumentNullException.ThrowIfNull(b);
+
+        return new Genome
+        {
+            Size = Mean(a.Size, b.Size),
+            SpeedCapacity = Mean(a.SpeedCapacity, b.SpeedCapacity),
+            ThermalCenter = Mean(a.ThermalCenter, b.ThermalCenter),
+            ThermalWidth = Mean(a.ThermalWidth, b.ThermalWidth),
+            EnvRadius = Mean(a.EnvRadius, b.EnvRadius),
+            OrgRadius = Mean(a.OrgRadius, b.OrgRadius),
+            SensoryAcuity = Mean(a.SensoryAcuity, b.SensoryAcuity),
+            MetabolicEfficiency = Mean(a.MetabolicEfficiency, b.MetabolicEfficiency),
+            Armour = Mean(a.Armour, b.Armour),
+            Evasion = Mean(a.Evasion, b.Evasion),
+            Toxicity = Mean(a.Toxicity, b.Toxicity),
+            Plasticity = Mean(a.Plasticity, b.Plasticity),
+            LearningDecay = Mean(a.LearningDecay, b.LearningDecay),
+            Sexuality = Mean(a.Sexuality, b.Sexuality),
+            ShareFraction = Mean(a.ShareFraction, b.ShareFraction),
+            CellCount = Math.Max(a.CellCount, b.CellCount),
+            GermWeight = Mean(a.GermWeight, b.GermWeight),
+            FeederWeight = Mean(a.FeederWeight, b.FeederWeight),
+            StoreWeight = Mean(a.StoreWeight, b.StoreWeight),
+            DefenderWeight = Mean(a.DefenderWeight, b.DefenderWeight),
+            MoverWeight = Mean(a.MoverWeight, b.MoverWeight),
+            SensorWeight = Mean(a.SensorWeight, b.SensorWeight),
+        };
+    }
+
+    private static double Mean(double x, double y) => (x + y) / 2.0;
+
     private static double Sample(TraitBounds.Range range, Prng prng) => range.Min + (prng.NextDouble() * (range.Max - range.Min));
 
     private static double Clamp(double value, TraitBounds.Range range) =>

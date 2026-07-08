@@ -32,6 +32,11 @@ public sealed record SimulationMetrics
     public long KinPredation { get; init; }
     public double EnergyShared { get; init; }
 
+    // --- Inclusive-fitness accounting (this tick's shares + the live population's indirect fitness). ---
+    public long KinDirectedShares { get; init; }
+    public long NonKinShares { get; init; }
+    public double MeanHelpGiven { get; init; }
+
     // --- Energy distribution across the live population (zeros when empty). ---
     public double EnergyMin { get; init; }
     public double EnergyAverage { get; init; }
@@ -72,6 +77,9 @@ public sealed record SimulationMetrics
         && FailedShare == other.FailedShare
         && KinPredation == other.KinPredation
         && EnergyShared.Equals(other.EnergyShared)
+        && KinDirectedShares == other.KinDirectedShares
+        && NonKinShares == other.NonKinShares
+        && MeanHelpGiven.Equals(other.MeanHelpGiven)
         && EnergyMin.Equals(other.EnergyMin)
         && EnergyAverage.Equals(other.EnergyAverage)
         && EnergyMax.Equals(other.EnergyMax)

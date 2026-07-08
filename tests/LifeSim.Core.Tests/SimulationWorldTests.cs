@@ -406,6 +406,28 @@ public class SimulationWorldTests
     }
 
     [Fact]
+    public void Advance_accountsForInclusiveFitness_overALongAbundantRun()
+    {
+        // Every successful share is classified exactly once (kin-directed vs non-kin) and credits the
+        // donor's relatedness-weighted HelpGiven — the inclusive-fitness accounting.
+        var config = SimulationConfig.Default with { InitialPopulation = 40 };
+        var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 909090), config);
+
+        long shareEvents = 0, kinDirected = 0, nonKin = 0;
+        for (int i = 0; i < 150 && !world.Extinct; i++)
+        {
+            world.Advance();
+            shareEvents += world.Metrics.SuccessfulShare;
+            kinDirected += world.Metrics.KinDirectedShares;
+            nonKin += world.Metrics.NonKinShares;
+        }
+
+        Assert.True(shareEvents > 0, "Expected some Share actions to resolve over the run.");
+        Assert.Equal(shareEvents, kinDirected + nonKin); // classified exactly once each
+        Assert.Contains(world.Organisms.Values, o => o.HelpGiven > 0.0); // donors carry indirect-fitness credit
+    }
+
+    [Fact]
     public void CreateGenesis_givesFoundersVariedGenerosity()
     {
         // Founder generosity is randomised like every other trait — a varied gene pool, not a constant.

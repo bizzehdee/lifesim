@@ -32,6 +32,9 @@ public sealed record OrganismSnapshot
     /// <summary>Lifetime failed hunts (fought off).</summary>
     public long PredationLosses { get; init; }
 
+    /// <summary>Lifetime relatedness-weighted energy donated (indirect-fitness contribution).</summary>
+    public double HelpGiven { get; init; }
+
     public static OrganismSnapshot From(Organism organism) => new()
     {
         OrganismId = organism.Id,
@@ -47,10 +50,11 @@ public sealed record OrganismSnapshot
         LastBirthTick = organism.LastBirthTick,
         PredationWins = organism.PredationWins,
         PredationLosses = organism.PredationLosses,
+        HelpGiven = organism.HelpGiven,
     };
 
     public Organism ToOrganism(double? energyCapacity = null) =>
-        new(OrganismId, Genome.ToGenome(), Name, Energy, X, Y, Brain, Age, LastAction, LastActionResult, LastBirthTick, energyCapacity, PredationWins, PredationLosses);
+        new(OrganismId, Genome.ToGenome(), Name, Energy, X, Y, Brain, Age, LastAction, LastActionResult, LastBirthTick, energyCapacity, PredationWins, PredationLosses, HelpGiven);
 }
 
 /// <summary>The inheritable trait values, as stored in a snapshot.</summary>

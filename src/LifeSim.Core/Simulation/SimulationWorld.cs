@@ -701,6 +701,22 @@ public sealed class SimulationWorld
         recipient.AddEnergy(donated * coop.ShareEfficiency);
         counters.SuccessfulShare++;
         counters.EnergyShared += donated;
+
+        // Inclusive-fitness accounting: relatedness-weighted energy is the donor's indirect-fitness
+        // contribution. Classify the share as kin-directed (helps propagate shared genes — kin selection)
+        // vs non-kin (indiscriminate altruism), by the same relatedness threshold used for kin predation.
+        // (A strict Hamilton rB > C in raw energy is degenerate here — ShareEfficiency < 1 makes it never
+        // hold — so the informative signal is whether sharing is kin-biased.)
+        organism.RecordHelpGiven(donated * relatedness);
+        if (relatedness >= coop.KinRelatednessThreshold)
+        {
+            counters.KinDirectedShares++;
+        }
+        else
+        {
+            counters.NonKinShares++;
+        }
+
         return ActionResult.Success;
     }
 
@@ -960,7 +976,7 @@ public sealed class SimulationWorld
 
         double energyMin = 0.0, energyMax = 0.0, energySum = 0.0;
         double sumSize = 0, sumSpeed = 0, sumThermalC = 0, sumThermalW = 0, sumEnv = 0, sumOrg = 0, sumAcuity = 0, sumEfficiency = 0, sumShare = 0, sumCells = 0;
-        double sumArmour = 0, sumEvasion = 0, sumToxicity = 0;
+        double sumArmour = 0, sumEvasion = 0, sumToxicity = 0, sumHelp = 0;
 
         var biomeCounts = new Dictionary<Biome, long>
         {
@@ -1000,6 +1016,7 @@ public sealed class SimulationWorld
             }
 
             energySum += energy;
+            sumHelp += organism.HelpGiven;
 
             Genome g = organism.Genome;
             sumSize += g.Size;
@@ -1071,6 +1088,9 @@ public sealed class SimulationWorld
             FailedShare = counters.FailedShare,
             KinPredation = counters.KinPredation,
             EnergyShared = counters.EnergyShared,
+            KinDirectedShares = counters.KinDirectedShares,
+            NonKinShares = counters.NonKinShares,
+            MeanHelpGiven = Average(sumHelp),
             EnergyMin = population > 0 ? energyMin : 0.0,
             EnergyAverage = Average(energySum),
             EnergyMax = population > 0 ? energyMax : 0.0,
@@ -1153,6 +1173,8 @@ public sealed class SimulationWorld
         public long FailedShare;
         public long KinPredation;
         public double EnergyShared;
+        public long KinDirectedShares;   // successful shares to a relative (r >= kin threshold)
+        public long NonKinShares;        // successful shares to a non-relative (indiscriminate altruism)
     }
 
     private sealed record PendingBirth(

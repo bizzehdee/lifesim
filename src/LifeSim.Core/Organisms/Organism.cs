@@ -49,12 +49,20 @@ public sealed class Organism
     /// <summary>Lifetime predation attempts against live organisms (<see cref="PredationWins"/> + <see cref="PredationLosses"/>).</summary>
     public long PredationAttempts => PredationWins + PredationLosses;
 
+    /// <summary>
+    /// Lifetime relatedness-weighted energy this organism has donated via sharing — its indirect-fitness
+    /// contribution (Σ energyDonated × relatedness-to-recipient). A lifetime tally like the predation
+    /// record; not inherited.
+    /// </summary>
+    public double HelpGiven { get; private set; }
+
     public bool IsAlive => Energy > 0.0;
 
     public Organism(
         long id, Genome genome, string name, double energy, int x, int y, NeatGenome brain,
         long age = 0, OrganismAction? lastAction = null, ActionResult lastActionResult = ActionResult.None,
-        long? lastBirthTick = null, double? energyCapacity = null, long predationWins = 0, long predationLosses = 0)
+        long? lastBirthTick = null, double? energyCapacity = null, long predationWins = 0, long predationLosses = 0,
+        double helpGiven = 0.0)
     {
         ArgumentNullException.ThrowIfNull(genome);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -74,6 +82,7 @@ public sealed class Organism
         LastBirthTick = lastBirthTick;
         PredationWins = predationWins;
         PredationLosses = predationLosses;
+        HelpGiven = helpGiven;
     }
 
     public void AddEnergy(double amount)
@@ -110,6 +119,13 @@ public sealed class Organism
 
     /// <summary>Tally a failed hunt (the target fought it off).</summary>
     public void RecordPredationLoss() => PredationLosses++;
+
+    /// <summary>Accumulate a share's relatedness-weighted energy toward this organism's indirect fitness.</summary>
+    public void RecordHelpGiven(double relatednessWeightedEnergy)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(relatednessWeightedEnergy);
+        HelpGiven += relatednessWeightedEnergy;
+    }
 
     public void UpdateBrain(NeatGenome brain)
     {

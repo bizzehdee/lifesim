@@ -61,6 +61,15 @@ public sealed record Genome
     public double Plasticity { get; init; }
 
     /// <summary>
+    /// Evolvable learning decay in [0, 1]: how fast learned weights fade back toward the germline each
+    /// tick (the stability–plasticity trade-off). 0 keeps learned changes indefinitely; higher values
+    /// forget quickly and lean on the inherited baseline. Together with <see cref="Plasticity"/> this
+    /// puts the <em>shape</em> of the learning rule — not just its rate — under selection. Founders start
+    /// at 0. Only matters when the brain is plastic.
+    /// </summary>
+    public double LearningDecay { get; init; }
+
+    /// <summary>
     /// Evolvable generosity: the fraction of its own energy the organism donates
     /// when it performs a Share action. Under selection this drifts freely — lineages can evolve
     /// toward hoarding (→ 0) or over-sharing (→ 1), whichever the local kin economy favours. The
@@ -100,6 +109,7 @@ public sealed record Genome
         Evasion = Clamp(Evasion, bounds.Evasion),
         Toxicity = Clamp(Toxicity, bounds.Toxicity),
         Plasticity = Clamp(Plasticity, bounds.Plasticity),
+        LearningDecay = Clamp(LearningDecay, bounds.LearningDecay),
         ShareFraction = Clamp(ShareFraction, bounds.ShareFraction),
         CellCount = Clamp(CellCount, bounds.CellCount),
         GermWeight = Clamp(GermWeight, bounds.GermWeight),
@@ -131,6 +141,7 @@ public sealed record Genome
         Evasion = bounds.Evasion.Min,
         Toxicity = bounds.Toxicity.Min,
         Plasticity = bounds.Plasticity.Min,
+        LearningDecay = bounds.LearningDecay.Min,
         ShareFraction = Midpoint(bounds.ShareFraction),
         CellCount = bounds.CellCount.Min,
         GermWeight = Midpoint(bounds.GermWeight),
@@ -168,6 +179,7 @@ public sealed record Genome
             Evasion = bounds.Evasion.Min,
             Toxicity = bounds.Toxicity.Min,
             Plasticity = bounds.Plasticity.Min,
+            LearningDecay = bounds.LearningDecay.Min,
             ShareFraction = Sample(bounds.ShareFraction, prng),
             CellCount = 1.0,
             GermWeight = Sample(bounds.GermWeight, prng),

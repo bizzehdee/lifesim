@@ -429,6 +429,34 @@ public class SimulationWorldTests
     }
 
     [Fact]
+    public void SaveReload_keepsTheGermlineDistinctFromALearnedBrain()
+    {
+        // Once learning diverges the live brain from the germline, save/reload must round-trip both
+        // separately — otherwise reproduction after reload would mutate the learned weights (Lamarckian).
+        var config = SimulationConfig.Default with
+        {
+            InitialPopulation = 40,
+            Mutation = SimulationConfig.Default.Mutation with { TraitMutationRate = 0.0 },
+            TraitBounds = SimulationConfig.Default.TraitBounds with { Plasticity = new TraitBounds.Range(1.0, 1.0) },
+        };
+        var world = SimulationWorld.CreateGenesis(NewWorldState(seed: 4242), config);
+        for (int i = 0; i < 15 && !world.Extinct; i++)
+        {
+            world.Advance();
+        }
+
+        SimulationWorld reloaded = SimulationWorld.FromSnapshot(SnapshotSerializer.Load(SnapshotSerializer.Save(world.ToSnapshot())));
+
+        Organism learner = world.Organisms.Values.First(o =>
+            !o.Brain.Connections.Select(c => c.Weight).SequenceEqual(o.Germline.Connections.Select(c => c.Weight)));
+        Organism reloadedLearner = reloaded.Organisms[learner.Id];
+
+        Assert.Equal(learner.Germline.Connections.Select(c => c.Weight), reloadedLearner.Germline.Connections.Select(c => c.Weight));
+        Assert.Equal(learner.Brain.Connections.Select(c => c.Weight), reloadedLearner.Brain.Connections.Select(c => c.Weight));
+        Assert.NotEqual(reloadedLearner.Brain.Connections.Select(c => c.Weight), reloadedLearner.Germline.Connections.Select(c => c.Weight));
+    }
+
+    [Fact]
     public void Advance_accountsForInclusiveFitness_overALongAbundantRun()
     {
         // Every successful share is classified exactly once (kin-directed vs non-kin) and credits the

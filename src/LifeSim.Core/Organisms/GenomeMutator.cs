@@ -36,6 +36,7 @@ public static class GenomeMutator
             Evasion = Drift(genome.Evasion, bounds.Evasion, config, mutationStream),
             Toxicity = Drift(genome.Toxicity, bounds.Toxicity, config, mutationStream),
             Plasticity = Drift(genome.Plasticity, bounds.Plasticity, config, mutationStream),
+            LearningDecay = Drift(genome.LearningDecay, bounds.LearningDecay, config, mutationStream),
             ShareFraction = Drift(genome.ShareFraction, bounds.ShareFraction, config, mutationStream),
             CellCount = Drift(genome.CellCount, bounds.CellCount, config, mutationStream),
             GermWeight = Drift(genome.GermWeight, bounds.GermWeight, config, mutationStream),

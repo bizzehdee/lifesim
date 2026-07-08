@@ -72,6 +72,9 @@ public sealed record LearningConfig
 
     /// <summary>Hard bound (±) on a learned connection weight, so learning can't blow weights up.</summary>
     public double WeightClamp { get; init; } = 8.0;
+
+    /// <summary>Fraction of the gap back to the germline weight that maximal <c>learning_decay</c> (=1) closes per tick.</summary>
+    public double DecayScale { get; init; } = 0.1;
 }
 
 /// <summary>Metabolism &amp; sensory-tax coefficients.</summary>
@@ -367,6 +370,9 @@ public sealed record TraitBounds
 
     /// <summary>Neural plasticity (within-life learning rate): 0 = fixed brain, 1 = maximal. Founders start at 0.</summary>
     public Range Plasticity { get; init; } = new(0.0, 1.0);
+
+    /// <summary>Learning decay (how fast learned weights fade back to the germline): 0 = never, 1 = maximal. Founders start at 0.</summary>
+    public Range LearningDecay { get; init; } = new(0.0, 1.0);
 
     /// <summary>Generosity bounds: 0 = never donates, 1 = donates all of its energy per Share.</summary>
     public Range ShareFraction { get; init; } = new(0.0, 1.0);

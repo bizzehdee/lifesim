@@ -26,7 +26,7 @@ public static class MetricsExporter
         "energy_min", "energy_avg", "energy_max",
         "avg_size", "avg_speed_capacity", "avg_thermal_center", "avg_thermal_width",
         "avg_env_radius", "avg_org_radius", "avg_sensory_acuity", "avg_metabolic_efficiency",
-        "avg_armour", "avg_evasion", "avg_toxicity", "avg_plasticity", "avg_share_fraction", "avg_cell_count",
+        "avg_armour", "avg_evasion", "avg_toxicity", "avg_plasticity", "avg_learning_decay", "avg_share_fraction", "avg_cell_count",
         "pop_grassland", "pop_desert", "pop_swamp", "pop_ice_sheet",
         "active_event_count",
     ];
@@ -72,6 +72,7 @@ public static class MetricsExporter
             Num(metrics.TraitAverages.Evasion),
             Num(metrics.TraitAverages.Toxicity),
             Num(metrics.TraitAverages.Plasticity),
+            Num(metrics.TraitAverages.LearningDecay),
             Num(metrics.TraitAverages.ShareFraction),
             Num(metrics.TraitAverages.CellCount),
             BiomeCount(metrics, World.Biome.Grassland).ToString(CultureInfo.InvariantCulture),

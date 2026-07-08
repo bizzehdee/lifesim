@@ -125,6 +125,7 @@
               "evasion": { "type": "number" },
               "toxicity": { "type": "number" },
               "plasticity": { "type": "number" },
+              "learning_decay": { "type": "number" },
               "share_fraction": { "type": "number" },
               "cell_count": { "type": "number" },
               "germ_weight": { "type": "number" },
@@ -169,6 +170,7 @@
               }
             }
           },
+          "germline": { "type": ["object", "null"] },
           "last_action": { "type": ["string", "null"] },
           "last_action_result": { "type": "string" },
           "last_birth_tick": { "type": ["integer", "null"], "minimum": 0 }

@@ -68,6 +68,7 @@ public sealed class LineageDetailViewModel : ViewModelBase
         new TraitReading("Evasion", g.Evasion, bounds.Evasion.Min, bounds.Evasion.Max),
         new TraitReading("Toxicity", g.Toxicity, bounds.Toxicity.Min, bounds.Toxicity.Max),
         new TraitReading("Plasticity", g.Plasticity, bounds.Plasticity.Min, bounds.Plasticity.Max),
+        new TraitReading("Learning Decay", g.LearningDecay, bounds.LearningDecay.Min, bounds.LearningDecay.Max),
         new TraitReading("Generosity", g.ShareFraction, bounds.ShareFraction.Min, bounds.ShareFraction.Max),
     ];
 }

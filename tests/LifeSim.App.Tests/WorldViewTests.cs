@@ -222,7 +222,7 @@ public class WorldViewTests
 
         Assert.NotNull(inspector);
         Assert.Equal(organism.Name, inspector.Name);
-        Assert.Equal(13, inspector.Traits.Count); // + Plasticity
+        Assert.Equal(14, inspector.Traits.Count); // + Learning Decay
 
         // Body composition stats (multicellularity): cell count + one entry per cell type.
         Assert.True(inspector.CellCount >= 1.0);
@@ -371,9 +371,9 @@ public class WorldViewTests
         LineageDetailViewModel detail = LineageDetailViewModel.Create(snapshot, dead.OrganismId)!;
         Assert.False(detail.IsAlive);
         Assert.NotNull(detail.DeathTick);
-        Assert.Equal(13, detail.BirthTraits.Count);
+        Assert.Equal(14, detail.BirthTraits.Count);
         Assert.True(detail.HasDeathTraits);
-        Assert.Equal(13, detail.DeathTraits.Count);
+        Assert.Equal(14, detail.DeathTraits.Count);
     }
 
     [Fact]

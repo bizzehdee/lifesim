@@ -14,8 +14,16 @@ public sealed record OrganismSnapshot
     public long Age { get; init; }
     public GenomeSnapshot Genome { get; init; } = new();
 
-    /// <summary>The NEAT genome; node <c>state</c> must round-trip for the save/reload test.</summary>
+    /// <summary>The live NEAT brain; node <c>state</c> must round-trip for the save/reload test.</summary>
     public NeatGenome Brain { get; init; } = new();
+
+    /// <summary>
+    /// The inherited germline brain. Must be stored separately once within-life learning can make the
+    /// live <see cref="Brain"/>'s weights diverge from the germline, so reproduction after reload still
+    /// mutates the true inherited weights. Null in pre-learning snapshots — then it's derived from the
+    /// live brain (valid when they haven't diverged).
+    /// </summary>
+    public NeatGenome? Germline { get; init; }
 
     /// <summary>The action selected last tick; null before an organism's first decision.</summary>
     public OrganismAction? LastAction { get; init; }
@@ -45,6 +53,7 @@ public sealed record OrganismSnapshot
         Age = organism.Age,
         Genome = GenomeSnapshot.From(organism.Genome),
         Brain = organism.Brain,
+        Germline = organism.Germline,
         LastAction = organism.LastAction,
         LastActionResult = organism.LastActionResult,
         LastBirthTick = organism.LastBirthTick,
@@ -54,7 +63,7 @@ public sealed record OrganismSnapshot
     };
 
     public Organism ToOrganism(double? energyCapacity = null) =>
-        new(OrganismId, Genome.ToGenome(), Name, Energy, X, Y, Brain, Age, LastAction, LastActionResult, LastBirthTick, energyCapacity, PredationWins, PredationLosses, HelpGiven);
+        new(OrganismId, Genome.ToGenome(), Name, Energy, X, Y, Brain, Age, LastAction, LastActionResult, LastBirthTick, energyCapacity, PredationWins, PredationLosses, HelpGiven, Germline);
 }
 
 /// <summary>The inheritable trait values, as stored in a snapshot.</summary>
@@ -72,6 +81,7 @@ public sealed record GenomeSnapshot
     public double Evasion { get; init; }
     public double Toxicity { get; init; }
     public double Plasticity { get; init; }
+    public double LearningDecay { get; init; }
     public double ShareFraction { get; init; }
     public double CellCount { get; init; } = 1.0;
     public double GermWeight { get; init; }
@@ -95,6 +105,7 @@ public sealed record GenomeSnapshot
         Evasion = genome.Evasion,
         Toxicity = genome.Toxicity,
         Plasticity = genome.Plasticity,
+        LearningDecay = genome.LearningDecay,
         ShareFraction = genome.ShareFraction,
         CellCount = genome.CellCount,
         GermWeight = genome.GermWeight,
@@ -119,6 +130,7 @@ public sealed record GenomeSnapshot
         Evasion = Evasion,
         Toxicity = Toxicity,
         Plasticity = Plasticity,
+        LearningDecay = LearningDecay,
         ShareFraction = ShareFraction,
         CellCount = CellCount,
         GermWeight = GermWeight,

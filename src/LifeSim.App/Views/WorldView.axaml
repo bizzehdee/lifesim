@@ -23,32 +23,25 @@
 
         <!-- Status bar -->
         <Border Grid.Row="0" Grid.ColumnSpan="3" Padding="12,8" Background="{DynamicResource SystemChromeMediumColor}">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="20">
-                    <TextBlock Text="{Binding Tick, StringFormat='Tick {0}'}" FontWeight="SemiBold" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding Population, StringFormat='Population {0}'}" VerticalAlignment="Center" />
-                    <TextBlock Text="EXTINCT" Foreground="#E5484D" FontWeight="Bold" VerticalAlignment="Center" IsVisible="{Binding Extinct}" />
-                    <ItemsControl ItemsSource="{Binding ActiveEvents}" VerticalAlignment="Center">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" Spacing="6" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="x:String">
-                                <Border Background="#5A3A00" CornerRadius="4" Padding="8,2">
-                                    <TextBlock Text="{Binding}" Foreground="#F5C451" FontWeight="SemiBold" FontSize="12" />
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <CheckBox IsChecked="{Binding NotificationsEnabled}" Content="🔔 Notifications" />
-                    <Button Content="🎨 Colours" Command="{Binding ToggleLegendCommand}" Padding="10,3" />
-                    <Button Content="📊 Statistics" Command="{Binding ToggleStatisticsCommand}" Padding="10,3" />
-                </StackPanel>
-            </Grid>
+            <!-- Slim alert strip: extinction + active world events (tick/population and the panel
+                 buttons now live in the Info sidebar). -->
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <TextBlock Text="EXTINCT" Foreground="#E5484D" FontWeight="Bold" VerticalAlignment="Center" IsVisible="{Binding Extinct}" />
+                <ItemsControl ItemsSource="{Binding ActiveEvents}" VerticalAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="6" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <Border Background="#5A3A00" CornerRadius="4" Padding="8,2">
+                                <TextBlock Text="{Binding}" Foreground="#F5C451" FontWeight="SemiBold" FontSize="12" />
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
         </Border>
 
         <!-- The map (the Fluent exception: full-bleed custom rendering) + zoom overlay -->
@@ -93,6 +86,7 @@
                                 <Button Content="📊 Full statistics" Command="{Binding ToggleStatisticsCommand}" />
                                 <Button Content="🎨 Colours" Command="{Binding ToggleLegendCommand}" />
                             </StackPanel>
+                            <CheckBox IsChecked="{Binding NotificationsEnabled}" Content="🔔 Notifications" Margin="0,4,0,0" />
                         </StackPanel>
 
                         <Border IsVisible="{Binding HasSelection}" BorderThickness="0,1,0,0"

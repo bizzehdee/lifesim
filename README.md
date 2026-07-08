@@ -229,8 +229,11 @@ dotnet run --project src/LifeSim.App.Desktop
 dotnet run --project src/LifeSim.Console -- new --out world.json --seed 42 --width 128 --height 128
 dotnet run --project src/LifeSim.Console -- run --in world.json --out out.json --ticks 1000 --metrics m.csv --metrics-format csv
 
-# Publish the browser (WASM) demo (serve artifacts/wasm/wwwroot over HTTP with COOP/COEP headers)
-dotnet publish src/LifeSim.App.Browser -c Release -o artifacts/wasm
+# Publish the browser (WASM) demo. -p:WasmBuildNative=true relinks the runtime to include SkiaSharp's
+# native lib (Avalonia's renderer) — without it the page dies with a SkiaSharp TypeInitialization error.
+# Needs the wasm-tools workload: run `dotnet workload install wasm-tools` once if publish complains.
+# Serve artifacts/wasm/wwwroot over any static HTTP server — the app is single-threaded, so no COOP/COEP.
+dotnet publish src/LifeSim.App.Browser -c Release -p:WasmBuildNative=true -o artifacts/wasm
 
 # Formatting (CI enforces this)
 dotnet format LifeSim.slnx --verify-no-changes

@@ -21,7 +21,16 @@ public sealed class Organism
 
     public Genome Genome { get; }
 
+    /// <summary>The live, working brain used for decisions each tick (its node states advance; under lifetime learning its weights may also change within life).</summary>
     public NeatGenome Brain { get; private set; }
+
+    /// <summary>
+    /// The inherited germline brain — the topology/weights this organism was born with, node-state
+    /// zeroed. Reproduction mutates <em>this</em>, not the live brain, so learned changes are not
+    /// inherited (Darwinian; the Baldwin effect works through selection on the germline). With no
+    /// lifetime learning its weights equal <see cref="Brain"/>'s.
+    /// </summary>
+    public NeatGenome Germline { get; }
 
     public double Energy { get; private set; }
 
@@ -62,7 +71,7 @@ public sealed class Organism
         long id, Genome genome, string name, double energy, int x, int y, NeatGenome brain,
         long age = 0, OrganismAction? lastAction = null, ActionResult lastActionResult = ActionResult.None,
         long? lastBirthTick = null, double? energyCapacity = null, long predationWins = 0, long predationLosses = 0,
-        double helpGiven = 0.0)
+        double helpGiven = 0.0, NeatGenome? germline = null)
     {
         ArgumentNullException.ThrowIfNull(genome);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -76,6 +85,7 @@ public sealed class Organism
         X = x;
         Y = y;
         Brain = brain;
+        Germline = (germline ?? brain).ResetState(); // inherited weights, always node-state-zeroed
         Age = age;
         LastAction = lastAction;
         LastActionResult = lastActionResult;

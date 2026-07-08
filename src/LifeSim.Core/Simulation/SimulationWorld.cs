@@ -415,7 +415,7 @@ public sealed class SimulationWorld
                 offspringGenome.CellCount, birth.Genome.CellCount, Config.Multicellular);
             offspringGenome = (offspringGenome with { CellCount = biasedCells }).Clamped(Config.TraitBounds);
 
-            NeatGenome offspringBrain = NeatMutator.Mutate(birth.Brain, Config.Mutation, mutation, _innovationIdAllocator);
+            NeatGenome offspringBrain = NeatMutator.Mutate(birth.Germline, Config.Mutation, mutation, _innovationIdAllocator);
             Organism offspring = OrganismFactory.Create(
                 birth.OffspringId, offspringGenome, Config.Naming, birth.OffspringEnergy, birth.X, birth.Y, offspringBrain,
                 Morphology.Capacity(offspringGenome, Config.Multicellular));
@@ -772,7 +772,7 @@ public sealed class SimulationWorld
 
         _occupancy.Set(freeTile.Value.X, freeTile.Value.Y, offspringId);
         pendingBirths.Add(new PendingBirth(
-            offspringId, organism.Id, organism.Genome, ResetBrainState(organism.Brain), offspringEnergy,
+            offspringId, organism.Id, organism.Genome, organism.Germline, offspringEnergy,
             freeTile.Value.X, freeTile.Value.Y, currentTick, parentLineage.LineageId, parentLineage.GenerationDepth + 1));
 
         return ActionResult.Success;
@@ -813,10 +813,6 @@ public sealed class SimulationWorld
             }
         }
     }
-
-    /// <summary>Node state is dynamic organism state, initialized to zero at birth — topology/weights are inherited unchanged.</summary>
-    private static NeatGenome ResetBrainState(NeatGenome brain) =>
-        brain with { Nodes = brain.Nodes.Select(n => n with { State = 0.0 }).ToList() };
 
     private void ScatterGenesisPopulation()
     {
@@ -1178,6 +1174,6 @@ public sealed class SimulationWorld
     }
 
     private sealed record PendingBirth(
-        long OffspringId, long ParentId, Genome Genome, NeatGenome Brain, double OffspringEnergy,
+        long OffspringId, long ParentId, Genome Genome, NeatGenome Germline, double OffspringEnergy,
         int X, int Y, long BirthTick, long LineageId, int GenerationDepth);
 }

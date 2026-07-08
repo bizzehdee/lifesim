@@ -12,6 +12,9 @@ public sealed record NeatGenome
     public IReadOnlyList<ConnectionGene> Connections { get; init; } = [];
     public string NetworkType { get; init; } = "recurrent";
 
+    /// <summary>A copy with every node's dynamic <see cref="NodeGene.State"/> zeroed — topology and weights unchanged (a fresh, un-activated brain).</summary>
+    public NeatGenome ResetState() => this with { Nodes = Nodes.Select(n => n with { State = 0.0 }).ToList() };
+
     // The compiler-generated record equality would compare Nodes/Connections by list reference
     // (List<T> doesn't override Equals), so two structurally-identical genomes deserialized into
     // separate list instances would compare unequal. Override with sequence equality instead.

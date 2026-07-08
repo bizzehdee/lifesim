@@ -19,6 +19,19 @@ public class OrganismTests
     }
 
     [Fact]
+    public void Germline_isTheStateZeroedInheritedBrain_matchingLiveWeights()
+    {
+        var organism = new Organism(1, NewGenome(), "Test-Test-Organism", 50.0, 0, 0, NewBrain());
+
+        // Germline is always node-state-zeroed (a fresh brain to hand to offspring)...
+        Assert.All(organism.Germline.Nodes, n => Assert.Equal(0.0, n.State));
+        // ...and, with no lifetime learning, its weights equal the live brain's.
+        Assert.Equal(
+            organism.Brain.Connections.Select(c => c.Weight),
+            organism.Germline.Connections.Select(c => c.Weight));
+    }
+
+    [Fact]
     public void Constructor_clampsNegativeInitialEnergyToZero()
     {
         var organism = new Organism(1, NewGenome(), "Test-Test-Organism", -10.0, 0, 0, NewBrain());

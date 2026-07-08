@@ -82,6 +82,7 @@ public sealed record GenomeSnapshot
     public double Toxicity { get; init; }
     public double Plasticity { get; init; }
     public double LearningDecay { get; init; }
+    public double Sexuality { get; init; }
     public double ShareFraction { get; init; }
     public double CellCount { get; init; } = 1.0;
     public double GermWeight { get; init; }
@@ -106,6 +107,7 @@ public sealed record GenomeSnapshot
         Toxicity = genome.Toxicity,
         Plasticity = genome.Plasticity,
         LearningDecay = genome.LearningDecay,
+        Sexuality = genome.Sexuality,
         ShareFraction = genome.ShareFraction,
         CellCount = genome.CellCount,
         GermWeight = genome.GermWeight,
@@ -131,6 +133,7 @@ public sealed record GenomeSnapshot
         Toxicity = Toxicity,
         Plasticity = Plasticity,
         LearningDecay = LearningDecay,
+        Sexuality = Sexuality,
         ShareFraction = ShareFraction,
         CellCount = CellCount,
         GermWeight = GermWeight,

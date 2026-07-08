@@ -126,6 +126,7 @@
               "toxicity": { "type": "number" },
               "plasticity": { "type": "number" },
               "learning_decay": { "type": "number" },
+              "sexuality": { "type": "number" },
               "share_fraction": { "type": "number" },
               "cell_count": { "type": "number" },
               "germ_weight": { "type": "number" },

@@ -192,6 +192,7 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
                 new TraitReading("Toxicity", genome.Toxicity, bounds.Toxicity.Min, bounds.Toxicity.Max),
                 new TraitReading("Plasticity", genome.Plasticity, bounds.Plasticity.Min, bounds.Plasticity.Max),
                 new TraitReading("Learning Decay", genome.LearningDecay, bounds.LearningDecay.Min, bounds.LearningDecay.Max),
+                new TraitReading("Sexuality", genome.Sexuality, bounds.Sexuality.Min, bounds.Sexuality.Max),
                 new TraitReading("Generosity", genome.ShareFraction, bounds.ShareFraction.Min, bounds.ShareFraction.Max),
             ],
             Economy = new EconomyBreakdown(

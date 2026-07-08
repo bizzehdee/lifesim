@@ -70,6 +70,15 @@ public sealed record Genome
     public double LearningDecay { get; init; }
 
     /// <summary>
+    /// Evolvable propensity to reproduce sexually in [0, 1]: 0 is obligate asexual cloning (today's
+    /// behaviour), higher values make the organism attempt biparental reproduction — finding a willing
+    /// adjacent mate and recombining germlines — when it reproduces. Founders start at 0 (sex is evolved
+    /// in, like the defensive/learning traits), so an asexual baseline is always available and sex has to
+    /// earn its keep against the two-fold cost. Falls back to cloning when no willing mate is adjacent.
+    /// </summary>
+    public double Sexuality { get; init; }
+
+    /// <summary>
     /// Evolvable generosity: the fraction of its own energy the organism donates
     /// when it performs a Share action. Under selection this drifts freely — lineages can evolve
     /// toward hoarding (→ 0) or over-sharing (→ 1), whichever the local kin economy favours. The
@@ -110,6 +119,7 @@ public sealed record Genome
         Toxicity = Clamp(Toxicity, bounds.Toxicity),
         Plasticity = Clamp(Plasticity, bounds.Plasticity),
         LearningDecay = Clamp(LearningDecay, bounds.LearningDecay),
+        Sexuality = Clamp(Sexuality, bounds.Sexuality),
         ShareFraction = Clamp(ShareFraction, bounds.ShareFraction),
         CellCount = Clamp(CellCount, bounds.CellCount),
         GermWeight = Clamp(GermWeight, bounds.GermWeight),
@@ -124,7 +134,7 @@ public sealed record Genome
     /// Mid-range genome: the midpoint of every bound, except <see cref="CellCount"/> which starts at 1
     /// (unicellular, not the bound midpoint) with equal specialisation-weight midpoints, so the single
     /// cell is a generalist, and the evolved-in capabilities (metabolic efficiency, armour, evasion,
-    /// toxicity, plasticity) which start at their baseline (min) so they are earned by selection. Used
+    /// toxicity, plasticity, sexuality) which start at their baseline (min) so they are earned by selection. Used
     /// as a neutral baseline; genesis founders use <see cref="Random"/>.
     /// </summary>
     public static Genome MidRange(TraitBounds bounds) => new()
@@ -142,6 +152,7 @@ public sealed record Genome
         Toxicity = bounds.Toxicity.Min,
         Plasticity = bounds.Plasticity.Min,
         LearningDecay = bounds.LearningDecay.Min,
+        Sexuality = bounds.Sexuality.Min,
         ShareFraction = Midpoint(bounds.ShareFraction),
         CellCount = bounds.CellCount.Min,
         GermWeight = Midpoint(bounds.GermWeight),
@@ -157,7 +168,7 @@ public sealed record Genome
     /// founding gene pool rather than a clone army of identical <see cref="MidRange"/> founders, so
     /// the world feels alive and diverse from tick 0. Cell count is forced to 1 (founders are
     /// unicellular and evolve up) and the evolved-in capabilities (metabolic efficiency, armour, evasion,
-    /// toxicity, plasticity) to baseline 0 — earned by selection. Draws come from the supplied PRNG in a
+    /// toxicity, plasticity, sexuality) to baseline 0 — earned by selection. Draws come from the supplied PRNG in a
     /// fixed trait order.
     /// </summary>
     public static Genome Random(TraitBounds bounds, Prng prng)
@@ -180,6 +191,7 @@ public sealed record Genome
             Toxicity = bounds.Toxicity.Min,
             Plasticity = bounds.Plasticity.Min,
             LearningDecay = bounds.LearningDecay.Min,
+            Sexuality = bounds.Sexuality.Min,
             ShareFraction = Sample(bounds.ShareFraction, prng),
             CellCount = 1.0,
             GermWeight = Sample(bounds.GermWeight, prng),

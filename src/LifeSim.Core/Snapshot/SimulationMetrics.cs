@@ -153,6 +153,9 @@ public sealed record TraitAverages
     /// <summary>Mean learning decay — the evolved stability–plasticity balance (how fast learned weights fade).</summary>
     public double LearningDecay { get; init; }
 
+    /// <summary>Mean sexuality — tracks whether the population is evolving toward biparental reproduction.</summary>
+    public double Sexuality { get; init; }
+
     /// <summary>Mean evolvable generosity — tracks whether the population drifts toward hoarding or over-sharing.</summary>
     public double ShareFraction { get; init; }
 

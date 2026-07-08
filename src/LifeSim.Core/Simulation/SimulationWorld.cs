@@ -991,7 +991,7 @@ public sealed class SimulationWorld
 
         double energyMin = 0.0, energyMax = 0.0, energySum = 0.0;
         double sumSize = 0, sumSpeed = 0, sumThermalC = 0, sumThermalW = 0, sumEnv = 0, sumOrg = 0, sumAcuity = 0, sumEfficiency = 0, sumShare = 0, sumCells = 0;
-        double sumArmour = 0, sumEvasion = 0, sumToxicity = 0, sumHelp = 0, sumPlasticity = 0, sumLearningDecay = 0;
+        double sumArmour = 0, sumEvasion = 0, sumToxicity = 0, sumHelp = 0, sumPlasticity = 0, sumLearningDecay = 0, sumSexuality = 0;
 
         var biomeCounts = new Dictionary<Biome, long>
         {
@@ -1014,6 +1014,7 @@ public sealed class SimulationWorld
         var toxicityBuckets = new int[HistogramBucketCount];
         var plasticityBuckets = new int[HistogramBucketCount];
         var learningDecayBuckets = new int[HistogramBucketCount];
+        var sexualityBuckets = new int[HistogramBucketCount];
         var shareBuckets = new int[HistogramBucketCount];
         var cellBuckets = new int[HistogramBucketCount];
 
@@ -1049,6 +1050,7 @@ public sealed class SimulationWorld
             sumToxicity += g.Toxicity;
             sumPlasticity += g.Plasticity;
             sumLearningDecay += g.LearningDecay;
+            sumSexuality += g.Sexuality;
             sumShare += g.ShareFraction;
             sumCells += Morphology.CellCount(g, Config.Multicellular);
 
@@ -1067,6 +1069,7 @@ public sealed class SimulationWorld
             toxicityBuckets[BucketIndex(g.Toxicity, bounds.Toxicity)]++;
             plasticityBuckets[BucketIndex(g.Plasticity, bounds.Plasticity)]++;
             learningDecayBuckets[BucketIndex(g.LearningDecay, bounds.LearningDecay)]++;
+            sexualityBuckets[BucketIndex(g.Sexuality, bounds.Sexuality)]++;
             shareBuckets[BucketIndex(g.ShareFraction, bounds.ShareFraction)]++;
             cellBuckets[BucketIndex(Morphology.CellCount(g, Config.Multicellular), bounds.CellCount)]++;
         }
@@ -1130,6 +1133,7 @@ public sealed class SimulationWorld
                 Toxicity = Average(sumToxicity),
                 Plasticity = Average(sumPlasticity),
                 LearningDecay = Average(sumLearningDecay),
+                Sexuality = Average(sumSexuality),
                 ShareFraction = Average(sumShare),
                 CellCount = Average(sumCells),
             },
@@ -1148,6 +1152,7 @@ public sealed class SimulationWorld
                 Histogram("toxicity", bounds.Toxicity, toxicityBuckets),
                 Histogram("plasticity", bounds.Plasticity, plasticityBuckets),
                 Histogram("learning_decay", bounds.LearningDecay, learningDecayBuckets),
+                Histogram("sexuality", bounds.Sexuality, sexualityBuckets),
                 Histogram("share_fraction", bounds.ShareFraction, shareBuckets),
                 Histogram("cell_count", bounds.CellCount, cellBuckets),
             ],

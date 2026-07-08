@@ -106,6 +106,7 @@ public static class GlobalStatistics
                 new StatRow("Toxicity", Num(m.TraitAverages.Toxicity)),
                 new StatRow("Plasticity", Num(m.TraitAverages.Plasticity)),
                 new StatRow("Learning decay", Num(m.TraitAverages.LearningDecay)),
+                new StatRow("Sexuality", Num(m.TraitAverages.Sexuality)),
                 new StatRow("Generosity", Num(m.TraitAverages.ShareFraction)),
             ]));
         }

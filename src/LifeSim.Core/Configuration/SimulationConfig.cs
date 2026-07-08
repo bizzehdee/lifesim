@@ -374,6 +374,9 @@ public sealed record TraitBounds
     /// <summary>Learning decay (how fast learned weights fade back to the germline): 0 = never, 1 = maximal. Founders start at 0.</summary>
     public Range LearningDecay { get; init; } = new(0.0, 1.0);
 
+    /// <summary>Propensity to reproduce sexually: 0 = obligate asexual (clone), 1 = always seek a mate. Founders start at 0.</summary>
+    public Range Sexuality { get; init; } = new(0.0, 1.0);
+
     /// <summary>Generosity bounds: 0 = never donates, 1 = donates all of its energy per Share.</summary>
     public Range ShareFraction { get; init; } = new(0.0, 1.0);
 

@@ -230,6 +230,24 @@
                         </ItemsControl>
                     </StackPanel>
 
+                    <!-- Kin-selection trend: cumulative kin-directed vs non-kin sharing over time -->
+                    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,14" IsVisible="{Binding HasSharingTrend}">
+                        <TextBlock Text="Kin selection — kin-directed vs non-kin sharing over time" FontWeight="SemiBold" FontSize="13" Opacity="0.85" />
+                        <Border CornerRadius="4" ClipToBounds="True" Height="90" Background="{DynamicResource SystemChromeLowColor}">
+                            <views:CompositionChartControl Chart="{Binding SharingTrendChart}" />
+                        </Border>
+                        <StackPanel Orientation="Horizontal" Spacing="14">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Border Width="12" Height="12" CornerRadius="2" VerticalAlignment="Center" Background="{Binding KinShareSwatch}" />
+                                <TextBlock Text="kin-directed" FontSize="12" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Border Width="12" Height="12" CornerRadius="2" VerticalAlignment="Center" Background="{Binding NonKinShareSwatch}" />
+                                <TextBlock Text="non-kin" FontSize="12" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+
                     <ScrollViewer Padding="0">
                         <ItemsControl ItemsSource="{Binding Statistics}" Margin="0,0,16,0">
                             <ItemsControl.ItemTemplate>

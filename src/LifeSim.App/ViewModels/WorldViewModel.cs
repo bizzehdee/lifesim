@@ -1,3 +1,4 @@
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LifeSim.App.Presentation;
@@ -148,6 +149,26 @@ public partial class WorldViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hasFoundingTypeBreakdown;
 
+    // Kin-selection trend: cumulative kin-directed vs non-kin shares over time. Reuses the composition
+    // chart (two bands) — a rising kin-directed band means sharing is becoming kin-biased (kin selection).
+    private readonly List<FoundingTypeSample> _shareHistory = [];
+    private long _cumulativeKinShares;
+    private long _cumulativeNonKinShares;
+    private long _lastShareTick = long.MinValue;
+
+    /// <summary>Stacked-area chart of cumulative kin-directed vs non-kin shares over time (null until sharing happens).</summary>
+    [ObservableProperty]
+    private CompositionChart? _sharingTrendChart;
+
+    /// <summary>True once any sharing has occurred — gates the kin-selection trend view.</summary>
+    [ObservableProperty]
+    private bool _hasSharingTrend;
+
+    /// <summary>Legend swatches for the sharing-trend chart, from the same colour map as its bands.</summary>
+    public IBrush KinShareSwatch { get; } = FoundingTypeComposition.Brush("kin-directed");
+
+    public IBrush NonKinShareSwatch { get; } = FoundingTypeComposition.Brush("non-kin");
+
     private readonly EventWatcher _eventWatcher = new();
 
     /// <summary>Whether in-app notifications are shown; toggleable live during a run. When off, frames are still folded into the watcher (so no backlog piles up), but nothing is raised.</summary>
@@ -259,6 +280,49 @@ public partial class WorldViewModel : ViewModelBase
         FoundingTypeChart = FoundingTypeComposition.Chart(_foundingHistory);
     }
 
+    // Accumulate cumulative kin-directed vs non-kin shares into a two-band composition over time. A
+    // rising kin-directed band = sharing is becoming kin-biased, i.e. kin selection at work.
+    private void UpdateSharingTrend(WorldSnapshot? value)
+    {
+        if (value?.Metrics is null)
+        {
+            _shareHistory.Clear();
+            _cumulativeKinShares = 0;
+            _cumulativeNonKinShares = 0;
+            _lastShareTick = long.MinValue;
+            SharingTrendChart = null;
+            HasSharingTrend = false;
+            return;
+        }
+
+        if (value.Tick < _lastShareTick)
+        {
+            _shareHistory.Clear();
+            _cumulativeKinShares = 0;
+            _cumulativeNonKinShares = 0;
+        }
+
+        if (value.Tick != _lastShareTick)
+        {
+            _cumulativeKinShares += value.Metrics.KinDirectedShares;
+            _cumulativeNonKinShares += value.Metrics.NonKinShares;
+            _shareHistory.Add(new FoundingTypeSample(value.Tick, new Dictionary<string, long>
+            {
+                ["kin-directed"] = _cumulativeKinShares,
+                ["non-kin"] = _cumulativeNonKinShares,
+            }));
+            if (_shareHistory.Count > MaxFoundingHistory)
+            {
+                _shareHistory.RemoveAt(0);
+            }
+
+            _lastShareTick = value.Tick;
+        }
+
+        HasSharingTrend = _cumulativeKinShares + _cumulativeNonKinShares > 0;
+        SharingTrendChart = FoundingTypeComposition.Chart(_shareHistory);
+    }
+
     private void RebuildLineageGraph()
     {
         LineageGraph = Snapshot is null || _lineageFocusId is not { } id
@@ -311,6 +375,7 @@ public partial class WorldViewModel : ViewModelBase
         }
 
         UpdateFoundingTypes(value);
+        UpdateSharingTrend(value);
         Glance = value is null ? [] : GlobalStatistics.Glance(value); // cheap headline summary, always live
 
         OnPropertyChanged(nameof(Tick));

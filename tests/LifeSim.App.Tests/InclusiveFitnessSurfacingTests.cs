@@ -34,6 +34,24 @@ public class InclusiveFitnessSurfacingTests
     }
 
     [Fact]
+    public void WorldViewModel_buildsTheKinSelectionTrend_afterSharing()
+    {
+        var world = SimulationWorld.CreateGenesis(
+            new WorldState { Seed = 909090, Width = 64, Height = 64 },
+            SimulationConfig.Default with { InitialPopulation = 40 });
+        var vm = new WorldViewModel();
+        for (int i = 0; i < 150 && !world.Extinct; i++)
+        {
+            world.Advance();
+            vm.LoadSnapshot(world.ToSnapshot());
+        }
+
+        Assert.True(vm.HasSharingTrend);
+        Assert.NotNull(vm.SharingTrendChart);
+        Assert.Contains("kin-directed", vm.SharingTrendChart!.Types);
+    }
+
+    [Fact]
     public void GlobalStatistics_hasAKinSelectionSection()
     {
         var world = SimulationWorld.CreateGenesis(

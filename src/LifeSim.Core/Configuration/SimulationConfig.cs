@@ -332,6 +332,21 @@ public sealed record ReproductionConfig
     public double ReproductionBaseCost { get; init; } = 3.0;  // per unit Size (Phase 12 calibration; was 10.0)
     public double OffspringEnergyFraction { get; init; } = 0.5;
     public int ReproductionCooldownTicks { get; init; } = 3;
+
+    /// <summary>
+    /// When two parents reproduce sexually, whether the reproduction cost is split between them (true —
+    /// total energy spent matches an asexual birth, isolating the genetic two-fold cost of sex) or each
+    /// parent pays the full cost (false — an extra energetic tax that makes sex harder to select).
+    /// Offspring energy is unaffected. Only matters once the <c>Sexuality</c> trait evolves above 0.
+    /// </summary>
+    public bool SplitReproductionCostAcrossParents { get; init; } = true;
+
+    /// <summary>
+    /// Chebyshev radius searched for a willing mate during sexual reproduction (1 = the immediate
+    /// neighbourhood). Among all willing, ready neighbours in range the mate is chosen deterministically
+    /// by lowest organism id; if none is found the organism falls back to asexual cloning.
+    /// </summary>
+    public int MateSearchRadius { get; init; } = 1;
 }
 
 /// <summary>Trait/topology mutation controls.</summary>

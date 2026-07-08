@@ -4,9 +4,9 @@ using LifeSim.Core.Snapshot;
 namespace LifeSim.App.Presentation;
 
 /// <summary>
-/// One row of the whole-simulation leaderboard. "Success" is a weighted descendant
-/// score — <c>children + 0.5·grandchildren + 0.25·great-grandchildren</c> — tie-broken by lifespan
-/// then id. Covers every organism that ever lived, alive or dead; all are named via the deterministic
+/// One row of the whole-simulation leaderboard. "Success" is a composite of weighted descendants,
+/// reproductive rate, and longevity (see <see cref="LineageScore"/>) — tie-broken by lifespan then id.
+/// Covers every organism that ever lived, alive or dead; all are named via the deterministic
 /// <see cref="OrganismNamer"/> (names are a pure function of id, so dead organisms are named too).
 /// </summary>
 public sealed record RankingEntry(
@@ -19,38 +19,7 @@ public static class RankingBuilder
     {
         ArgumentNullException.ThrowIfNull(snapshot);
 
-        // Parent links, and the weighted descendant score computed by walking up to 3 ancestors from
-        // each organism (O(n)): each organism adds 1 to its parent, 0.5 to its grandparent, 0.25 to
-        // its great-grandparent — i.e. children + 0.5·grandchildren + 0.25·great-grandchildren.
-        var parentOf = new Dictionary<long, long>();
-        var directChildren = new Dictionary<long, long>();
-        foreach (LineageSnapshot l in snapshot.Lineages)
-        {
-            if (l.ParentId is { } parent)
-            {
-                parentOf[l.OrganismId] = parent;
-                directChildren[parent] = directChildren.GetValueOrDefault(parent) + 1;
-            }
-        }
-
-        var score = new Dictionary<long, double>();
-        foreach (LineageSnapshot l in snapshot.Lineages)
-        {
-            if (!parentOf.TryGetValue(l.OrganismId, out long p1))
-            {
-                continue;
-            }
-
-            score[p1] = score.GetValueOrDefault(p1) + 1.0;
-            if (parentOf.TryGetValue(p1, out long p2))
-            {
-                score[p2] = score.GetValueOrDefault(p2) + 0.5;
-                if (parentOf.TryGetValue(p2, out long p3))
-                {
-                    score[p3] = score.GetValueOrDefault(p3) + 0.25;
-                }
-            }
-        }
+        (Dictionary<long, double> descendants, Dictionary<long, long> directChildren) = LineageScore.Lineage(snapshot);
 
         var living = snapshot.Organisms.Select(o => o.OrganismId).ToHashSet();
         // HelpGiven (indirect fitness) is a live-organism tally — dead organisms' is unknown, shown as 0.
@@ -58,13 +27,18 @@ public static class RankingBuilder
         long now = snapshot.Tick;
 
         return snapshot.Lineages
-            .Select(l => new
+            .Select(l =>
             {
-                Lineage = l,
-                Score = score.GetValueOrDefault(l.OrganismId),
-                Children = directChildren.GetValueOrDefault(l.OrganismId),
-                Lifespan = Math.Max(0, (l.DeathTick ?? now) - l.BirthTick),
-                Alive = living.Contains(l.OrganismId),
+                long lifespan = Math.Max(0, (l.DeathTick ?? now) - l.BirthTick);
+                long children = directChildren.GetValueOrDefault(l.OrganismId);
+                return new
+                {
+                    Lineage = l,
+                    Score = LineageScore.Score(descendants.GetValueOrDefault(l.OrganismId), children, lifespan),
+                    Children = children,
+                    Lifespan = lifespan,
+                    Alive = living.Contains(l.OrganismId),
+                };
             })
             .OrderByDescending(x => x.Score)
             .ThenByDescending(x => x.Lifespan)

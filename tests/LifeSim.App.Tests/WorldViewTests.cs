@@ -313,11 +313,42 @@ public class WorldViewTests
         };
         var snapshot = new WorldSnapshot { Lineages = lineages };
 
+        // The weighted-descendant component: 2 children*1 + 1 grandchild*0.5 + 1 gg*0.25 = 2.75.
+        (Dictionary<long, double> descendants, Dictionary<long, long> children) = LineageScore.Lineage(snapshot);
+        Assert.Equal(2.75, descendants[1], precision: 6);
+        Assert.Equal(2, children[1]);
+
         IReadOnlyList<RankingEntry> ranking = RankingBuilder.Build(snapshot);
-        RankingEntry root = ranking.Single(r => r.OrganismId == 1);
-        Assert.Equal(2.75, root.Score, precision: 6);
-        Assert.Equal(2, root.Children);
-        Assert.Equal(1, ranking[0].OrganismId); // root ranks first
+        Assert.Equal(2, ranking.Single(r => r.OrganismId == 1).Children);
+        Assert.Equal(1, ranking[0].OrganismId); // root (most descendants + highest rate) ranks first
+    }
+
+    [Fact]
+    public void LineageScore_offspringRate_beatsAHigherButSlowerBrood()
+    {
+        // 10 offspring in 50 ticks vs 15 offspring in 200 ticks: the faster breeder wins despite fewer
+        // total offspring (reproductive rate dominates a larger, slower brood).
+        double fast = LineageScore.Score(weightedDescendants: 10, directChildren: 10, lifespan: 50);
+        double slow = LineageScore.Score(weightedDescendants: 15, directChildren: 15, lifespan: 200);
+        Assert.True(fast > slow, $"fast {fast} should beat slow {slow}");
+    }
+
+    [Fact]
+    public void LineageScore_longevity_breaksTiesWhenReproductionIsEqual()
+    {
+        // With reproduction equal (here none), a longer life scores higher.
+        Assert.True(
+            LineageScore.Score(0, 0, lifespan: 200) > LineageScore.Score(0, 0, lifespan: 100),
+            "a longer lifespan should outscore a shorter one when offspring are equal");
+    }
+
+    [Fact]
+    public void LineageScore_offspring_outweighLongevity()
+    {
+        // A single child is worth more than a very long childless life.
+        double oneChild = LineageScore.Score(weightedDescendants: 1, directChildren: 1, lifespan: 100);
+        double longLife = LineageScore.Score(weightedDescendants: 0, directChildren: 0, lifespan: 1000);
+        Assert.True(oneChild > longLife, $"one child {oneChild} should outweigh a long childless life {longLife}");
     }
 
     [Fact]

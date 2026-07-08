@@ -76,8 +76,10 @@ The right sidebar (drag its edge to resize) has three tabs:
 - **Info** — an *at-a-glance* summary (tick, population, generation, births/deaths, …) and, when you've
   selected an organism, its full **inspector**: identity and lineage, physical state, its genome traits
   against their bounds, the per-tick energy breakdown, its action probabilities, and its brain graph.
-- **Ranking** — the all-time leaderboard by *descendant score* (children + ½ grandchildren + …), alive
-  or dead, with how much each has helped kin.
+- **Ranking** — the all-time leaderboard by a *success score*: weighted descendants (children +
+  ½ grandchildren + ¼ great-grandchildren) plus a reward for reproducing *fast* (offspring per tick) and
+  a smaller one for *living long* — so a quick breeder can outrank a larger, slower dynasty, offspring
+  always outweigh longevity, and a longer life breaks ties. Alive or dead, with how much each helped kin.
 - **Organisms** — every living organism, sortable by age, size, children, score, brain size, or prey
   count. Click one to jump to it.
 

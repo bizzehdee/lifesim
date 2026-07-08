@@ -63,6 +63,9 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
     public long PredationWins => Organism.PredationWins;
     public long PredationLosses => Organism.PredationLosses;
 
+    /// <summary>Lifetime relatedness-weighted energy donated — this organism's indirect-fitness (kin-help) contribution.</summary>
+    public double HelpGiven => Organism.HelpGiven;
+
     // Physical state.
     public int X => Organism.X;
     public int Y => Organism.Y;

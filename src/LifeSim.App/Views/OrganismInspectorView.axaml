@@ -24,7 +24,9 @@
             <TextBlock FontSize="12" Opacity="0.75" IsVisible="{Binding ParentName, Converter={x:Static ObjectConverters.IsNotNull}}"
                        Text="{Binding ParentName, StringFormat='parent name: {0} (alive)'}" />
             <TextBlock FontSize="12" Opacity="0.75"
-                       Text="{Binding ChildCount, StringFormat='children: {0}'}" />
+                       Text="{Binding ChildCount, StringFormat='children (direct): {0}'}" />
+            <TextBlock FontSize="12" Opacity="0.75"
+                       Text="{Binding HelpGiven, StringFormat='help given to kin (indirect): {0:F1}'}" />
             <TextBlock FontSize="12" Opacity="0.75"
                        Text="{Binding GenerationDepth, StringFormat='generation {0}'}" />
             <TextBlock FontSize="12" Opacity="0.75"

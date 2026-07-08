@@ -10,7 +10,7 @@ namespace LifeSim.App.Presentation;
 /// <see cref="OrganismNamer"/> (names are a pure function of id, so dead organisms are named too).
 /// </summary>
 public sealed record RankingEntry(
-    int Rank, long OrganismId, string Name, double Score, long Children, long Lifespan, int Generation, bool IsAlive);
+    int Rank, long OrganismId, string Name, double Score, long Children, long Lifespan, int Generation, bool IsAlive, double HelpGiven);
 
 /// <summary>Ranks every organism in the run (from the all-time lineage records) most-to-least successful.</summary>
 public static class RankingBuilder
@@ -53,6 +53,8 @@ public static class RankingBuilder
         }
 
         var living = snapshot.Organisms.Select(o => o.OrganismId).ToHashSet();
+        // HelpGiven (indirect fitness) is a live-organism tally — dead organisms' is unknown, shown as 0.
+        var helpGiven = snapshot.Organisms.ToDictionary(o => o.OrganismId, o => o.HelpGiven);
         long now = snapshot.Tick;
 
         return snapshot.Lineages
@@ -76,7 +78,8 @@ public static class RankingBuilder
                 x.Children,
                 x.Lifespan,
                 x.Lineage.GenerationDepth,
-                x.Alive))
+                x.Alive,
+                helpGiven.GetValueOrDefault(x.Lineage.OrganismId)))
             .ToList();
     }
 }

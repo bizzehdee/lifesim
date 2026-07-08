@@ -53,11 +53,12 @@ Every tick resolves in a fixed order: **sense → decide → act → pay metabol
   - Each of armour, evasion, and toxicity starts at zero and must be evolved, and each costs metabolic upkeep to maintain — so defence trades off against everything else energy buys.
 
 ## 7. Life cycle & evolution
-1. **Reproduction is asexual**: it costs energy proportional to body mass, is gated by a cooldown, and places the offspring on a free adjacent tile.
+1. **Reproduction starts asexual**: it costs energy proportional to body mass, is gated by a cooldown, and places the offspring on a free adjacent tile.
 2. Offspring **inherit the parent's genome and brain, with mutation** — traits drift a little, and the brain may gain or lose structure.
-3. There is **no designer-set fitness**. What survives and breeds, spreads. Selection is entirely emergent from the energy economy.
-4. Every organism gets a **name** and a tracked **lineage** (parent, generation depth, descendants).
-5. **Senescence** (aging) is on by default: past an onset age, an organism pays a metabolic tax that grows with age, so no lineage is immortal. It can be switched off per world.
+3. **Sexual reproduction is an evolvable trait.** A lineage can evolve a *sexuality* leaning (founders start at zero — pure cloning). When it reproduces, an organism with a high enough sexuality seeks a willing, ready neighbour to mate with; the offspring is then a **50/50 blend of both parents** (each trait averaged, the two brains recombined by shared ancestry) with the usual mutation on top. No willing mate nearby → it falls back to cloning. Sex carries the two-fold cost — a partner spends energy on a half-related child instead of a full clone — so it only spreads if the churn of a changing world (plagues, blights, climate swings, predator–prey arms races) rewards the variety it produces.
+4. There is **no designer-set fitness**. What survives and breeds, spreads. Selection is entirely emergent from the energy economy.
+5. Every organism gets a **name** and a tracked **lineage** (parent — and, for a sexual birth, the co-parent — generation depth, descendants).
+6. **Senescence** (aging) is on by default: past an onset age, an organism pays a metabolic tax that grows with age, so no lineage is immortal. It can be switched off per world.
 
 ## 8. Environmental shocks
 Rare, world-level events punish over-specialisation and monocultures:

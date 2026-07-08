@@ -12,6 +12,14 @@ descendants, or it doesn't spread.
 Founders start asexual (the trait at its `Min`, exactly like the other evolved-in traits), so a
 world with sex switched off is the exact behaviour we ship today: a safe no-op baseline.
 
+> **Implementation status (2026-07-08).** Phases 1–3 below are implemented (tasks SR-1…SR-8): the
+> `Sexuality` trait, the pure `Genome.Blend` / `NeatCrossover.Recombine` primitives, the `Mating` PRNG
+> stream, the serial-phase mate-finding + two-parent birth path, the `SecondParentId` lineage record,
+> and the sexual-vs-asexual observability. Crossover is applied in the serial intent phase rather than
+> at birth-commit (it's pure and PRNG-free, so the location is behaviourally irrelevant and mutation
+> still runs in birth-commit). Phase 4 (the Red Queen experiment) and phase 5 (SR-9, seeding founders
+> sexual) remain open.
+
 ---
 
 ## Why this is a good fit for the architecture

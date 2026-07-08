@@ -86,9 +86,9 @@ The right sidebar (drag its edge to resize) has three tabs:
 Every organism carries inheritable traits you can watch drift in the inspector and the statistics
 histograms: body **size**, **speed**, a **thermal comfort band**, **sensing** radii and acuity,
 **metabolic efficiency** (frugality), the defences **armour / evasion / toxicity**, neural
-**plasticity** and **learning decay** (within-life learning), **generosity**, and — with
-multicellularity on — a **body plan** of specialised cells. None of these are set by you; selection
-finds whatever values survive in your world.
+**plasticity** and **learning decay** (within-life learning), **generosity**, **sexuality** (a leaning
+toward mating rather than cloning — see below), and — with multicellularity on — a **body plan** of
+specialised cells. None of these are set by you; selection finds whatever values survive in your world.
 
 ---
 

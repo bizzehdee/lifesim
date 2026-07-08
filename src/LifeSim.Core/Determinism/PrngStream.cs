@@ -20,4 +20,7 @@ public enum PrngStream
 
     /// <summary>Gaussian sensory-input noise scaled by acuity.</summary>
     SensoryNoise = 4,
+
+    /// <summary>Sexual-reproduction rolls: the sexual-vs-asexual decision and deterministic mate choice.</summary>
+    Mating = 5,
 }

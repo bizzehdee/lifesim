@@ -948,7 +948,7 @@ public sealed class SimulationWorld
         Prng genesis = _prngStreams[PrngStream.Genesis];
         int maxAttempts = Math.Max(10_000, World.Width * World.Height * 4);
 
-        foreach ((NeatGenome? scriptedBrain, string foundingType) in BuildFounderPlan())
+        foreach ((NeatGenome? scriptedBrain, string foundingType, double sexualitySeed) in BuildFounderPlan())
         {
             bool placed = false;
             for (int attempt = 0; attempt < maxAttempts && !placed; attempt++)
@@ -971,7 +971,15 @@ public sealed class SimulationWorld
                 thermalWidth += genesis.NextDouble() * (bounds.ThermalWidth.Max - thermalWidth);
                 double slack = Math.Max(0.0, (thermalWidth / 2.0) - 3.0);
                 double thermalCenter = Config.Biomes.Grassland.Temperature + (((genesis.NextDouble() * 2.0) - 1.0) * slack);
-                Genome genome = Genome.Random(bounds, genesis) with { ThermalCenter = thermalCenter, ThermalWidth = thermalWidth };
+                // Sexuality is normally 0 for founders (evolved in) but a founding type can seed it above
+                // 0 to start a population sexual. Applied after Random with no PRNG draw, so an all-zero
+                // composition keeps the exact prior genesis-stream consumption.
+                Genome genome = Genome.Random(bounds, genesis) with
+                {
+                    ThermalCenter = thermalCenter,
+                    ThermalWidth = thermalWidth,
+                    Sexuality = Math.Clamp(sexualitySeed, bounds.Sexuality.Min, bounds.Sexuality.Max),
+                };
                 long id = _idAllocator.Allocate();
 
                 // A scripted type seeds an author-chosen brain (all founders of that type share the same
@@ -1003,14 +1011,14 @@ public sealed class SimulationWorld
     /// behaviour, byte-identical). Scripted types are compiled once each; a bad script throws here, at
     /// world creation, with the parser's message.
     /// </summary>
-    private IEnumerable<(NeatGenome? Brain, string FoundingType)> BuildFounderPlan()
+    private IEnumerable<(NeatGenome? Brain, string FoundingType, double Sexuality)> BuildFounderPlan()
     {
         IReadOnlyList<BrainTypeSpec> composition = Config.FoundingComposition;
         if (composition.Count == 0 || composition.All(s => s.Count <= 0))
         {
             for (int i = 0; i < Config.InitialPopulation; i++)
             {
-                yield return (null, "Generic");
+                yield return (null, "Generic", 0.0);
             }
 
             yield break;
@@ -1029,7 +1037,7 @@ public sealed class SimulationWorld
 
             for (int i = 0; i < spec.Count; i++)
             {
-                yield return (brain, spec.Name);
+                yield return (brain, spec.Name, spec.Sexuality);
             }
         }
     }

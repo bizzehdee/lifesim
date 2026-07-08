@@ -16,6 +16,32 @@ public class SimulationWorldTests
     private static SimulationConfig SmallPopulation() => SimulationConfig.Default with { InitialPopulation = 20 };
 
     [Fact]
+    public void FoundingType_seededSexual_startsFoundersSexual_andProducesBiparentalBirths()
+    {
+        var config = SimulationConfig.Default with
+        {
+            FoundingComposition = [new BrainTypeSpec { Name = "Sexuals", Count = 120, Sexuality = 1.0 }],
+        };
+        var world = SimulationWorld.CreateGenesis(new WorldState { Seed = 7, Width = 48, Height = 48 }, config);
+
+        // Every founder of a sexual type starts fully sexual (evolved-in trait, seeded up).
+        var founders = world.ToSnapshot().Organisms;
+        Assert.NotEmpty(founders);
+        Assert.All(founders, o => Assert.Equal(1.0, o.Genome.Sexuality));
+
+        // Over a bounded run the fully-sexual population actually mates — exercising the whole
+        // mate-finding + crossover + second-parent path end to end.
+        long sexualBirths = 0;
+        for (int i = 0; i < 400 && sexualBirths == 0; i++)
+        {
+            world.Advance();
+            sexualBirths += world.Metrics.SexualBirths;
+        }
+
+        Assert.True(sexualBirths > 0, "a fully-sexual founding population produced no biparental births");
+    }
+
+    [Fact]
     public void CreateGenesis_placesInitialPopulationOnGrasslandTiles_withNoOverlap()
     {
         SimulationConfig config = SmallPopulation();

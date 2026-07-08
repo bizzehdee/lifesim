@@ -12,11 +12,12 @@ namespace LifeSim.App.ViewModels;
 /// </summary>
 public partial class BrainTypeRowViewModel : ObservableObject
 {
-    public BrainTypeRowViewModel(string name, string? script, int count, bool isGeneric, bool isRemovable)
+    public BrainTypeRowViewModel(string name, string? script, int count, bool isGeneric, bool isRemovable, bool sexual = false)
     {
         _name = name;
         _scriptText = script ?? string.Empty;
         _count = count;
+        _sexual = sexual;
         IsGeneric = isGeneric;
         IsRemovable = isRemovable;
         Validate();
@@ -31,6 +32,10 @@ public partial class BrainTypeRowViewModel : ObservableObject
     /// <summary>Founder count for this type; decimal to bind a whole-number NumericUpDown.</summary>
     [ObservableProperty]
     private decimal _count;
+
+    /// <summary>Seed this type's founders sexual (Sexuality = 1) rather than asexual; still evolves from there.</summary>
+    [ObservableProperty]
+    private bool _sexual;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasError))]
@@ -66,6 +71,7 @@ public partial class BrainTypeRowViewModel : ObservableObject
             Name = string.IsNullOrWhiteSpace(Name) ? "Custom" : Name.Trim(),
             Script = IsGeneric ? null : ScriptText,
             Count = count,
+            Sexuality = Sexual ? 1.0 : 0.0,
         };
     }
 

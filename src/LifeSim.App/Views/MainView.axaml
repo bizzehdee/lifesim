@@ -122,6 +122,8 @@
                                                                 Command="{Binding #TypeList.((vm:MainViewModel)DataContext).RemoveTypeCommand}"
                                                                 CommandParameter="{Binding}" />
                                                     </Grid>
+                                                    <CheckBox IsChecked="{Binding Sexual}" Content="Start sexual (mates &amp; recombines rather than cloning)"
+                                                              ToolTip.Tip="Seed this type's founders with full sexuality; it still evolves from there." />
                                                     <Expander Header="Script" IsVisible="{Binding HasScript}">
                                                         <StackPanel Spacing="4">
                                                             <TextBox Text="{Binding ScriptText}" AcceptsReturn="True" TextWrapping="NoWrap" MinHeight="120"

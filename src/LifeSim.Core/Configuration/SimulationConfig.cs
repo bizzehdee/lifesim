@@ -62,6 +62,13 @@ public sealed record BrainTypeSpec
     public string Name { get; init; } = "Generic";
     public string? Script { get; init; }
     public int Count { get; init; }
+
+    /// <summary>
+    /// Starting <c>sexuality</c> for founders of this type in [0, 1] (0 = the default asexual clone; 1 =
+    /// always seek a mate). Lets a setup pit sexual founders against asexual ones; it still evolves
+    /// freely from tick 0. Only meaningful when the world's reproduction config permits mating.
+    /// </summary>
+    public double Sexuality { get; init; }
 }
 
 /// <summary>Within-life (Hebbian) learning coefficients, applied when an organism has non-zero <c>plasticity</c>.</summary>

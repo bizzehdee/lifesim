@@ -290,6 +290,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                 ["count"] = (int)t.Count,
                 ["generic"] = t.IsGeneric,
                 ["removable"] = t.IsRemovable,
+                ["sexual"] = t.Sexual,
             }).ToArray()),
             ["config"] = JsonNode.Parse(AdvancedConfig.ToJson()),
         };
@@ -338,7 +339,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                     generic ? null : t["script"]?.GetValue<string>(),
                     t["count"]?.GetValue<int>() ?? 0,
                     generic,
-                    t["removable"]?.GetValue<bool>() ?? false));
+                    t["removable"]?.GetValue<bool>() ?? false,
+                    t["sexual"]?.GetValue<bool>() ?? false));
             }
         }
         else

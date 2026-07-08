@@ -17,8 +17,10 @@ world with sex switched off is the exact behaviour we ship today: a safe no-op b
 > stream, the serial-phase mate-finding + two-parent birth path, the `SecondParentId` lineage record,
 > and the sexual-vs-asexual observability. Crossover is applied in the serial intent phase rather than
 > at birth-commit (it's pure and PRNG-free, so the location is behaviourally irrelevant and mutation
-> still runs in birth-commit). Phase 4 (the Red Queen experiment) and phase 5 (SR-9, seeding founders
-> sexual) remain open.
+> still runs in birth-commit). Phase 5 (SR-9) is also done: a founding type can be seeded sexual from
+> the setup screen (`BrainTypeSpec.Sexuality`), so sexual and asexual populations can be pitted directly.
+> Only phase 4 — the deeper Red Queen tuning experiment — remains open; a first pass showed sex occurs
+> but isn't strongly selected under the default economy (reported, not tuned toward).
 
 ---
 

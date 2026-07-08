@@ -109,9 +109,12 @@ public partial class WorldViewModel : ViewModelBase
 
     public bool Extinct => Snapshot?.Metrics?.Extinct ?? false;
 
-    /// <summary>Labels for any active world events (blight, plague, ice age / heatwave), for the status bar.</summary>
+    /// <summary>Labels for any active world events (blight, plague, ice age / heatwave), shown in the Info panel.</summary>
     public IReadOnlyList<string> ActiveEvents =>
         Snapshot is null ? [] : [.. Snapshot.EnvironmentModifiers.Select(EventLabel)];
+
+    /// <summary>Whether any world event is active — gates the Info panel's events block.</summary>
+    public bool HasActiveEvents => ActiveEvents.Count > 0;
 
     private static string EventLabel(EnvironmentModifier modifier)
     {
@@ -314,6 +317,7 @@ public partial class WorldViewModel : ViewModelBase
         OnPropertyChanged(nameof(Population));
         OnPropertyChanged(nameof(Extinct));
         OnPropertyChanged(nameof(ActiveEvents));
+        OnPropertyChanged(nameof(HasActiveEvents));
 
         if (value is not null)
         {

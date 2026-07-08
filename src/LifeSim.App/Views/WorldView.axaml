@@ -14,38 +14,15 @@
         <conv:ColourToBrushConverter x:Key="ColourToBrush" />
     </UserControl.Resources>
 
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="*">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" MinWidth="240" />
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="360" MinWidth="260" MaxWidth="720" />
         </Grid.ColumnDefinitions>
 
-        <!-- Status bar -->
-        <Border Grid.Row="0" Grid.ColumnSpan="3" Padding="12,8" Background="{DynamicResource SystemChromeMediumColor}">
-            <!-- Slim alert strip: extinction + active world events (tick/population and the panel
-                 buttons now live in the Info sidebar). -->
-            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                <TextBlock Text="EXTINCT" Foreground="#E5484D" FontWeight="Bold" VerticalAlignment="Center" IsVisible="{Binding Extinct}" />
-                <ItemsControl ItemsSource="{Binding ActiveEvents}" VerticalAlignment="Center">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" Spacing="6" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="x:String">
-                            <Border Background="#5A3A00" CornerRadius="4" Padding="8,2">
-                                <TextBlock Text="{Binding}" Foreground="#F5C451" FontWeight="SemiBold" FontSize="12" />
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
-        </Border>
-
         <!-- The map (the Fluent exception: full-bleed custom rendering) + zoom overlay -->
-        <Panel Grid.Row="1" Grid.Column="0">
+        <Panel Grid.Row="0" Grid.Column="0">
             <views:SimulationCanvas x:Name="MapCanvas"
                                     Scene="{Binding Scene}"
                                     SelectedOrganismId="{Binding SelectedOrganismId, Mode=TwoWay}" />
@@ -58,11 +35,11 @@
         </Panel>
 
         <!-- Drag to resize the sidebar -->
-        <GridSplitter Grid.Row="1" Grid.Column="1" Width="6" ResizeDirection="Columns"
+        <GridSplitter Grid.Row="0" Grid.Column="1" Width="6" ResizeDirection="Columns"
                       Background="{DynamicResource SystemChromeMediumColor}" ToolTip.Tip="Drag to resize the sidebar" />
 
         <!-- Chrome: Info / Ranking tabs -->
-        <TabControl Grid.Row="1" Grid.Column="2" SelectedIndex="{Binding SidebarTabIndex}">
+        <TabControl Grid.Row="0" Grid.Column="2" SelectedIndex="{Binding SidebarTabIndex}">
 
             <!-- Info: at-a-glance summary + selected-organism inspector (colours/legend live behind the 🎨 button) -->
             <TabItem Header="Info">
@@ -70,6 +47,25 @@
                      edge and the extra right inset clears it off the right-aligned trait values. -->
                 <ScrollViewer Padding="0">
                     <StackPanel Spacing="16" Margin="12,12,22,12">
+                        <!-- Active world events (ice age, blight, …) — shown here now that the top bar is gone. -->
+                        <StackPanel Spacing="4" IsVisible="{Binding HasActiveEvents}">
+                            <TextBlock Text="Active events" FontWeight="SemiBold" />
+                            <ItemsControl ItemsSource="{Binding ActiveEvents}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <Border Background="#5A3A00" CornerRadius="4" Padding="8,2" Margin="0,0,6,6">
+                                            <TextBlock Text="{Binding}" Foreground="#F5C451" FontWeight="SemiBold" FontSize="12" />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
                         <StackPanel Spacing="4">
                             <TextBlock Text="At a glance" FontWeight="SemiBold" />
                             <ItemsControl ItemsSource="{Binding Glance}">
@@ -175,7 +171,7 @@
         </TabControl>
 
         <!-- Lineage graph overlay (over the whole view) -->
-        <Border Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3"
+        <Border Grid.Row="0" Grid.ColumnSpan="3"
                 IsVisible="{Binding IsLineageGraphVisible}" Background="#CC0E1013">
             <Border Margin="40" Padding="16" CornerRadius="8" Background="{DynamicResource SystemChromeMediumColor}">
                 <DockPanel>
@@ -201,7 +197,7 @@
         </Border>
 
         <!-- Global statistics overlay -->
-        <Border Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3"
+        <Border Grid.Row="0" Grid.ColumnSpan="3"
                 IsVisible="{Binding IsStatisticsVisible}" Background="#CC0E1013">
             <Border Margin="60,40" Padding="16" CornerRadius="8" MaxWidth="640"
                     Background="{DynamicResource SystemChromeMediumColor}">
@@ -259,7 +255,7 @@
         </Border>
 
         <!-- Colours overlay: colour mode + legend, behind the 🎨 button -->
-        <Border Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3"
+        <Border Grid.Row="0" Grid.ColumnSpan="3"
                 IsVisible="{Binding IsLegendVisible}" Background="#CC0E1013">
             <Border Margin="60,40" Padding="16" CornerRadius="8" MaxWidth="420"
                     Background="{DynamicResource SystemChromeMediumColor}">

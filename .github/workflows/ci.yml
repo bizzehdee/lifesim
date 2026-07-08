@@ -43,3 +43,49 @@ jobs:
           name: lifesim-wasm-demo
           path: artifacts/wasm/wwwroot
           if-no-files-found: warn
+
+  # Packages a self-contained desktop build per platform (plus the WASM demo) and publishes them to a
+  # single rolling "ci" pre-release, always replacing the previous one. Only on pushes to main.
+  release:
+    needs: build-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      # Self-contained desktop builds (no .NET install needed by end users), cross-published from Linux.
+      - name: Publish desktop (Windows x64)
+        run: dotnet publish src/LifeSim.App.Desktop -c Release -r win-x64 --self-contained -o artifacts/desktop/win-x64
+
+      - name: Publish desktop (Linux x64)
+        run: dotnet publish src/LifeSim.App.Desktop -c Release -r linux-x64 --self-contained -o artifacts/desktop/linux-x64
+
+      - name: Publish browser (WASM) demo
+        run: dotnet publish src/LifeSim.App.Browser -c Release -o artifacts/wasm
+
+      - name: Package zips
+        run: |
+          mkdir -p dist
+          (cd artifacts/desktop/win-x64 && zip -qr - .) > dist/LifeSim-win-x64.zip
+          (cd artifacts/desktop/linux-x64 && zip -qr - .) > dist/LifeSim-linux-x64.zip
+          (cd artifacts/wasm/wwwroot && zip -qr - .) > dist/LifeSim-wasm-demo.zip
+          ls -lh dist
+
+      # Delete the existing rolling release (and its tag) if present, then recreate it fresh.
+      - name: Replace the CI release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete ci --cleanup-tag --yes || echo "No existing 'ci' release to delete."
+          gh release create ci dist/*.zip \
+            --target "$GITHUB_SHA" \
+            --title "CI build (latest main)" \
+            --prerelease \
+            --notes "Rolling build of the latest \`main\` (commit ${GITHUB_SHA:0:7}). Download the zip for your OS, unzip, and run LifeSim. Unstable — replaced on every push to main."

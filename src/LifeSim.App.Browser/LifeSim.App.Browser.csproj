@@ -13,4 +13,14 @@
   <ItemGroup>
     <ProjectReference Include="..\LifeSim.App\LifeSim.App.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The AOT/Release WASM publish trims unused code. ViewLocator resolves views by reflection
+      (ViewModel name -> View name via Type.GetType), so the trimmer can't see the views are used and
+      drops them, giving a runtime "Not Found: LifeSim.App.Views.…View". Root the app assembly so all
+      views (and view-models) survive trimming. The framework/Avalonia are still trimmed.
+    -->
+    <TrimmerRootAssembly Include="LifeSim.App" />
+  </ItemGroup>
 </Project>

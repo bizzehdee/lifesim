@@ -21,6 +21,29 @@ public sealed record StatSection(string Title, IReadOnlyList<StatRow> Rows);
 /// </summary>
 public static class GlobalStatistics
 {
+    /// <summary>
+    /// A compact "at a glance" summary for the Info sidebar — the handful of headline numbers a user
+    /// wants without opening the full statistics panel: where the run is, how it's doing, and the world
+    /// it started from. A pure projection of the snapshot, like <see cref="Build"/>.
+    /// </summary>
+    public static IReadOnlyList<StatRow> Glance(WorldSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        SimulationMetrics? m = snapshot.Metrics;
+
+        return
+        [
+            new StatRow("Tick", Int(snapshot.Tick)),
+            new StatRow("Population", Int(snapshot.Organisms.Count)),
+            new StatRow("Status", m?.Extinct == true ? "Extinct" : "Alive"),
+            new StatRow("Generation (deepest)", Int(MaxGeneration(snapshot))),
+            new StatRow("Distinct lineages", Int(DistinctLineages(snapshot))),
+            new StatRow("Births / deaths", m is null ? "—" : $"{m.Births} / {m.Deaths}"),
+            new StatRow("Avg energy", m is null ? "—" : Num(m.EnergyAverage)),
+            new StatRow("World", $"seed {snapshot.World.Seed} · {snapshot.World.Width}×{snapshot.World.Height}"),
+        ];
+    }
+
     public static IReadOnlyList<StatSection> Build(WorldSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);

@@ -14,10 +14,15 @@
         <conv:ColourToBrushConverter x:Key="ColourToBrush" />
     </UserControl.Resources>
 
-    <Grid ColumnDefinitions="*,360" RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,*">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" MinWidth="240" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="360" MinWidth="260" MaxWidth="720" />
+        </Grid.ColumnDefinitions>
 
         <!-- Status bar -->
-        <Border Grid.Row="0" Grid.ColumnSpan="2" Padding="12,8" Background="{DynamicResource SystemChromeMediumColor}">
+        <Border Grid.Row="0" Grid.ColumnSpan="3" Padding="12,8" Background="{DynamicResource SystemChromeMediumColor}">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="20">
                     <TextBlock Text="{Binding Tick, StringFormat='Tick {0}'}" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -40,6 +45,7 @@
                 </StackPanel>
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <CheckBox IsChecked="{Binding NotificationsEnabled}" Content="🔔 Notifications" />
+                    <Button Content="🎨 Colours" Command="{Binding ToggleLegendCommand}" Padding="10,3" />
                     <Button Content="📊 Statistics" Command="{Binding ToggleStatisticsCommand}" Padding="10,3" />
                 </StackPanel>
             </Grid>
@@ -58,40 +64,36 @@
             </StackPanel>
         </Panel>
 
-        <!-- Chrome: Info / Ranking tabs -->
-        <TabControl Grid.Row="1" Grid.Column="1" SelectedIndex="{Binding SidebarTabIndex}">
+        <!-- Drag to resize the sidebar -->
+        <GridSplitter Grid.Row="1" Grid.Column="1" Width="6" ResizeDirection="Columns"
+                      Background="{DynamicResource SystemChromeMediumColor}" ToolTip.Tip="Drag to resize the sidebar" />
 
-            <!-- Info: colour mode + legend + inspector -->
+        <!-- Chrome: Info / Ranking tabs -->
+        <TabControl Grid.Row="1" Grid.Column="2" SelectedIndex="{Binding SidebarTabIndex}">
+
+            <!-- Info: at-a-glance summary + selected-organism inspector (colours/legend live behind the 🎨 button) -->
             <TabItem Header="Info">
                 <!-- Padding on the content (not the ScrollViewer) so the scrollbar stays at the true right
                      edge and the extra right inset clears it off the right-aligned trait values. -->
                 <ScrollViewer Padding="0">
                     <StackPanel Spacing="16" Margin="12,12,22,12">
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="Colour mode" FontWeight="SemiBold" />
-                            <ComboBox ItemsSource="{Binding ColourModes}" SelectedItem="{Binding ColourMode}" HorizontalAlignment="Stretch" />
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="At a glance" FontWeight="SemiBold" />
+                            <ItemsControl ItemsSource="{Binding Glance}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="pres:StatRow">
+                                        <Grid ColumnDefinitions="*,Auto" Margin="0,1">
+                                            <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="12" Opacity="0.75" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="12" FontWeight="SemiBold" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                                <Button Content="📊 Full statistics" Command="{Binding ToggleStatisticsCommand}" />
+                                <Button Content="🎨 Colours" Command="{Binding ToggleLegendCommand}" />
+                            </StackPanel>
                         </StackPanel>
-
-                        <ItemsControl ItemsSource="{Binding Legend}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="pres:LegendSection">
-                                    <StackPanel Margin="0,0,0,8" Spacing="4">
-                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12" Opacity="0.8" />
-                                        <ItemsControl ItemsSource="{Binding Entries}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate x:DataType="pres:LegendEntry">
-                                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,1">
-                                                        <Border Width="16" Height="16" CornerRadius="3"
-                                                                Background="{Binding Colour, Converter={StaticResource ColourToBrush}}" />
-                                                        <TextBlock Text="{Binding Label}" VerticalAlignment="Center" FontSize="12" />
-                                                    </StackPanel>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
 
                         <Border IsVisible="{Binding HasSelection}" BorderThickness="0,1,0,0"
                                 BorderBrush="{DynamicResource SystemChromeMediumColor}" Padding="0,12,0,0">
@@ -179,7 +181,7 @@
         </TabControl>
 
         <!-- Lineage graph overlay (over the whole view) -->
-        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Grid.ColumnSpan="2"
+        <Border Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3"
                 IsVisible="{Binding IsLineageGraphVisible}" Background="#CC0E1013">
             <Border Margin="40" Padding="16" CornerRadius="8" Background="{DynamicResource SystemChromeMediumColor}">
                 <DockPanel>
@@ -205,7 +207,7 @@
         </Border>
 
         <!-- Global statistics overlay -->
-        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Grid.ColumnSpan="2"
+        <Border Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3"
                 IsVisible="{Binding IsStatisticsVisible}" Background="#CC0E1013">
             <Border Margin="60,40" Padding="16" CornerRadius="8" MaxWidth="640"
                     Background="{DynamicResource SystemChromeMediumColor}">
@@ -250,6 +252,46 @@
                                                         <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="12" Opacity="0.75" />
                                                         <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="12" FontWeight="SemiBold" />
                                                     </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </Border>
+
+        <!-- Colours overlay: colour mode + legend, behind the 🎨 button -->
+        <Border Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3"
+                IsVisible="{Binding IsLegendVisible}" Background="#CC0E1013">
+            <Border Margin="60,40" Padding="16" CornerRadius="8" MaxWidth="420"
+                    Background="{DynamicResource SystemChromeMediumColor}">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                        <TextBlock Text="Colours" FontWeight="Bold" FontSize="16" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Content="Close" Command="{Binding CloseLegendCommand}" />
+                    </Grid>
+                    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,12">
+                        <TextBlock Text="Colour mode" FontWeight="SemiBold" FontSize="12" Opacity="0.8" />
+                        <ComboBox ItemsSource="{Binding ColourModes}" SelectedItem="{Binding ColourMode}" HorizontalAlignment="Stretch" />
+                    </StackPanel>
+                    <ScrollViewer Padding="0">
+                        <ItemsControl ItemsSource="{Binding Legend}" Margin="0,0,16,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="pres:LegendSection">
+                                    <StackPanel Margin="0,0,0,8" Spacing="4">
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12" Opacity="0.8" />
+                                        <ItemsControl ItemsSource="{Binding Entries}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="pres:LegendEntry">
+                                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,1">
+                                                        <Border Width="16" Height="16" CornerRadius="3"
+                                                                Background="{Binding Colour, Converter={StaticResource ColourToBrush}}" />
+                                                        <TextBlock Text="{Binding Label}" VerticalAlignment="Center" FontSize="12" />
+                                                    </StackPanel>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>

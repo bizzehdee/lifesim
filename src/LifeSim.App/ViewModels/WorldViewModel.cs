@@ -82,6 +82,14 @@ public partial class WorldViewModel : ViewModelBase
     [ObservableProperty]
     private IReadOnlyList<StatSection> _statistics = [];
 
+    /// <summary>Whether the colour-mode + legend panel is open (behind a button, like statistics).</summary>
+    [ObservableProperty]
+    private bool _isLegendVisible;
+
+    /// <summary>Compact "at a glance" headline stats shown in the Info sidebar, refreshed every frame.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<StatRow> _glance = [];
+
     /// <summary>How many ancestor generations to show above the focus organism (default 3).</summary>
     [ObservableProperty]
     private decimal _maxParentGens = 3;
@@ -201,6 +209,13 @@ public partial class WorldViewModel : ViewModelBase
     [RelayCommand]
     private void CloseStatistics() => IsStatisticsVisible = false;
 
+    /// <summary>Open/close the colour-mode + legend panel.</summary>
+    [RelayCommand]
+    private void ToggleLegend() => IsLegendVisible = !IsLegendVisible;
+
+    [RelayCommand]
+    private void CloseLegend() => IsLegendVisible = false;
+
     private void RebuildStatistics() => Statistics = Snapshot is null ? [] : GlobalStatistics.Build(Snapshot);
 
     // Accumulate the founding-type breakdown into a bounded history and refresh the scoreboard + chart.
@@ -293,6 +308,7 @@ public partial class WorldViewModel : ViewModelBase
         }
 
         UpdateFoundingTypes(value);
+        Glance = value is null ? [] : GlobalStatistics.Glance(value); // cheap headline summary, always live
 
         OnPropertyChanged(nameof(Tick));
         OnPropertyChanged(nameof(Population));

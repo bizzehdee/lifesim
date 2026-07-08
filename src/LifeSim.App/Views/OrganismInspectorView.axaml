@@ -23,6 +23,10 @@
                        Text="{Binding ParentId, StringFormat='parent {0}'}" />
             <TextBlock FontSize="12" Opacity="0.75" IsVisible="{Binding ParentName, Converter={x:Static ObjectConverters.IsNotNull}}"
                        Text="{Binding ParentName, StringFormat='parent name: {0} (alive)'}" />
+            <TextBlock FontSize="12" Opacity="0.75" IsVisible="{Binding SecondParentId, Converter={x:Static ObjectConverters.IsNotNull}}"
+                       Text="{Binding SecondParentId, StringFormat='second parent {0} (sexual)'}" />
+            <TextBlock FontSize="12" Opacity="0.75" IsVisible="{Binding SecondParentName, Converter={x:Static ObjectConverters.IsNotNull}}"
+                       Text="{Binding SecondParentName, StringFormat='second parent name: {0} (alive)'}" />
             <TextBlock FontSize="12" Opacity="0.75"
                        Text="{Binding ChildCount, StringFormat='children (direct): {0}'}" />
             <TextBlock FontSize="12" Opacity="0.75"

@@ -68,6 +68,7 @@ public static class GlobalStatistics
             sections.Add(new StatSection("This tick",
             [
                 new StatRow("Births", Int(m.Births)),
+                new StatRow("Sexual births", $"{m.SexualBirths} / {m.Births}"),
                 new StatRow("Deaths", Int(m.Deaths)),
                 new StatRow("Grazing (ok / fail)", $"{m.SuccessfulGrazing} / {m.FailedGrazing}"),
                 new StatRow("Predation (ok / fail)", $"{m.SuccessfulPredation} / {m.FailedPredation}"),

@@ -451,6 +451,7 @@ public sealed class SimulationWorld
         }
 
         counters.Births = pendingBirths.Count;
+        counters.SexualBirths = pendingBirths.Count(b => b.SecondParentId is not null);
 
         // 9. Metrics & Snapshot Phase.
         Tick++;
@@ -1212,6 +1213,7 @@ public sealed class SimulationWorld
             Population = population,
             Extinct = Extinct,
             Births = counters.Births,
+            SexualBirths = counters.SexualBirths,
             Deaths = counters.Deaths,
             SuccessfulGrazing = counters.SuccessfulGrazing,
             FailedGrazing = counters.FailedGrazing,
@@ -1303,6 +1305,7 @@ public sealed class SimulationWorld
     private sealed class TickCounters
     {
         public long Births;
+        public long SexualBirths;   // of Births, those with two parents (biparental recombination)
         public long Deaths;
         public long SuccessfulGrazing;
         public long FailedGrazing;

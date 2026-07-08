@@ -19,7 +19,7 @@ public static class MetricsExporter
     private static readonly string[] CsvColumns =
     [
         "tick", "population", "extinct",
-        "births", "deaths",
+        "births", "sexual_births", "deaths",
         "successful_grazing", "failed_grazing", "successful_predation", "failed_predation",
         "successful_share", "failed_share", "kin_predation", "energy_shared",
         "kin_directed_shares", "non_kin_shares", "mean_help_given",
@@ -45,6 +45,7 @@ public static class MetricsExporter
             metrics.Population.ToString(CultureInfo.InvariantCulture),
             metrics.Extinct ? "true" : "false",
             metrics.Births.ToString(CultureInfo.InvariantCulture),
+            metrics.SexualBirths.ToString(CultureInfo.InvariantCulture),
             metrics.Deaths.ToString(CultureInfo.InvariantCulture),
             metrics.SuccessfulGrazing.ToString(CultureInfo.InvariantCulture),
             metrics.FailedGrazing.ToString(CultureInfo.InvariantCulture),

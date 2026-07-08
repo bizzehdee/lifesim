@@ -20,6 +20,9 @@ public sealed record SimulationMetrics
 
     // --- Per-tick flow counters (this tick's window). ---
     public long Births { get; init; }
+
+    /// <summary>Of <see cref="Births"/>, those from sexual reproduction (two parents); the rest are asexual clones.</summary>
+    public long SexualBirths { get; init; }
     public long Deaths { get; init; }
     public long SuccessfulGrazing { get; init; }
     public long FailedGrazing { get; init; }
@@ -68,6 +71,7 @@ public sealed record SimulationMetrics
         && Population == other.Population
         && Extinct == other.Extinct
         && Births == other.Births
+        && SexualBirths == other.SexualBirths
         && Deaths == other.Deaths
         && SuccessfulGrazing == other.SuccessfulGrazing
         && FailedGrazing == other.FailedGrazing
@@ -96,6 +100,7 @@ public sealed record SimulationMetrics
         hash.Add(Population);
         hash.Add(Extinct);
         hash.Add(Births);
+        hash.Add(SexualBirths);
         hash.Add(Deaths);
         hash.Add(EnergyAverage);
         hash.Add(TraitAverages);

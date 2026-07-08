@@ -51,6 +51,10 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
     public long? ParentId { get; private init; }
     public string? ParentName { get; private init; }
     public bool ParentAlive { get; private init; }
+
+    /// <summary>The sexual-reproduction co-parent, if this organism was born from two parents; else null.</summary>
+    public long? SecondParentId { get; private init; }
+    public string? SecondParentName { get; private init; }
     public int GenerationDepth { get; private init; }
     public long BirthTick { get; private init; }
     public long Age => Organism.Age;
@@ -138,6 +142,9 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
         string? parentName = lineage?.ParentId is { } parentId
             ? snapshot.Organisms.FirstOrDefault(o => o.OrganismId == parentId)?.Name
             : null;
+        string? secondParentName = lineage?.SecondParentId is { } secondParentId
+            ? snapshot.Organisms.FirstOrDefault(o => o.OrganismId == secondParentId)?.Name
+            : null;
 
         bool reproReady = organism.Energy >= config.Reproduction.ReproductionBaseCost * genome.Size
             && (organism.LastBirthTick is not { } birth || snapshot.Tick - birth >= config.Reproduction.ReproductionCooldownTicks);
@@ -170,6 +177,8 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
             FoundingType = lineage?.FoundingType ?? "Generic",
             ParentId = lineage?.ParentId,
             ParentName = parentName,
+            SecondParentId = lineage?.SecondParentId,
+            SecondParentName = secondParentName,
             GenerationDepth = lineage?.GenerationDepth ?? 0,
             BirthTick = lineage?.BirthTick ?? 0,
             ParentAlive = lineage?.ParentId is { } parent && livingIds.Contains(parent),

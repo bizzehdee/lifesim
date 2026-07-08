@@ -18,6 +18,7 @@ genuinely random: actions are sampled, mutation is random, combat is a roll — 
 ## 2. Organisms
 - An organism occupies **one tile**. It has a **genome** (its inherited traits), a **brain** (an evolvable neural network), and an **energy budget**.
 - The founding population is a **varied gene pool** — each founder is spawned with randomised traits (kept viable for its starting biome), not identical clones — so the world is diverse and unpredictable from the first tick.
+- Founders' brains are normally random, but you can **seed brain "types"**: at setup, mix in any number of hand-authored personalities (selfish, fearless, …) written as a short weighted-preference script that compiles into a starting brain. A type is only a *starting point* — from tick 0 it mutates and competes exactly like a random brain, so survival of the fittest, not the script, decides which types win. Each lineage keeps a cosmetic label of the type it descended from, so you can watch the mix shift.
 - Energy runs from 0 to a ceiling (100 by default). **Energy hits zero → the organism dies** and is removed. There is no other automatic death unless aging is switched on (see rule 7).
 - Traits include body **size**, **speed**, a **thermal comfort band** (centre ± width), **sensing radii** and **acuity**, **metabolic efficiency** (see rule 3), **generosity**, and a multicellular **body plan** (see rule 9).
 

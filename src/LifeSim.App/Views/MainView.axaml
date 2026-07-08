@@ -103,6 +103,46 @@
                                        Text="Seed gameplay randomness from entropy: the same seed gives the same map but different life every run. Off = fully reproducible from the seed. (A created run still saves/reloads exactly either way.)" />
                         </StackPanel>
 
+                        <Expander Header="Founding population by type">
+                            <StackPanel Spacing="8">
+                                <TextBlock Opacity="0.7" FontSize="12" TextWrapping="Wrap"
+                                           Text="Seed the world with a mix of brain &quot;types&quot;. Give any a count above zero and they replace the Population field; leave all at zero to use it. Every type is only a starting point — all of them mutate and compete from tick 0. Copy a built-in and edit its rules, or add your own." />
+                                <ItemsControl x:Name="TypeList" ItemsSource="{Binding FoundingTypes}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:BrainTypeRowViewModel">
+                                            <Border Margin="0,0,0,6" Padding="10" CornerRadius="6" Background="{DynamicResource SystemChromeLowColor}">
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                                        <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                                   IsVisible="{Binding !IsRemovable}" />
+                                                        <TextBox Grid.Column="0" Text="{Binding Name}" PlaceholderText="Type name" HorizontalAlignment="Left" MinWidth="160"
+                                                                 IsVisible="{Binding IsRemovable}" />
+                                                        <NumericUpDown Grid.Column="1" Width="120" Minimum="0" Maximum="1000000" Increment="1" FormatString="0"
+                                                                       Value="{Binding Count}" VerticalAlignment="Center" />
+                                                        <Button Grid.Column="2" Content="✕" VerticalAlignment="Center" ToolTip.Tip="Remove this custom type"
+                                                                IsVisible="{Binding IsRemovable}"
+                                                                Command="{Binding #TypeList.((vm:MainViewModel)DataContext).RemoveTypeCommand}"
+                                                                CommandParameter="{Binding}" />
+                                                    </Grid>
+                                                    <Expander Header="Script" IsVisible="{Binding HasScript}">
+                                                        <StackPanel Spacing="4">
+                                                            <TextBox Text="{Binding ScriptText}" AcceptsReturn="True" TextWrapping="NoWrap" MinHeight="120"
+                                                                     FontFamily="Cascadia Code,Consolas,Menlo,monospace" />
+                                                            <TextBlock Text="{Binding ParseError}" TextWrapping="Wrap" FontSize="12" IsVisible="{Binding HasError}"
+                                                                       Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
+                                                            <TextBlock Text="✓ compiles" FontSize="12" IsVisible="{Binding IsValid}"
+                                                                       Foreground="{DynamicResource SystemFillColorSuccessBrush}" />
+                                                        </StackPanel>
+                                                    </Expander>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <Button Content="➕ Add custom type" Command="{Binding AddCustomTypeCommand}" HorizontalAlignment="Left" />
+                            </StackPanel>
+                        </Expander>
+
                         <Expander Header="Advanced: all simulation settings">
                             <StackPanel Spacing="6">
                                 <TextBlock Opacity="0.7" FontSize="12" TextWrapping="Wrap"

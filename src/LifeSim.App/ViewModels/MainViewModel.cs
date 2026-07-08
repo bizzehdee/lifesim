@@ -1,8 +1,10 @@
+using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LifeSim.App.Engine;
+using LifeSim.Core.Brains;
 using LifeSim.Core.Configuration;
 using LifeSim.Core.Editing;
 using LifeSim.Core.Simulation;
@@ -107,6 +109,14 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private AdvancedConfigEditor _advancedConfig = new(SnapshotSerializer.SaveConfig(SimulationConfig.Default));
 
+    /// <summary>
+    /// Founding-population composition by brain type: Generic (evolved) plus the shipped example scripts,
+    /// each with a count. When any count is positive it seeds the world by type and the
+    /// <see cref="Population"/> field is ignored; otherwise the flat <see cref="Population"/> of generics
+    /// is used. Every type competes and evolves from tick 0.
+    /// </summary>
+    public ObservableCollection<BrainTypeRowViewModel> FoundingTypes { get; } = [];
+
     public WorldViewModel World { get; } = new();
 
     public bool LiveCapable => _liveCapable;
@@ -135,6 +145,40 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         // Default to half the machine's hardware threads (at least 1) — a balance between throughput
         // and leaving headroom for the UI and the rest of the system.
         ThreadCount = Math.Max(1, MaxThreads / 2);
+
+        ResetFoundingTypes();
+    }
+
+    /// <summary>Populate the type list with Generic + the shipped example scripts, all at count 0.</summary>
+    private void ResetFoundingTypes()
+    {
+        FoundingTypes.Clear();
+        FoundingTypes.Add(new BrainTypeRowViewModel("Generic", script: null, count: 0, isGeneric: true, isRemovable: false));
+        foreach (string script in BuiltInBrains.All)
+        {
+            string name = BrainScriptParser.ParseTemplate(script).Name;
+            FoundingTypes.Add(new BrainTypeRowViewModel(name, script, count: 0, isGeneric: false, isRemovable: false));
+        }
+    }
+
+    /// <summary>Adds a blank custom type the user can name and script.</summary>
+    [RelayCommand]
+    public void AddCustomType() =>
+        FoundingTypes.Add(new BrainTypeRowViewModel(
+            "Custom",
+            "type Custom:\n  prefer HarvestToward(food)  always\n  prefer Reproduce            when ready\n",
+            count: 0,
+            isGeneric: false,
+            isRemovable: true));
+
+    /// <summary>Removes a custom type row (built-in rows are not removable).</summary>
+    [RelayCommand]
+    public void RemoveType(BrainTypeRowViewModel? row)
+    {
+        if (row is { IsRemovable: true })
+        {
+            FoundingTypes.Remove(row);
+        }
     }
 
     [RelayCommand]
@@ -177,6 +221,16 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     public void CreateWorld()
     {
+        if (FoundingTypes.Any(t => !t.IsValid))
+        {
+            Status = "Fix the invalid brain script(s) before creating the world.";
+            return;
+        }
+
+        // Types with a positive count seed the world by composition (Population is then ignored);
+        // an all-zero list leaves the composition empty so the flat Population of generics is used.
+        var composition = FoundingTypes.Select(t => t.ToSpec()).OfType<BrainTypeSpec>().ToList();
+
         SimulationConfig config;
         try
         {
@@ -184,6 +238,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             config = parsed with
             {
                 InitialPopulation = (int)Population,
+                FoundingComposition = composition,
                 Senescence = SenescenceEnabled,
                 Cooperation = parsed.Cooperation with { Enabled = CooperationEnabled },
                 Multicellular = parsed.Multicellular with { Enabled = MulticellularEnabled },
@@ -193,6 +248,16 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         {
             Status = $"Invalid configuration: {ex.Message}";
             return;
+        }
+
+        if (composition.Count > 0)
+        {
+            long total = composition.Sum(s => (long)s.Count);
+            if (total > (long)Width * (long)Height)
+            {
+                Status = "The founding types total more organisms than the world has tiles.";
+                return;
+            }
         }
 
         // Entropy mode seeds the gameplay streams from OS randomness (same map, different life each run).
@@ -218,6 +283,14 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             ["senescence"] = SenescenceEnabled,
             ["multicellular"] = MulticellularEnabled,
             ["entropy"] = EntropyBehaviour,
+            ["founding_types"] = new JsonArray(FoundingTypes.Select(t => (JsonNode)new JsonObject
+            {
+                ["name"] = t.Name,
+                ["script"] = t.IsGeneric ? null : t.ScriptText,
+                ["count"] = (int)t.Count,
+                ["generic"] = t.IsGeneric,
+                ["removable"] = t.IsRemovable,
+            }).ToArray()),
             ["config"] = JsonNode.Parse(AdvancedConfig.ToJson()),
         };
 
@@ -248,6 +321,31 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         SenescenceEnabled = options["senescence"]!.GetValue<bool>();
         MulticellularEnabled = options["multicellular"]!.GetValue<bool>();
         EntropyBehaviour = options["entropy"]?.GetValue<bool>() ?? false;
+
+        if (options["founding_types"] is JsonArray savedTypes)
+        {
+            FoundingTypes.Clear();
+            foreach (JsonNode? node in savedTypes)
+            {
+                if (node is not JsonObject t)
+                {
+                    continue;
+                }
+
+                bool generic = t["generic"]?.GetValue<bool>() ?? false;
+                FoundingTypes.Add(new BrainTypeRowViewModel(
+                    t["name"]?.GetValue<string>() ?? "Custom",
+                    generic ? null : t["script"]?.GetValue<string>(),
+                    t["count"]?.GetValue<int>() ?? 0,
+                    generic,
+                    t["removable"]?.GetValue<bool>() ?? false));
+            }
+        }
+        else
+        {
+            ResetFoundingTypes(); // older options file without a composition
+        }
+
         Status = "Loaded starting options — ready to create the world.";
     }
 
@@ -286,9 +384,10 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             error = null;
             return true;
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex) when (ex is InvalidOperationException or BrainScriptException)
         {
-            // e.g. couldn't scatter the genesis population on enough Grassland tiles.
+            // e.g. couldn't scatter the genesis population on enough Grassland tiles, or a founding
+            // brain script failed to compile.
             error = ex.Message;
             Status = error;
             HasWorld = false;

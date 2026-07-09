@@ -184,11 +184,14 @@ public partial class WorldViewModel : ViewModelBase
     // Heavy sidebar lists (Ranking, Organisms) rebuild the whole collection and force the ListBox to
     // recreate its item containers — far costlier than the map scene. At a fast tick rate, doing that
     // every frame saturates the UI thread and starves input. While the sim is playing we therefore cap
-    // these rebuilds to a few per second; when paused/stepping (ThrottleLiveLists = false) every frame
+    // these rebuilds to about once a second; when paused/stepping (ThrottleLiveLists = false) every frame
     // refreshes immediately, and user actions (tab switch, sort change, manual refresh) always do too.
-    private const long ListRefreshIntervalMs = 250;
-    private long _lastRankingRefreshMs = long.MinValue;
-    private long _lastOrganismRefreshMs = long.MinValue;
+    private const long ListRefreshIntervalMs = 1000;
+
+    // Seeded so the first check is always due (now - (-interval) ≥ interval for any TickCount64 ≥ 0).
+    // A long.MinValue sentinel would overflow the subtraction below and wedge the throttle permanently off.
+    private long _lastRankingRefreshMs = -ListRefreshIntervalMs;
+    private long _lastOrganismRefreshMs = -ListRefreshIntervalMs;
 
     /// <summary>
     /// Set by the session while the sim is playing. When true, the Ranking/Organisms lists refresh at a

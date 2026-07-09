@@ -43,6 +43,27 @@ public class SessionTests
     }
 
     [Fact]
+    public void SidebarLists_keepRefreshingWhilePlaying_notOnlyOnPause()
+    {
+        MainViewModel session = CreatedSession();
+        session.World.SidebarTabIndex = 2; // Organisms tab populates the list on switch
+        IReadOnlyList<Presentation.OrganismRow>? initial = session.World.OrganismList;
+        Assert.NotNull(initial);
+
+        session.Play();
+
+        // Throttled (once/sec) but never frozen: a fresh list instance must appear while still playing,
+        // not only after pausing. (A regression here wedged the throttle permanently off.)
+        Assert.True(
+            SpinUntil(() => !ReferenceEquals(session.World.OrganismList, initial)),
+            "Organisms list should keep refreshing during play.");
+        Assert.True(session.IsPlaying);
+
+        session.Pause();
+        session.Dispose();
+    }
+
+    [Fact]
     public void Speed_isADiscreteStepScale_withClampedFineTuneCommands()
     {
         MainViewModel session = CreatedSession();

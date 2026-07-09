@@ -1,9 +1,12 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
 using LifeSim.App.Presentation;
 using LifeSim.Core.Neat;
+using LifeSim.Core.Sensing;
 
 namespace LifeSim.App.Views;
 
@@ -24,9 +27,22 @@ public sealed class NeatGraphControl : Control
     private static readonly Color ActivationHigh = Color.FromRgb(0x3F, 0xB9, 0x50);
     private static readonly ImmutablePen NodeOutline = new(new ImmutableSolidColorBrush(Colors.White, 0.85), 1.0);
 
+    private const double Pad = 14.0;
+    private const double HiddenRadius = 5.0;
+    private const double IoRadius = 6.5;
+
+    private long? _hoveredNodeId;
+
     static NeatGraphControl()
     {
         AffectsRender<NeatGraphControl>(GraphProperty);
+    }
+
+    public NeatGraphControl()
+    {
+        // Show the input tooltips right at the cursor, without the usual hover delay.
+        ToolTip.SetPlacement(this, PlacementMode.Pointer);
+        ToolTip.SetShowDelay(this, 0);
     }
 
     public NeatGraph? Graph
@@ -43,10 +59,12 @@ public sealed class NeatGraphControl : Control
             return;
         }
 
-        const double pad = 14.0;
-        double w = Math.Max(1.0, Bounds.Width - (2 * pad));
-        double h = Math.Max(1.0, Bounds.Height - (2 * pad));
-        Point Map(double nx, double ny) => new(pad + (nx * w), pad + (ny * h));
+        // Paint the whole area (transparent) so the control is hit-testable end-to-end for tooltips.
+        context.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
+
+        double w = Math.Max(1.0, Bounds.Width - (2 * Pad));
+        double h = Math.Max(1.0, Bounds.Height - (2 * Pad));
+        Point Map(double nx, double ny) => new(Pad + (nx * w), Pad + (ny * h));
 
         foreach (NeatEdgeLayout edge in graph.Edges)
         {
@@ -64,8 +82,82 @@ public sealed class NeatGraphControl : Control
         {
             double t = Math.Clamp((node.Activation + 1.0) / 2.0, 0.0, 1.0);
             var brush = new ImmutableSolidColorBrush(SimulationPalette.Lerp(ActivationLow, ActivationHigh, t));
-            double radius = node.Type == NodeType.Hidden ? 5.0 : 6.5;
+            double radius = node.Type == NodeType.Hidden ? HiddenRadius : IoRadius;
             context.DrawEllipse(brush, NodeOutline, Map(node.X, node.Y), radius, radius);
         }
+    }
+
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+        UpdateHover(e.GetPosition(this));
+    }
+
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+        ClearHover();
+    }
+
+    // Show a tooltip naming the input and its live value when the cursor is over an input node.
+    private void UpdateHover(Point pointer)
+    {
+        NeatGraph? graph = Graph;
+        if (graph is null)
+        {
+            ClearHover();
+            return;
+        }
+
+        double w = Math.Max(1.0, Bounds.Width - (2 * Pad));
+        double h = Math.Max(1.0, Bounds.Height - (2 * Pad));
+        const double hitRadius = IoRadius + 4.0; // a little slop so the target isn't pixel-precise
+
+        foreach (NeatNodeLayout node in graph.Nodes)
+        {
+            if (node.Type != NodeType.Input || !SensoryFieldLabels.TryForInputNode(node.Id, out SensoryField field))
+            {
+                continue;
+            }
+
+            var centre = new Point(Pad + (node.X * w), Pad + (node.Y * h));
+            if (Distance(centre, pointer) > hitRadius)
+            {
+                continue;
+            }
+
+            if (_hoveredNodeId != node.Id)
+            {
+                _hoveredNodeId = node.Id;
+                string value = node.Activation.ToString("F2", CultureInfo.InvariantCulture);
+                ToolTip.SetTip(this, $"{SensoryFieldLabels.Describe(field)}: {value}");
+                // Reopen so the tooltip repositions to the newly hovered node.
+                ToolTip.SetIsOpen(this, false);
+                ToolTip.SetIsOpen(this, true);
+            }
+
+            return;
+        }
+
+        ClearHover();
+    }
+
+    private void ClearHover()
+    {
+        if (_hoveredNodeId is null)
+        {
+            return;
+        }
+
+        _hoveredNodeId = null;
+        ToolTip.SetIsOpen(this, false);
+        ToolTip.SetTip(this, null);
+    }
+
+    private static double Distance(Point a, Point b)
+    {
+        double dx = a.X - b.X;
+        double dy = a.Y - b.Y;
+        return Math.Sqrt((dx * dx) + (dy * dy));
     }
 }

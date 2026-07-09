@@ -47,13 +47,40 @@ public class GroundEnergyGridTests
 
         for (int i = 0; i < 10_000; i++)
         {
-            grid.RegenerateTick();
+            grid.RegenerateTick(globalLight: 1.0, photosynthesis: false);
         }
 
         Assert.Equal(cap, grid.EnergyAt(x, y));
         // Regen never overshoots the cap once fully recovered, and the tile drops out of the
         // sparse override map again once it's back to its implicit full state.
         Assert.Empty(grid.CaptureState());
+    }
+
+    [Fact]
+    public void RegenerateTick_photosynthesis_scalesRegenByLocalLight()
+    {
+        (TerrainSampler terrain, SimulationConfig config) = NewWorld();
+        int x = FindTileOfBiome(terrain, Biome.Grassland); // LightFactor 1.0
+        int y = 0;
+        double rate = config.Biomes.For(Biome.Grassland).RegenRate;
+
+        // Photosynthesis off: plain biome rate regardless of light (unchanged behaviour).
+        var off = new GroundEnergyGrid(terrain, config);
+        off.Drain(x, y, off.CapAt(x, y));
+        off.RegenerateTick(globalLight: 0.5, photosynthesis: false);
+        Assert.Equal(rate, off.EnergyAt(x, y), precision: 9);
+
+        // On at half light: half the regen (grassland LightFactor is 1.0).
+        var half = new GroundEnergyGrid(terrain, config);
+        half.Drain(x, y, half.CapAt(x, y));
+        half.RegenerateTick(globalLight: 0.5, photosynthesis: true);
+        Assert.Equal(rate * 0.5, half.EnergyAt(x, y), precision: 9);
+
+        // On in the dark: regen stalls entirely.
+        var dark = new GroundEnergyGrid(terrain, config);
+        dark.Drain(x, y, dark.CapAt(x, y));
+        dark.RegenerateTick(globalLight: 0.0, photosynthesis: true);
+        Assert.Equal(0.0, dark.EnergyAt(x, y), precision: 9);
     }
 
     [Fact]
@@ -75,7 +102,7 @@ public class GroundEnergyGridTests
         grid.Drain(x, y, iceCap);
         Assert.Equal(0.0, grid.EnergyAt(x, y));
 
-        grid.RegenerateTick();
+        grid.RegenerateTick(globalLight: 1.0, photosynthesis: false);
         double afterOneTick = grid.EnergyAt(x, y);
         Assert.True(afterOneTick > 0.0 && afterOneTick < iceCap); // regenerates, but only a trickle
     }

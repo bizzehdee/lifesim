@@ -135,7 +135,7 @@ public class FoundationDeterminismTests
 
         for (int tick = 0; tick < 5_000; tick++)
         {
-            grid.RegenerateTick();
+            grid.RegenerateTick(globalLight: 1.0, photosynthesis: false);
             Assert.True(grid.EnergyAt(x, 0) <= cap);
         }
 

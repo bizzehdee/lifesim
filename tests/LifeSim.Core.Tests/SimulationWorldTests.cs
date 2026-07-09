@@ -272,7 +272,9 @@ public class SimulationWorldTests
         // Reproduce) — so it starves by exactly the deterministic metabolism cost, and corpse
         // deposit is exactly predictable.
         var worldState = new WorldState { Seed = 555, Width = 20, Height = 20 };
-        SimulationConfig config = SimulationConfig.Default;
+        // Photosynthesis off so the regen added on top of the corpse deposit is the plain biome rate this
+        // test asserts, not a light-scaled rate (light scaling is covered in GroundEnergyGridTests).
+        SimulationConfig config = SimulationConfig.Default with { Photosynthesis = false };
 
         var genome = new Genome
         {

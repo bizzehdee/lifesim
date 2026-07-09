@@ -48,6 +48,15 @@ public sealed record SimulationConfig
     /// </summary>
     public bool Senescence { get; init; } = true;
 
+    /// <summary>
+    /// Photosynthesis: when enabled (the default), a tile's resource regeneration is scaled by its local
+    /// light (the day/night + seasonal <see cref="EnvironmentCycleConfig"/> clock × the biome's
+    /// <see cref="BiomeSettings.LightFactor"/>), so food regrows fast in sunlit day/summer and stalls at
+    /// night/in winter — the daily and seasonal productivity pulses that give phototaxis selective value.
+    /// Disable it to leave regeneration purely biome-rate-driven, exactly as when no cycle existed.
+    /// </summary>
+    public bool Photosynthesis { get; init; } = true;
+
     public static SimulationConfig Default => new();
 }
 

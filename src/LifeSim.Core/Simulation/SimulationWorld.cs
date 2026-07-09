@@ -423,7 +423,7 @@ public sealed class SimulationWorld
         //   , which is what forces populations off grazing and toward predation.
         if (!_environment.BlightActive)
         {
-            _groundEnergy.RegenerateTick();
+            _groundEnergy.RegenerateTick(clock.GlobalLight, Config.Photosynthesis);
         }
 
         // 8. Mutation & Birth Commit Phase. Trait and brain mutation are applied here, in ascending

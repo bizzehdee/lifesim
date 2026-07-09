@@ -44,8 +44,14 @@ public sealed class GroundEnergyGrid
         SetEnergy(x, y, Math.Min(CapAt(x, y), EnergyAt(x, y) + amount));
     }
 
-    /// <summary>Regenerates every tracked tile toward its biome cap by one tick's regen rate.</summary>
-    public void RegenerateTick()
+    /// <summary>
+    /// Regenerates every tracked tile toward its biome cap by one tick's regen rate. When
+    /// <paramref name="photosynthesis"/> is on, each tile's rate is scaled by its local light
+    /// (<paramref name="globalLight"/> × the biome's <see cref="BiomeSettings.LightFactor"/>), so regen
+    /// pulses with the day/night and seasonal cycle; when off, it is the plain biome rate exactly as
+    /// before the cycle existed.
+    /// </summary>
+    public void RegenerateTick(double globalLight, bool photosynthesis)
     {
         if (_overrides.Count == 0)
         {
@@ -54,7 +60,13 @@ public sealed class GroundEnergyGrid
 
         foreach ((int X, int Y) key in _overrides.Keys.ToArray())
         {
-            double rate = _config.Biomes.For(_terrain.BiomeAt(key.X, key.Y)).RegenRate;
+            BiomeSettings settings = _config.Biomes.For(_terrain.BiomeAt(key.X, key.Y));
+            double rate = settings.RegenRate;
+            if (photosynthesis)
+            {
+                rate *= globalLight * settings.LightFactor;
+            }
+
             SetEnergy(key.X, key.Y, _overrides[key] + rate);
         }
     }

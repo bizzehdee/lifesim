@@ -125,7 +125,19 @@ public class SnapshotSerializerTests
     public void Load_rejectsIncompatibleMajorVersion()
     {
         JsonObject obj = JsonNode.Parse(SnapshotSerializer.Save(SampleSnapshot()))!.AsObject();
-        obj["schema_version"] = "2.0";
+        obj["schema_version"] = "99.0"; // a major far beyond anything the engine supports
+
+        var ex = Assert.Throws<SnapshotValidationException>(() => SnapshotSerializer.Load(obj.ToJsonString()));
+        Assert.Contains("schema", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Load_rejectsPre2_0Snapshots_whoseBrainsHaveTheOldInputWidth()
+    {
+        // schema 2.0 widened the sensory input vector (19 → 26); a schema-1.x snapshot's brains are
+        // structurally incompatible, so it must be rejected rather than loaded and run corrupt.
+        JsonObject obj = JsonNode.Parse(SnapshotSerializer.Save(SampleSnapshot()))!.AsObject();
+        obj["schema_version"] = "1.2";
 
         var ex = Assert.Throws<SnapshotValidationException>(() => SnapshotSerializer.Load(obj.ToJsonString()));
         Assert.Contains("schema", ex.Message, StringComparison.OrdinalIgnoreCase);

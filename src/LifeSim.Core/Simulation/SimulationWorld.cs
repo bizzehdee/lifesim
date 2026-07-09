@@ -245,8 +245,13 @@ public sealed class SimulationWorld
         long[] tickIds = _organisms.Keys.ToArray();
         int organismCount = tickIds.Length;
 
+        // The day/night + seasonal clock for this tick (pure function of the tick + config). Its cyclic
+        // temperature offset adds onto any climatic-event offset to form the effective temperature shift
+        // used by both sensing and metabolism below.
+        EnvironmentClock clock = EnvironmentClock.At(currentTick, Config.Cycle);
+
         double globalStress = _environment.GlobalStress;
-        double temperatureOffset = _environment.TemperatureOffset;
+        double temperatureOffset = _environment.TemperatureOffset + clock.CyclicTemperatureOffset;
         ulong sensoryNoiseSeed = _prngStreams[PrngStream.SensoryNoise].NextULong();
         var sensoryInputs = new double[organismCount][];
         RunPhase(organismCount, i =>
@@ -328,7 +333,7 @@ public sealed class SimulationWorld
         //    writes — so the body runs across up to MaxDegreeOfParallelism threads with byte-identical
         //    results for any thread count. Each captures its own pre-metabolism energy first (the Death &
         //    Transfer phase reads it for corpse energy) into a slot only it owns.
-        double temperatureShift = _environment.TemperatureOffset;
+        double temperatureShift = _environment.TemperatureOffset + clock.CyclicTemperatureOffset;
         bool plagueActive = _environment.PlagueActive;
         var energyBeforeMetabolism = new double[organismCount];
 

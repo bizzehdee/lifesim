@@ -419,9 +419,12 @@ public sealed record TraitBounds
 /// <summary>Stochastic event tuning.</summary>
 public sealed record EventsConfig
 {
-    public double BlightProbability { get; init; } = 0.001;
-    public double PlagueProbability { get; init; } = 0.001;
-    public double TemperatureAnomalyProbability { get; init; } = 0.001;
+    // Per-tick trigger chance for each catastrophe (one of each type active at a time). At 0.001 some
+    // event started roughly every ~350 ticks (~15% uptime), which felt too frequent; 0.0006 spaces them
+    // out to ~one every ~560 ticks (~9% uptime). Tunable per world in the advanced config.
+    public double BlightProbability { get; init; } = 0.0006;
+    public double PlagueProbability { get; init; } = 0.0006;
+    public double TemperatureAnomalyProbability { get; init; } = 0.0006;
     public int BlightDurationTicks { get; init; } = 50;
     public int PlagueDurationTicks { get; init; } = 40;
     public int TemperatureAnomalyDurationTicks { get; init; } = 60;

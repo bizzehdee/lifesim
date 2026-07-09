@@ -121,6 +121,10 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _multicellularEnabled = true;
 
+    /// <summary>Photosynthesis; on by default. Light (day/night + seasons) scales food regeneration, so productivity pulses with the cycle.</summary>
+    [ObservableProperty]
+    private bool _photosynthesisEnabled = true;
+
     /// <summary>
     /// When true, gameplay randomness (behaviour, mutation, combat, events) is seeded from entropy, so
     /// the same seed gives the same <em>map</em> but different <em>life</em> every run. Off = fully
@@ -342,6 +346,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                 InitialPopulation = (int)Population,
                 FoundingComposition = composition,
                 Senescence = SenescenceEnabled,
+                Photosynthesis = PhotosynthesisEnabled,
                 Cooperation = parsed.Cooperation with { Enabled = CooperationEnabled },
                 Multicellular = parsed.Multicellular with { Enabled = MulticellularEnabled },
             };
@@ -384,6 +389,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             ["cooperation"] = CooperationEnabled,
             ["senescence"] = SenescenceEnabled,
             ["multicellular"] = MulticellularEnabled,
+            ["photosynthesis"] = PhotosynthesisEnabled,
             ["entropy"] = EntropyBehaviour,
             ["founding_types"] = new JsonArray(FoundingTypes.Select(t => (JsonNode)new JsonObject
             {
@@ -423,6 +429,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         CooperationEnabled = options["cooperation"]!.GetValue<bool>();
         SenescenceEnabled = options["senescence"]!.GetValue<bool>();
         MulticellularEnabled = options["multicellular"]!.GetValue<bool>();
+        PhotosynthesisEnabled = options["photosynthesis"]?.GetValue<bool>() ?? true; // default on for older options files
         EntropyBehaviour = options["entropy"]?.GetValue<bool>() ?? false;
 
         if (options["founding_types"] is JsonArray savedTypes)

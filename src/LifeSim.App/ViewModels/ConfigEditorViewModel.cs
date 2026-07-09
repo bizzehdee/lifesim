@@ -78,12 +78,12 @@ public sealed record ConfigGroup(string Title, IReadOnlyList<ConfigField> Fields
 /// config JSON into a mutable tree and exposes every numeric/boolean leaf as an editable
 /// <see cref="ConfigField"/> grouped by config block, so the user can tweak any starting constant
 /// without hand-editing JSON. Edits write straight back into the tree; <see cref="ToJson"/> returns
-/// the current config. The three headline toggles (cooperation/senescence/multicellularity) are
-/// excluded here because the setup screen surfaces them as dedicated checkboxes.
+/// the current config. The headline toggles (cooperation/senescence/multicellularity/photosynthesis)
+/// are excluded here because the setup screen surfaces them as dedicated checkboxes.
 /// </summary>
 public sealed class AdvancedConfigEditor
 {
-    private static readonly HashSet<string> Excluded = ["senescence", "cooperation.enabled", "multicellular.enabled"];
+    private static readonly HashSet<string> Excluded = ["senescence", "photosynthesis", "cooperation.enabled", "multicellular.enabled"];
 
     private readonly JsonObject _root;
 

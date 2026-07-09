@@ -56,14 +56,17 @@ public class ConfigEditorTests
     {
         AdvancedConfigEditor editor = DefaultEditor();
 
-        // Senescence / cooperation.enabled / multicellular.enabled are edited via the setup checkboxes.
+        // Senescence / photosynthesis / cooperation.enabled / multicellular.enabled are edited via the
+        // setup checkboxes, so they don't appear as editable fields here.
         Assert.DoesNotContain(editor.Groups.SelectMany(AllFields), f => f.Label == "Senescence");
+        Assert.DoesNotContain(editor.Groups.SelectMany(AllFields), f => f.Label == "Photosynthesis");
         Assert.DoesNotContain(editor.Groups.First(g => g.Title == "Cooperation").Fields, f => f.Label == "Enabled");
 
         // …but they still round-trip untouched.
         SimulationConfig parsed = SnapshotSerializer.LoadConfig(editor.ToJson());
         Assert.True(parsed.Cooperation.Enabled);
         Assert.True(parsed.Multicellular.Enabled);
+        Assert.True(parsed.Photosynthesis);
     }
 
     [Fact]
@@ -78,6 +81,7 @@ public class ConfigEditorTests
         a.CooperationEnabled = false;
         a.SenescenceEnabled = false;
         a.MulticellularEnabled = false;
+        a.PhotosynthesisEnabled = false;
         Field(a.AdvancedConfig, "Reproduction", "Reproduction Base Cost").Number = 4.25m;
 
         string saved = a.SaveOptionsJson();
@@ -92,6 +96,7 @@ public class ConfigEditorTests
         Assert.False(b.CooperationEnabled);
         Assert.False(b.SenescenceEnabled);
         Assert.False(b.MulticellularEnabled);
+        Assert.False(b.PhotosynthesisEnabled);
         Assert.Equal(4.25, SnapshotSerializer.LoadConfig(b.AdvancedConfig.ToJson()).Reproduction.ReproductionBaseCost);
 
         a.Dispose();

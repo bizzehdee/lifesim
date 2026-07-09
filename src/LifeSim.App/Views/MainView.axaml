@@ -101,6 +101,10 @@
                                       Content="Multicellularity (differentiated bodies)" Margin="0,4,0,0" />
                             <TextBlock Opacity="0.6" FontSize="12" Margin="28,0,0,0" TextWrapping="Wrap"
                                        Text="Bodies can evolve many cells specialised to jobs (germ, feeder, store, defender, mover, sensor). Bigger bodies cost more but store more; the square-cube law caps size. Off = every organism is a single cell." />
+                            <CheckBox IsChecked="{Binding PhotosynthesisEnabled}"
+                                      Content="Photosynthesis (light-driven food)" Margin="0,4,0,0" />
+                            <TextBlock Opacity="0.6" FontSize="12" Margin="28,0,0,0" TextWrapping="Wrap"
+                                       Text="Food regrows with the light: fast in daytime and summer, stalled at night and in winter (shaded biomes get less). Drives daily and seasonal productivity cycles that reward following the sun. Off = food regenerates at a steady biome rate regardless of the day/night cycle." />
                             <CheckBox IsChecked="{Binding EntropyBehaviour}"
                                       Content="Entropy (unrepeatable life)" Margin="0,4,0,0" />
                             <TextBlock Opacity="0.6" FontSize="12" Margin="28,0,0,0" TextWrapping="Wrap"

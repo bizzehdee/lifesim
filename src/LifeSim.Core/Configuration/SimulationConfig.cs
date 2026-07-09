@@ -21,6 +21,7 @@ public sealed record SimulationConfig
     public MutationConfig Mutation { get; init; } = new();
     public TraitBounds TraitBounds { get; init; } = new();
     public EventsConfig Events { get; init; } = new();
+    public EnvironmentCycleConfig Cycle { get; init; } = new();
     public NamingConfig Naming { get; init; } = new();
 
     /// <summary>Moisture noise layer.</summary>
@@ -48,6 +49,38 @@ public sealed record SimulationConfig
     public bool Senescence { get; init; } = true;
 
     public static SimulationConfig Default => new();
+}
+
+/// <summary>
+/// The nested day/night + seasonal clock. Every value here drives a <em>pure function of the tick</em>
+/// (see <c>EnvironmentClock</c>) — no randomness — so the cycle needs no PRNG stream and nothing new to
+/// serialize: it is re-derived from the tick on load. The clock produces a global light level (used by
+/// the light field / photosynthesis) and a cyclic temperature offset (added to the effective tile
+/// temperature alongside climatic-event offsets).
+/// <para>
+/// A "flat" world with no cycle is reachable without a toggle: set both temperature amplitudes to 0 and
+/// both light floors to 1, and light/temperature become constant.
+/// </para>
+/// </summary>
+public sealed record EnvironmentCycleConfig
+{
+    /// <summary>Ticks in one full day/night cycle (light peaks mid-day, troughs at midnight).</summary>
+    public int DayLengthTicks { get; init; } = 240;
+
+    /// <summary>Ticks in one full seasonal cycle (a "year"); the default is ≈20 days.</summary>
+    public int YearLengthTicks { get; init; } = 4800;
+
+    /// <summary>Peak-to-baseline temperature swing (°C) between midnight and midday.</summary>
+    public double DayNightTemperatureAmplitude { get; init; } = 6.0;
+
+    /// <summary>Peak-to-baseline temperature swing (°C) between midwinter and midsummer.</summary>
+    public double SeasonalTemperatureAmplitude { get; init; } = 12.0;
+
+    /// <summary>Global light at midnight as a fraction of noon light (0 = pitch dark, 1 = no day/night dimming).</summary>
+    public double NightLightFloor { get; init; } = 0.05;
+
+    /// <summary>Midwinter daytime light as a fraction of midsummer daytime light (1 = no seasonal dimming).</summary>
+    public double WinterLightScale { get; init; } = 0.4;
 }
 
 /// <summary>

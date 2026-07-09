@@ -44,11 +44,45 @@ jobs:
           path: artifacts/wasm/wwwroot
           if-no-files-found: warn
 
+  # Decides whether the heavy publish jobs (release + Pages, both AOT — slow) need to run: they do only
+  # when the push changes something other than docs. A docs-only change (*.md or docs/**) still runs
+  # build-test everywhere, but skips the ~30-minute AOT builds.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need history to diff the pushed range
+
+      - name: Detect non-docs changes
+        id: filter
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          # No usable base (first push, force-push, or non-push event) → treat as code changed (run).
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed="$(git diff --name-only "$BEFORE" "$AFTER")"
+          echo "Changed files:"; echo "$changed"
+          # 'code' is true if ANY changed file is not markdown and not under docs/.
+          if printf '%s\n' "$changed" | grep -qvE '(\.md$|^docs/)'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false (docs only) — skipping the AOT publish jobs"
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # Packages a self-contained desktop build per platform (plus the WASM demo) and publishes them to a
-  # single rolling "ci" pre-release, always replacing the previous one. Only on pushes to main.
+  # single rolling "ci" pre-release, always replacing the previous one. Only on pushes to main, and only
+  # when non-docs files changed.
   release:
-    needs: build-test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build-test, changes]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -106,8 +140,8 @@ jobs:
   # single-threaded, so it needs no COOP/COEP headers — plain static hosting works, and every asset is
   # referenced relatively so it runs fine from the project sub-path (user.github.io/<repo>/).
   deploy-pages:
-    needs: build-test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build-test, changes]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     permissions:
       pages: write

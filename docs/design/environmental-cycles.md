@@ -4,7 +4,17 @@ A planned extension that gives the world a **nested day/night + seasonal clock**
 light field**, and two coupled consequences: the clock **swings temperature** (colder nights and
 winters), and — behind a headline toggle — **light drives food regeneration (photosynthesis)**.
 Organisms gain new senses so behaviour can time itself to the cycle (circadian rhythm) and orient to
-light (phototaxis). Not implemented yet; this is the design.
+light (phototaxis).
+
+> **Implementation status (2026-07-09).** Fully implemented (tasks EC-1…EC-11). Phase 1: the
+> `EnvironmentCycleConfig` + pure `EnvironmentClock`, with the cyclic temperature offset folded into the
+> existing offset seam. Phase 2: per-biome `LightFactor`, and the `Photosynthesis` toggle scaling
+> ground-energy regen by local light (setup checkbox + editor exclusion + options round-trip). Phase 3:
+> the seven light/cycle sensory inputs, `InputCount` 19→26, and a schema major bump to 2.0 so pre-cycle
+> snapshots reject cleanly. Phase 4: the glance/statistics time line, a `Light` colour mode + legend,
+> the inspector light readout, and this rules.md update. Determinism held throughout (the clock is a pure
+> function of the tick); calibration stayed green. Follow-ups below (latitude bands, per-sense evolvable
+> acuity/cost) remain open.
 
 Like every feature it must respect the hard constraints: **determinism** (byte-identical replay /
 save-reload / any thread count), **WASM/AOT/trimming friendliness** in the Core, and **no

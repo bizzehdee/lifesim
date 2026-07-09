@@ -38,7 +38,7 @@ public sealed class EngineRunner : IDisposable
     private volatile bool _playing;
     private volatile bool _stopping;
     private volatile int _pendingSteps;
-    private volatile int _delayMs = 100; // minimum ms per tick; 10 ticks/s default
+    private volatile int _delayMs = 100; // target ms between ticks; 0.1 s/tick default
 
     public EngineRunner(SimulationWorld world, Action<WorldSnapshot> onFrame)
     {
@@ -78,12 +78,17 @@ public sealed class EngineRunner : IDisposable
         Interlocked.Increment(ref _pendingSteps);
     }
 
-    public void SetTicksPerSecond(double ticksPerSecond)
+    /// <summary>
+    /// Sets the target wall-clock interval between ticks (seconds per tick). Each tick is paced off a
+    /// stopwatch to hit this interval, so the rate is independent of CPU clock speed. The interval is a
+    /// floor on the wait, never a busy-spin: if a tick costs more than the interval — e.g. the 1 ms
+    /// target on a slow machine or a very large world — the sim just runs as fast as it can, so the
+    /// fastest steps are best-effort targets rather than guarantees.
+    /// </summary>
+    public void SetTargetInterval(double secondsPerTick)
     {
-        double clamped = Math.Clamp(ticksPerSecond, 0.5, 1000.0);
-        // A minimum time per tick: at low speeds this paces the sim; at high speeds it's below the
-        // compute time, so the sim runs flat-out (0 for the top of the range = fully unthrottled).
-        _delayMs = clamped >= 1000.0 ? 0 : (int)Math.Round(1000.0 / clamped);
+        double ms = Math.Round(secondsPerTick * 1000.0);
+        _delayMs = (int)Math.Clamp(ms, 1.0, int.MaxValue);
     }
 
     /// <summary>Live-adjust the per-tick worker thread count for the parallel phases (execution-only, results are unaffected).</summary>
@@ -196,8 +201,8 @@ public sealed class EngineRunner : IDisposable
                 _nextFrameAt = now + FrameIntervalMs;
             }
 
-            // _delayMs is a *minimum* per-tick time: wait only the unspent remainder, so a slow speed
-            // paces the sim while a high speed runs flat-out.
+            // _delayMs is the *target* per-tick interval: wait only the unspent remainder, so the rate
+            // is CPU-independent; if the tick already overran the interval, run the next one immediately.
             int remaining = _delayMs - (int)(now - start);
             return remaining > 0 ? remaining : 0;
         }

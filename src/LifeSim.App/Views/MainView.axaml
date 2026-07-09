@@ -21,8 +21,14 @@
                 <Button Content="⟳ New…" Command="{Binding ShowSetupCommand}" />
 
                 <TextBlock Text="Speed" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding LiveCapable}" />
-                <Slider Width="120" Minimum="1" Maximum="1000" Value="{Binding TicksPerSecond}" VerticalAlignment="Center" IsVisible="{Binding LiveCapable}"
-                        ToolTip.Tip="Ticks per second (drag to the far right for unthrottled max speed)" />
+                <Button Content="−" Command="{Binding SlowDownCommand}" IsEnabled="{Binding CanSlowDown}" IsVisible="{Binding LiveCapable}"
+                        ToolTip.Tip="Slower (longer interval between ticks)" />
+                <Slider Width="120" Minimum="0" Maximum="{Binding MaxSpeedIndex}" Value="{Binding SpeedIndex}"
+                        TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" IsVisible="{Binding LiveCapable}"
+                        ToolTip.Tip="Target interval between ticks (paced off a wall-clock, so it's independent of CPU speed)" />
+                <Button Content="+" Command="{Binding SpeedUpCommand}" IsEnabled="{Binding CanSpeedUp}" IsVisible="{Binding LiveCapable}"
+                        ToolTip.Tip="Faster (shorter interval between ticks)" />
+                <TextBlock Text="{Binding SpeedLabel}" VerticalAlignment="Center" MinWidth="118" IsVisible="{Binding LiveCapable}" />
 
                 <Border Width="1" Background="{DynamicResource SystemChromeHighColor}" Margin="6,2" />
 

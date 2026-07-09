@@ -181,6 +181,34 @@ public partial class WorldViewModel : ViewModelBase
     /// <summary>Forget notification history so the next frame re-seeds baselines silently (call when a new world is adopted).</summary>
     public void ResetNotifications() => _eventWatcher.Reset();
 
+    // Heavy sidebar lists (Ranking, Organisms) rebuild the whole collection and force the ListBox to
+    // recreate its item containers — far costlier than the map scene. At a fast tick rate, doing that
+    // every frame saturates the UI thread and starves input. While the sim is playing we therefore cap
+    // these rebuilds to a few per second; when paused/stepping (ThrottleLiveLists = false) every frame
+    // refreshes immediately, and user actions (tab switch, sort change, manual refresh) always do too.
+    private const long ListRefreshIntervalMs = 250;
+    private long _lastRankingRefreshMs = long.MinValue;
+    private long _lastOrganismRefreshMs = long.MinValue;
+
+    /// <summary>
+    /// Set by the session while the sim is playing. When true, the Ranking/Organisms lists refresh at a
+    /// capped rate rather than every frame so a fast tick rate can't monopolise the UI thread; when false
+    /// (paused, stepping, a static loaded snapshot) each frame refreshes them immediately.
+    /// </summary>
+    public bool ThrottleLiveLists { get; set; }
+
+    private static bool DueForRefresh(ref long lastMs)
+    {
+        long now = Environment.TickCount64;
+        if (now - lastMs < ListRefreshIntervalMs)
+        {
+            return false;
+        }
+
+        lastMs = now;
+        return true;
+    }
+
     /// <summary>Feed a new frame from either a live Core or a loaded snapshot.</summary>
     public void LoadSnapshot(WorldSnapshot snapshot) => Snapshot = snapshot;
 
@@ -354,14 +382,16 @@ public partial class WorldViewModel : ViewModelBase
     {
         RebuildScene();
         RebuildInspector();
-        if (SidebarTabIndex == 1)
+        // Auto-refresh the open list, but rate-cap it while playing (see ThrottleLiveLists) so a fast tick
+        // rate rebuilding the whole list every frame can't starve the UI thread of input.
+        if (SidebarTabIndex == 1 && (!ThrottleLiveLists || DueForRefresh(ref _lastRankingRefreshMs)))
         {
-            RefreshRankingPreservingSelection(); // auto-refresh the leaderboard while the tab is open
+            RefreshRankingPreservingSelection(); // leaderboard
         }
 
-        if (SidebarTabIndex == 2)
+        if (SidebarTabIndex == 2 && (!ThrottleLiveLists || DueForRefresh(ref _lastOrganismRefreshMs)))
         {
-            RefreshOrganismList(); // auto-refresh the live-organisms list while the tab is open
+            RefreshOrganismList(); // live-organisms list
         }
 
         if (IsLineageGraphVisible)

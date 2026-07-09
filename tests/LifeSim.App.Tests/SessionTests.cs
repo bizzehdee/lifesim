@@ -43,6 +43,50 @@ public class SessionTests
     }
 
     [Fact]
+    public void Speed_isADiscreteStepScale_withClampedFineTuneCommands()
+    {
+        MainViewModel session = CreatedSession();
+
+        // The scale is ordered slowest → fastest and spans the requested 10 s … 1 ms targets.
+        Assert.Equal(10.0, MainViewModel.SpeedSteps[0].Seconds);
+        Assert.Equal(0.001, MainViewModel.SpeedSteps[^1].Seconds);
+        Assert.Equal(MainViewModel.SpeedSteps.Count - 1, session.MaxSpeedIndex);
+
+        // Default is 0.1 s / tick, and the label reflects the current step.
+        Assert.Equal(0.1, MainViewModel.SpeedSteps[session.SpeedIndex].Seconds);
+        Assert.Equal(MainViewModel.SpeedSteps[session.SpeedIndex].Label, session.SpeedLabel);
+
+        // "+" fine-tunes faster (up the scale), "−" slower, and both clamp at the ends.
+        session.SpeedUp();
+        Assert.Equal(5, session.SpeedIndex);
+        session.SlowDown();
+        session.SlowDown();
+        Assert.Equal(3, session.SpeedIndex);
+
+        while (session.CanSpeedUp)
+        {
+            session.SpeedUp();
+        }
+
+        Assert.Equal(session.MaxSpeedIndex, session.SpeedIndex);
+        Assert.False(session.CanSpeedUp);
+        session.SpeedUp(); // clamped — no-op at the top
+        Assert.Equal(session.MaxSpeedIndex, session.SpeedIndex);
+
+        while (session.CanSlowDown)
+        {
+            session.SlowDown();
+        }
+
+        Assert.Equal(0, session.SpeedIndex);
+        Assert.False(session.CanSlowDown);
+        session.SlowDown(); // clamped — no-op at the bottom
+        Assert.Equal(0, session.SpeedIndex);
+
+        session.Dispose();
+    }
+
+    [Fact]
     public void Play_isIdempotent_andGatesTheButtonsByPlayState()
     {
         MainViewModel session = CreatedSession();
@@ -81,7 +125,7 @@ public class SessionTests
         Assert.Equal(0, Volatile.Read(ref lastTick)); // initial frame at tick 0
         Assert.Equal(1, frames);
 
-        runner.SetTicksPerSecond(100);
+        runner.SetTargetInterval(0.01); // 10 ms / tick
         runner.Play();
         Assert.True(SpinUntil(() => Volatile.Read(ref lastTick) >= 3), "Playing should advance the tick.");
 

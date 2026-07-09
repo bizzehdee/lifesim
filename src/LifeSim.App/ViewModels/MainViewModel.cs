@@ -22,6 +22,9 @@ public enum SessionMode
     Streaming,
 }
 
+/// <summary>One step on the discrete speed scale: a target seconds-per-tick interval and its display label.</summary>
+public sealed record SpeedStep(double Seconds, string Label);
+
 /// <summary>
 /// The app-shell session hosting the shared <see cref="WorldViewModel"/>.
 /// It exposes the control deck (play / pause / step / speed), save/load and stream exchange with the
@@ -61,8 +64,28 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isPlaying;
 
+    /// <summary>
+    /// Discrete target intervals between ticks (seconds per tick), ordered slowest → fastest so sliding
+    /// right runs faster. The engine paces each tick to hit its interval off a wall-clock, so the rate is
+    /// independent of CPU clock speed; the fastest step (1 ms) is a best-effort target slower machines may
+    /// not reach.
+    /// </summary>
+    public static readonly IReadOnlyList<SpeedStep> SpeedSteps =
+    [
+        new(10.0, "10 s / tick"),
+        new(5.0, "5 s / tick"),
+        new(1.0, "1 s / tick"),
+        new(0.5, "0.5 s / tick"),
+        new(0.1, "0.1 s / tick"),
+        new(0.05, "50 ms / tick"),
+        new(0.01, "10 ms / tick"),
+        new(0.005, "5 ms / tick"),
+        new(0.001, "1 ms / tick (target)"),
+    ];
+
+    /// <summary>Index into <see cref="SpeedSteps"/> selecting the target tick interval; default 0.1 s/tick.</summary>
     [ObservableProperty]
-    private double _ticksPerSecond = 10.0;
+    private int _speedIndex = 4;
 
     [ObservableProperty]
     private string _status = "";
@@ -139,12 +162,56 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
         OnPropertyChanged(nameof(CanPlay));
         OnPropertyChanged(nameof(CanPause));
+
+        // While playing, cap the heavy Ranking/Organisms list rebuilds so a fast tick rate can't starve
+        // the UI thread; paused/stepping refreshes them every frame for immediacy.
+        World.ThrottleLiveLists = value;
     }
 
     partial void OnHasWorldChanged(bool value)
     {
         OnPropertyChanged(nameof(CanPlay));
         OnPropertyChanged(nameof(CanPause));
+    }
+
+    /// <summary>Highest valid <see cref="SpeedIndex"/> — the slider's upper bound.</summary>
+    public int MaxSpeedIndex => SpeedSteps.Count - 1;
+
+    /// <summary>Human label for the current speed step (e.g. "0.1 s / tick"), shown next to the slider.</summary>
+    public string SpeedLabel => SpeedSteps[Math.Clamp(SpeedIndex, 0, MaxSpeedIndex)].Label;
+
+    /// <summary>The − button can fine-tune down (slower) while not already at the slowest step.</summary>
+    public bool CanSlowDown => SpeedIndex > 0;
+
+    /// <summary>The + button can fine-tune up (faster) while not already at the fastest step.</summary>
+    public bool CanSpeedUp => SpeedIndex < MaxSpeedIndex;
+
+    partial void OnSpeedIndexChanged(int value)
+    {
+        OnPropertyChanged(nameof(SpeedLabel));
+        OnPropertyChanged(nameof(CanSlowDown));
+        OnPropertyChanged(nameof(CanSpeedUp));
+        _runner?.SetTargetInterval(SpeedSteps[Math.Clamp(value, 0, MaxSpeedIndex)].Seconds);
+    }
+
+    /// <summary>Fine-tune one step slower (a longer interval between ticks).</summary>
+    [RelayCommand]
+    public void SlowDown()
+    {
+        if (SpeedIndex > 0)
+        {
+            SpeedIndex--;
+        }
+    }
+
+    /// <summary>Fine-tune one step faster (a shorter interval between ticks).</summary>
+    [RelayCommand]
+    public void SpeedUp()
+    {
+        if (SpeedIndex < MaxSpeedIndex)
+        {
+            SpeedIndex++;
+        }
     }
 
     /// <summary>Design-time / default: live-capable, showing the setup screen.</summary>
@@ -502,8 +569,6 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     public void Dispose() => DisposeSources();
 
-    partial void OnTicksPerSecondChanged(double value) => _runner?.SetTicksPerSecond(value);
-
     partial void OnThreadCountChanged(decimal value) => _runner?.SetMaxDegreeOfParallelism(ResolveThreads(value));
 
     /// <summary>Clamp a requested thread count to 1..hardware-threads.</summary>
@@ -521,7 +586,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         World.ResetNotifications(); // fresh world → re-seed notification baselines silently
         world.MaxDegreeOfParallelism = ResolveThreads(ThreadCount);
         _runner = new EngineRunner(world, PublishFrame);
-        _runner.SetTicksPerSecond(TicksPerSecond);
+        _runner.SetTargetInterval(SpeedSteps[Math.Clamp(SpeedIndex, 0, MaxSpeedIndex)].Seconds);
         HasWorld = true;
     }
 

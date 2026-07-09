@@ -23,4 +23,7 @@ public enum ColourMode
 
     /// <summary>Teal if the organism's last action was to share energy, else neutral — a cooperation readout.</summary>
     Cooperation,
+
+    /// <summary>Brain "cognition" index (0–100): dim (simple brain) → bright (deep, well-wired brain).</summary>
+    Intelligence,
 }

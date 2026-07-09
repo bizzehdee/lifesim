@@ -121,6 +121,12 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
     /// <summary>Effective feed-forward depth of the evolved network (layers from input to output).</summary>
     public int NetworkDepth => BrainGraph.Depth;
 
+    /// <summary>
+    /// Display-only "cognition" index (0–100) — depth, functional units, wiring, and recurrence rolled
+    /// into one brain-sophistication number. See <see cref="BrainIntelligence"/>. Not a simulation input.
+    /// </summary>
+    public double Intelligence => BrainIntelligence.Score(Organism.Brain);
+
     /// <summary>Builds the inspector for organism <paramref name="organismId"/>, or null if it isn't in the snapshot.</summary>
     public static OrganismInspectorViewModel? Create(WorldSnapshot snapshot, long organismId)
     {

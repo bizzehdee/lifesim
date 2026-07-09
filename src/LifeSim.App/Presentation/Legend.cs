@@ -94,6 +94,10 @@ public static class LegendBuilder
             new LegendEntry("Shared energy this tick", SimulationPalette.Share),
             new LegendEntry("Did not share", SimulationPalette.Neutral),
         ]),
+        ColourMode.Intelligence => new LegendSection("Fill: Intelligence (brain capability)",
+        [
+            new LegendEntry("Simple → sophisticated", SimulationPalette.IntelligenceColour(80), LegendGlyph.Gradient),
+        ]),
         _ => new LegendSection("Fill", []),
     };
 }

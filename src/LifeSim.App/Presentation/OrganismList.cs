@@ -11,11 +11,12 @@ public enum OrganismSortKey
     Children,
     Score,
     BrainNodes,
+    Intelligence,
     PreyCount,
 }
 
 /// <summary>One row of the live-organisms list: identity plus the sortable stats. PreyCount is lifetime kills.</summary>
-public sealed record OrganismRow(long OrganismId, string Name, long Age, double CellCount, long Children, double Score, int BrainNodes, long PreyCount);
+public sealed record OrganismRow(long OrganismId, string Name, long Age, double CellCount, long Children, double Score, int BrainNodes, double Intelligence, long PreyCount);
 
 /// <summary>
 /// Builds the sortable list of currently-alive organisms for the Organisms sidebar tab. Score is the
@@ -39,6 +40,7 @@ public static class OrganismListBuilder
             children.GetValueOrDefault(o.OrganismId),
             LineageScore.Score(descendants.GetValueOrDefault(o.OrganismId), children.GetValueOrDefault(o.OrganismId), o.Age),
             o.Brain.Nodes.Count,
+            BrainIntelligence.Score(o.Brain),
             o.PredationWins));
 
         Func<OrganismRow, double> selector = key switch
@@ -47,6 +49,7 @@ public static class OrganismListBuilder
             OrganismSortKey.CellCount => r => r.CellCount,
             OrganismSortKey.Children => r => r.Children,
             OrganismSortKey.BrainNodes => r => r.BrainNodes,
+            OrganismSortKey.Intelligence => r => r.Intelligence,
             OrganismSortKey.PreyCount => r => r.PreyCount,
             _ => r => r.Score,
         };

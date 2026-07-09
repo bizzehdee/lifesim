@@ -43,6 +43,11 @@ public static class SimulationPalette
     private static readonly Color EnergyMid = Color.FromRgb(0xF2, 0xB1, 0x3A);  // amber
     private static readonly Color EnergyHigh = Color.FromRgb(0x3F, 0xB9, 0x50); // green
 
+    // --- Intelligence gradient stops (0 → 100): dim slate → indigo → bright teal. ---
+    private static readonly Color IqLow = Color.FromRgb(0x3A, 0x3F, 0x55);  // dim slate-blue (simple brain)
+    private static readonly Color IqMid = Color.FromRgb(0x6D, 0x5A, 0xE0);  // indigo
+    private static readonly Color IqHigh = Color.FromRgb(0x3F, 0xE0, 0xD0); // bright teal (sophisticated brain)
+
     public static Color Biome(Biome biome) => biome switch
     {
         Core.World.Biome.Grassland => Grassland,
@@ -71,6 +76,15 @@ public static class SimulationPalette
         return t < 0.5
             ? Lerp(EnergyLow, EnergyMid, t / 0.5)
             : Lerp(EnergyMid, EnergyHigh, (t - 0.5) / 0.5);
+    }
+
+    /// <summary>Intelligence fill: dim slate → indigo → bright teal across a 0–100 cognition score.</summary>
+    public static Color IntelligenceColour(double score)
+    {
+        double t = Math.Clamp(score / 100.0, 0.0, 1.0);
+        return t < 0.5
+            ? Lerp(IqLow, IqMid, t / 0.5)
+            : Lerp(IqMid, IqHigh, (t - 0.5) / 0.5);
     }
 
     /// <summary>

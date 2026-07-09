@@ -160,6 +160,7 @@
                                         <TextBlock FontSize="11" Opacity="0.7" Text="{Binding Children, StringFormat='· children {0}'}" />
                                         <TextBlock FontSize="11" Opacity="0.7" Text="{Binding Score, StringFormat='· score {0:F2}'}" />
                                         <TextBlock FontSize="11" Opacity="0.7" Text="{Binding BrainNodes, StringFormat='· nodes {0}'}" />
+                                        <TextBlock FontSize="11" Opacity="0.7" Text="{Binding Intelligence, StringFormat='· IQ {0:F0}'}" />
                                         <TextBlock FontSize="11" Opacity="0.7" Text="{Binding PreyCount, StringFormat='· prey {0}'}" />
                                     </StackPanel>
                                 </StackPanel>

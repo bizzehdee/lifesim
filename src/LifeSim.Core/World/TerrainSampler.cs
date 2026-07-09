@@ -43,6 +43,13 @@ public sealed class TerrainSampler
         _biomeCache.GetOrAdd((x, y), k => BiomeClassifier.Classify(MoistureAt(k.X, k.Y), TemperatureAt(k.X, k.Y), _config.Biomes.Thresholds));
 
     /// <summary>
+    /// The tile's spatial light factor (0..1) — its biome's <see cref="BiomeSettings.LightFactor"/>.
+    /// Multiply by the current <see cref="EnvironmentClock.GlobalLight"/> to get the tile's actual light;
+    /// this is the only spatially-varying part, since day/night dims the whole map uniformly.
+    /// </summary>
+    public double LightFactorAt(int x, int y) => _config.Biomes.For(BiomeAt(x, y)).LightFactor;
+
+    /// <summary>
     /// The tile's physical temperature in °C: its biome's baseline temperature
     /// plus the temperature-noise field scaled by <see cref="BiomesConfig.TemperatureVariation"/>.
     /// This is what thermal-stress metabolism and the temperature sensor read, so an organism's °C

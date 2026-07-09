@@ -313,7 +313,9 @@ public sealed record BiomesConfig
 {
     public BiomeSettings Grassland { get; init; } = new() { Friction = 1.0, RegenRate = 0.8, EnergyCap = 20.0, Temperature = 20.0 };
     public BiomeSettings Desert { get; init; } = new() { Friction = 0.8, RegenRate = 0.05, EnergyCap = 5.0, Temperature = 45.0 };
-    public BiomeSettings Swamp { get; init; } = new() { Friction = 3.0, RegenRate = 1.5, EnergyCap = 40.0, Temperature = 25.0 };
+    // A shaded canopy (LightFactor < 1): richest ground but the least sunlight, so under photosynthesis
+    // its regen is throttled and phototaxis reads it as a dim patch to move out of toward open ground.
+    public BiomeSettings Swamp { get; init; } = new() { Friction = 3.0, RegenRate = 1.5, EnergyCap = 40.0, Temperature = 25.0, LightFactor = 0.6 };
     // A minimal energy trickle — harsher than the desert, but non-zero — so a cold-adapted, lean
     // lineage (cold thermal_center, small size, sparse senses) can scrape a living on the ice where a
     // grassland generalist would starve, rather than the ice being flatly uninhabitable.
@@ -353,6 +355,15 @@ public sealed record BiomeSettings
     public double RegenRate { get; init; } = 0.5;
     public double EnergyCap { get; init; } = 20.0;
     public double Temperature { get; init; } = 20.0;
+
+    /// <summary>
+    /// How much of the global light reaches this biome's ground (0..1). Day/night is spatially uniform,
+    /// so this per-biome factor is the <em>only</em> spatial light variation — the gradient phototaxis
+    /// climbs. Open biomes sit near 1.0; shaded ones (canopy/swamp) sit below it. Multiplies
+    /// <see cref="World.EnvironmentClock.GlobalLight"/> to give a tile's light, and (when photosynthesis
+    /// is on) scales that tile's resource regeneration.
+    /// </summary>
+    public double LightFactor { get; init; } = 1.0;
 }
 
 /// <summary>

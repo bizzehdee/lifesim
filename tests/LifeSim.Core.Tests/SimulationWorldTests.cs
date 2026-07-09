@@ -236,7 +236,13 @@ public class SimulationWorldTests
         // With only one organism in the world, the only possible source of energy gain each tick
         // is Harvest-Self grazing — there's no other organism to predate, and Reproduce only ever
         // spends energy. So any tick-over-tick increase proves grazing actually transferred energy.
-        SimulationConfig config = SimulationConfig.Default with { InitialPopulation = 1 };
+        // Reproduction is made unaffordable so the organism stays the sole occupant for the whole run
+        // (otherwise a lucky brain can breed and there'd be more than one organism to reason about).
+        SimulationConfig config = SimulationConfig.Default with
+        {
+            InitialPopulation = 1,
+            Reproduction = SimulationConfig.Default.Reproduction with { ReproductionBaseCost = 1_000_000.0 },
+        };
         var world = SimulationWorld.CreateGenesis(NewWorldState(), config);
 
         double previousEnergy = world.Organisms.Values.Single().Energy;

@@ -35,6 +35,8 @@ public static class BrainVocabulary
         ["prey_near"] = new(SensoryField.NearbySmallerCount, 1.0),
         ["toxic_prey_near"] = new(SensoryField.ClosestOrganismToxicity, 1.0), // aposematic warning signal
         ["stressed"] = new(SensoryField.GlobalStressLevel, 1.0),
+        ["bright"] = new(SensoryField.LightLevel, 1.0),   // fires in the light (daytime / summer / open ground)
+        ["dark"] = new(SensoryField.LightLevel, -1.0),    // fires in the dark (night / winter / shade)
     };
 
     // Direction words usable inside a directional macro, e.g. HarvestToward(<dir>).
@@ -47,6 +49,8 @@ public static class BrainVocabulary
         // Skew toward related / unrelated neighbours.
         ["kin"] = new(SensoryField.ClosestOrganismDirectionX, SensoryField.ClosestOrganismDirectionY, SensoryField.ClosestOrganismRelatedness, 1.0),
         ["stranger"] = new(SensoryField.ClosestOrganismDirectionX, SensoryField.ClosestOrganismDirectionY, SensoryField.ClosestOrganismRelatedness, -1.0),
+        // Toward the brightest ground nearby — phototaxis / basking (or MoveAway for shade-seeking).
+        ["light"] = new(SensoryField.LightDirectionX, SensoryField.LightDirectionY, null, 0.0),
     };
 
     /// <summary>The N/S/E/W action indices of a directional action family, for direction-vector wiring.</summary>

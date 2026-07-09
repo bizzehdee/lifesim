@@ -10,7 +10,7 @@ namespace LifeSim.Core.Neat;
 public static class NeatTopology
 {
     /// <summary>The fixed sensory vector width — see <see cref="LifeSim.Core.Sensing.SensoryField"/>.</summary>
-    public const int InputCount = 19;
+    public const int InputCount = 26;
 
     /// <summary>The 15 action outputs — matches <see cref="Organisms.OrganismAction"/>.</summary>
     public const int OutputCount = 15;

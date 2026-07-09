@@ -33,4 +33,28 @@ public enum SensoryField
     /// evolve to avoid attacking toxic prey rather than only learning by being poisoned.
     /// </summary>
     ClosestOrganismToxicity = 18,
+
+    // --- Diurnal/seasonal cycle + light (see EnvironmentClock, LightFactor). Added as a batch so the
+    //     input vector width changes exactly once. ---
+
+    /// <summary>Light at the organism's own tile (0..1): the clock's global light × the biome light factor.</summary>
+    LightLevel = 19,
+
+    /// <summary>Sine of the day phase — half of a smooth cyclic encoding of time-of-day (no wrap discontinuity).</summary>
+    DayPhaseSin = 20,
+
+    /// <summary>Cosine of the day phase — the other half of the time-of-day encoding; lets a brain anticipate dawn/dusk.</summary>
+    DayPhaseCos = 21,
+
+    /// <summary>Sine of the season phase — half of a smooth cyclic encoding of time-of-year.</summary>
+    SeasonPhaseSin = 22,
+
+    /// <summary>Cosine of the season phase — the other half; lets a brain anticipate winter/summer.</summary>
+    SeasonPhaseCos = 23,
+
+    /// <summary>X of the unit vector toward the brightest tile within env-radius — the phototaxis / shade-seeking gradient.</summary>
+    LightDirectionX = 24,
+
+    /// <summary>Y of the phototaxis gradient vector (see <see cref="LightDirectionX"/>).</summary>
+    LightDirectionY = 25,
 }

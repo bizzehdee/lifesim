@@ -36,7 +36,7 @@ public sealed class SensoryInputBuilder
 
     public double[] Build(
         Organism self, IReadOnlyDictionary<long, Organism> allOrganisms, long currentTick,
-        Prng sensoryNoiseStream, double globalStress, double temperatureOffset)
+        Prng sensoryNoiseStream, double globalStress, double temperatureOffset, EnvironmentClock clock = default)
     {
         var values = new double[NeatTopology.InputCount];
 
@@ -83,6 +83,19 @@ public sealed class SensoryInputBuilder
         // Global stress level reflects active environmental events, already
         // normalized to [0, 1] by the environment state.
         values[(int)SensoryField.GlobalStressLevel] = globalStress;
+
+        // Diurnal/seasonal cycle + light. Light at the own tile is the clock's global light gated by the
+        // biome's light factor; the day/season phases are fed as sin/cos pairs so the brain sees a smooth
+        // cyclic signal (no discontinuity at the wrap) and can anticipate, not just react to, the cycle.
+        values[(int)SensoryField.LightLevel] = clock.GlobalLight * _terrain.LightFactorAt(self.X, self.Y);
+        values[(int)SensoryField.DayPhaseSin] = Math.Sin(2.0 * Math.PI * clock.DayPhase);
+        values[(int)SensoryField.DayPhaseCos] = Math.Cos(2.0 * Math.PI * clock.DayPhase);
+        values[(int)SensoryField.SeasonPhaseSin] = Math.Sin(2.0 * Math.PI * clock.SeasonPhase);
+        values[(int)SensoryField.SeasonPhaseCos] = Math.Cos(2.0 * Math.PI * clock.SeasonPhase);
+
+        (double lightDirX, double lightDirY) = FindBrightestTileDirection(self);
+        values[(int)SensoryField.LightDirectionX] = lightDirX;
+        values[(int)SensoryField.LightDirectionY] = lightDirY;
 
         // Sensor cells sharpen perception — a higher effective acuity means less injected noise.
         InjectNoise(values, Morphology.EffectiveAcuity(self.Genome, _config.Multicellular), sensoryNoiseStream);
@@ -168,6 +181,72 @@ public sealed class SensoryInputBuilder
         double dirX = dirLength > 0.0 ? (bestX - self.X) / dirLength : 0.0;
         double dirY = dirLength > 0.0 ? (bestY - self.Y) / dirLength : 0.0;
         return (normalizedDistance, dirX, dirY);
+    }
+
+    /// <summary>
+    /// Unit vector toward the brightest tile within env-radius — the phototaxis gradient. Day/night dims
+    /// the whole map uniformly, so the brightest tile is simply the highest-<see cref="Configuration.BiomeSettings.LightFactor"/>
+    /// tile in range; if nothing nearby is brighter than home (or the organism can't see), it's (0, 0).
+    /// Deterministic tie-break mirrors <see cref="FindRichestTile"/>: brighter wins, then nearer, then (y, x).
+    /// </summary>
+    private (double DirX, double DirY) FindBrightestTileDirection(Organism self)
+    {
+        int radius = (int)Math.Floor(self.Genome.EnvRadius);
+        if (radius < 1)
+        {
+            return (0.0, 0.0);
+        }
+
+        int bestX = self.X, bestY = self.Y;
+        double bestLight = _terrain.LightFactorAt(self.X, self.Y);
+        double bestDistance = 0.0;
+
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                if (dx == 0 && dy == 0)
+                {
+                    continue;
+                }
+
+                double distance = Math.Sqrt((dx * dx) + (dy * dy));
+                if (distance > radius)
+                {
+                    continue;
+                }
+
+                int x = self.X + dx;
+                int y = self.Y + dy;
+                if (x < 0 || x >= _world.Width || y < 0 || y >= _world.Height)
+                {
+                    continue;
+                }
+
+                double light = _terrain.LightFactorAt(x, y);
+                bool better = light > bestLight
+                    || (light == bestLight
+                        && (distance < bestDistance || (distance == bestDistance && (y, x).CompareTo((bestY, bestX)) < 0)));
+
+                if (better)
+                {
+                    bestLight = light;
+                    bestX = x;
+                    bestY = y;
+                    bestDistance = distance;
+                }
+            }
+        }
+
+        if (bestX == self.X && bestY == self.Y)
+        {
+            return (0.0, 0.0);
+        }
+
+        double dirLength = Math.Sqrt(((bestX - self.X) * (double)(bestX - self.X)) + ((bestY - self.Y) * (double)(bestY - self.Y)));
+        double dirX = dirLength > 0.0 ? (bestX - self.X) / dirLength : 0.0;
+        double dirY = dirLength > 0.0 ? (bestY - self.Y) / dirLength : 0.0;
+        return (dirX, dirY);
     }
 
     private readonly record struct ClosestOrganismInfo(

@@ -259,7 +259,7 @@ public sealed class SimulationWorld
             long id = tickIds[i];
             var noise = new Prng(SplitMix64.Finalize(sensoryNoiseSeed + (ulong)id));
             sensoryInputs[i] = _sensoryInputBuilder.Build(
-                _organisms[id], _organisms, currentTick, noise, globalStress, temperatureOffset);
+                _organisms[id], _organisms, currentTick, noise, globalStress, temperatureOffset, clock);
         });
 
         // 3. Decision Phase. Per-organism NEAT evaluation is independent of every other organism

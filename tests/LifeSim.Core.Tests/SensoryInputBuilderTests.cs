@@ -269,6 +269,92 @@ public class SensoryInputBuilderTests
     }
 
     [Fact]
+    public void Build_lightLevel_isGlobalLightGatedByBiomeLightFactor()
+    {
+        (SensoryInputBuilder builder, TerrainSampler terrain, _) = NewBuilder();
+        Organism self = NewOrganism(1, 20, 20); // pristine → no noise
+        var organisms = new Dictionary<long, Organism> { [self.Id] = self };
+
+        EnvironmentClock clock = EnvironmentClock.At(120, Config.Cycle);
+        double[] values = builder.Build(self, organisms, 1, new Prng(1), 0.0, 0.0, clock);
+
+        double expected = clock.GlobalLight * terrain.LightFactorAt(20, 20);
+        Assert.Equal(expected, values[(int)SensoryField.LightLevel], precision: 10);
+    }
+
+    [Fact]
+    public void Build_dayAndSeasonPhases_areFedAsSinCosPairs()
+    {
+        (SensoryInputBuilder builder, _, _) = NewBuilder();
+        Organism self = NewOrganism(1, 20, 20);
+        var organisms = new Dictionary<long, Organism> { [self.Id] = self };
+
+        EnvironmentClock clock = EnvironmentClock.At(333, Config.Cycle);
+        double[] values = builder.Build(self, organisms, 1, new Prng(1), 0.0, 0.0, clock);
+
+        Assert.Equal(Math.Sin(2.0 * Math.PI * clock.DayPhase), values[(int)SensoryField.DayPhaseSin], precision: 10);
+        Assert.Equal(Math.Cos(2.0 * Math.PI * clock.DayPhase), values[(int)SensoryField.DayPhaseCos], precision: 10);
+        Assert.Equal(Math.Sin(2.0 * Math.PI * clock.SeasonPhase), values[(int)SensoryField.SeasonPhaseSin], precision: 10);
+        Assert.Equal(Math.Cos(2.0 * Math.PI * clock.SeasonPhase), values[(int)SensoryField.SeasonPhaseCos], precision: 10);
+    }
+
+    [Fact]
+    public void Build_lightDirection_isZero_whenBlind_andAUnitVectorTowardBrighterGround()
+    {
+        (SensoryInputBuilder builder, TerrainSampler terrain, _) = NewBuilder();
+        var organisms = new Dictionary<long, Organism>();
+
+        // No env-radius → can't see, so no phototaxis gradient.
+        Organism blind = NewOrganism(1, 20, 20, genome: PristineGenome() with { EnvRadius = 0.0 });
+        organisms[blind.Id] = blind;
+        double[] blindValues = builder.Build(blind, organisms, 1, new Prng(1), 0.0, 0.0, EnvironmentClock.At(120, Config.Cycle));
+        Assert.Equal(0.0, blindValues[(int)SensoryField.LightDirectionX]);
+        Assert.Equal(0.0, blindValues[(int)SensoryField.LightDirectionY]);
+
+        // At a biome light boundary, the gradient is a unit vector toward brighter ground.
+        const int radius = 6;
+        (int sx, int sy) = FindTileWithBrighterNeighbour(terrain, radius);
+        Organism seer = NewOrganism(2, sx, sy, genome: PristineGenome() with { EnvRadius = radius });
+        organisms.Clear();
+        organisms[seer.Id] = seer;
+        double[] seerValues = builder.Build(seer, organisms, 1, new Prng(1), 0.0, 0.0, EnvironmentClock.At(120, Config.Cycle));
+        double dx = seerValues[(int)SensoryField.LightDirectionX];
+        double dy = seerValues[(int)SensoryField.LightDirectionY];
+        Assert.Equal(1.0, Math.Sqrt((dx * dx) + (dy * dy)), precision: 6); // unit vector → a brighter tile was found
+    }
+
+    // Scans (y, x) order for a tile that has a strictly brighter tile within the given radius — a biome
+    // light-factor boundary, which must exist for the phototaxis gradient to be exercisable.
+    private static (int X, int Y) FindTileWithBrighterNeighbour(TerrainSampler terrain, int radius)
+    {
+        for (int y = 0; y < World.Height; y++)
+        {
+            for (int x = 0; x < World.Width; x++)
+            {
+                double home = terrain.LightFactorAt(x, y);
+                for (int dy = -radius; dy <= radius; dy++)
+                {
+                    for (int dx = -radius; dx <= radius; dx++)
+                    {
+                        int nx = x + dx, ny = y + dy;
+                        if (nx < 0 || nx >= World.Width || ny < 0 || ny >= World.Height)
+                        {
+                            continue;
+                        }
+
+                        if ((dx * dx) + (dy * dy) <= radius * radius && terrain.LightFactorAt(nx, ny) > home)
+                        {
+                            return (x, y);
+                        }
+                    }
+                }
+            }
+        }
+
+        throw new InvalidOperationException("Test terrain has no light-factor variation to exercise phototaxis.");
+    }
+
+    [Fact]
     public void Build_maxAcuity_injectsNoNoise_regardlessOfNoiseStreamState()
     {
         (SensoryInputBuilder builder, _, _) = NewBuilder();

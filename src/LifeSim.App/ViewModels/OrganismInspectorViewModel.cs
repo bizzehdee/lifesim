@@ -77,6 +77,12 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
     /// <summary>Grid coordinate as "(x, y)" — a single binding source so both components render.</summary>
     public string Position => $"({X}, {Y})";
     public Biome Biome { get; private init; }
+
+    /// <summary>Light at this organism's tile (0..1): the diurnal/seasonal global light × the biome light factor.</summary>
+    public double Light { get; private init; }
+
+    /// <summary>Human time-of-day at the current tick (e.g. "midday", "dusk").</summary>
+    public string TimeOfDay { get; private init; } = "";
     public double Energy => Organism.Energy;
     public double EnergyCeiling => Core.Organisms.Organism.EnergyCeiling;
     public bool ReproductiveReady { get; private init; }
@@ -144,7 +150,9 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
         Genome genome = organism.Genome.ToGenome();
         TraitBounds bounds = config.TraitBounds;
 
+        EnvironmentClock clock = EnvironmentClock.At(snapshot.Tick, config.Cycle);
         double tileTemperature = terrain.TemperatureCelsiusAt(organism.X, organism.Y) + environment.TemperatureOffset;
+        double tileLight = clock.GlobalLight * terrain.LightFactorAt(organism.X, organism.Y);
         double friction = config.Biomes.For(terrain.BiomeAt(organism.X, organism.Y)).Friction;
         double movementCost = IsMove(organism.LastAction)
             ? Metabolism.LocomotionTax(1.0, genome.SpeedCapacity, friction, config.MovementCombat)
@@ -199,6 +207,8 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
             ParentAlive = lineage?.ParentId is { } parent && livingIds.Contains(parent),
             ChildCount = childCount,
             Biome = terrain.BiomeAt(organism.X, organism.Y),
+            Light = tileLight,
+            TimeOfDay = EnvironmentClockLabel.TimeOfDayLabel(clock),
             ReproductiveReady = reproReady,
             CooldownRemaining = cooldownRemaining,
             Traits =

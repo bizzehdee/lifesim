@@ -26,4 +26,7 @@ public enum ColourMode
 
     /// <summary>Brain "cognition" index (0–100): dim (simple brain) → bright (deep, well-wired brain).</summary>
     Intelligence,
+
+    /// <summary>Light at the organism's tile: deep-night indigo → dusk violet → bright daylight gold (day/night + shade).</summary>
+    Light,
 }

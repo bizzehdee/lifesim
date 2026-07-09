@@ -75,6 +75,10 @@ public sealed class WorldScene
         bool eventActive = environment.Modifiers.Count > 0;
         double ceiling = Organism.EnergyCeiling;
 
+        // The frame's diurnal/seasonal light, constant across the map this tick (spatial variation comes
+        // from each tile's biome light factor). Used by the Light colour mode.
+        double globalLight = EnvironmentClock.At(snapshot.Tick, config.Cycle).GlobalLight;
+
         var lineageByOrganism = new Dictionary<long, long>(snapshot.Lineages.Count);
         foreach (LineageSnapshot lineage in snapshot.Lineages)
         {
@@ -88,6 +92,7 @@ public sealed class WorldScene
         {
             long lineageId = lineageByOrganism.GetValueOrDefault(organism.OrganismId, organism.OrganismId);
             double tileTemperature = terrain.TemperatureCelsiusAt(organism.X, organism.Y) + temperatureOffset;
+            double tileLight = globalLight * terrain.LightFactorAt(organism.X, organism.Y);
             Genome genome = organism.Genome.ToGenome();
 
             bool reproReady = organism.Energy >= config.Reproduction.ReproductionBaseCost * genome.Size
@@ -103,7 +108,7 @@ public sealed class WorldScene
                 X = organism.X,
                 Y = organism.Y,
                 Radius = OrganismColours.Radius(genome.Size, config.TraitBounds.Size),
-                Fill = OrganismColours.Fill(mode, organism, lineageId, ceiling, tileTemperature),
+                Fill = OrganismColours.Fill(mode, organism, lineageId, ceiling, tileTemperature, tileLight),
                 Outline = OrganismColours.Outline(organism.LastAction, organism.LastActionResult),
                 ReproductiveReady = reproReady,
                 Stressed = stressed,

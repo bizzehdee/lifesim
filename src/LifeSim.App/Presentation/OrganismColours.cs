@@ -20,7 +20,8 @@ public static class OrganismColours
     /// organism's resolved lineage (from the lineage records — not stored on the organism record itself).
     /// </summary>
     public static Color Fill(
-        ColourMode mode, OrganismSnapshot organism, long lineageId, double energyCeiling, double tileTemperatureCelsius)
+        ColourMode mode, OrganismSnapshot organism, long lineageId, double energyCeiling,
+        double tileTemperatureCelsius, double tileLight)
     {
         GenomeSnapshot g = organism.Genome;
         return mode switch
@@ -34,6 +35,7 @@ public static class OrganismColours
                 ? SimulationPalette.Share
                 : SimulationPalette.Neutral,
             ColourMode.Intelligence => SimulationPalette.IntelligenceColour(BrainIntelligence.Score(organism.Brain)),
+            ColourMode.Light => SimulationPalette.LightColour(tileLight),
             _ => SimulationPalette.Neutral,
         };
     }

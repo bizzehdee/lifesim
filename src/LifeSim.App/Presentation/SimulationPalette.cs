@@ -48,6 +48,11 @@ public static class SimulationPalette
     private static readonly Color IqMid = Color.FromRgb(0x6D, 0x5A, 0xE0);  // indigo
     private static readonly Color IqHigh = Color.FromRgb(0x3F, 0xE0, 0xD0); // bright teal (sophisticated brain)
 
+    // --- Light gradient stops (0 → 1): deep night indigo → dusk violet → bright noon gold. ---
+    private static readonly Color LightLow = Color.FromRgb(0x1B, 0x1F, 0x3A);  // deep night
+    private static readonly Color LightMid = Color.FromRgb(0x7A, 0x6A, 0x9E);  // dawn/dusk violet
+    private static readonly Color LightHigh = Color.FromRgb(0xFF, 0xE6, 0x8A); // bright daylight gold
+
     public static Color Biome(Biome biome) => biome switch
     {
         Core.World.Biome.Grassland => Grassland,
@@ -85,6 +90,15 @@ public static class SimulationPalette
         return t < 0.5
             ? Lerp(IqLow, IqMid, t / 0.5)
             : Lerp(IqMid, IqHigh, (t - 0.5) / 0.5);
+    }
+
+    /// <summary>Light fill: deep-night indigo → dusk violet → bright daylight gold across a 0–1 tile light level.</summary>
+    public static Color LightColour(double light)
+    {
+        double t = Math.Clamp(light, 0.0, 1.0);
+        return t < 0.5
+            ? Lerp(LightLow, LightMid, t / 0.5)
+            : Lerp(LightMid, LightHigh, (t - 0.5) / 0.5);
     }
 
     /// <summary>

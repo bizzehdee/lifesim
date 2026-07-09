@@ -98,6 +98,10 @@ public static class LegendBuilder
         [
             new LegendEntry("Simple → sophisticated", SimulationPalette.IntelligenceColour(80), LegendGlyph.Gradient),
         ]),
+        ColourMode.Light => new LegendSection("Fill: Light (tile)",
+        [
+            new LegendEntry("Night/shade → daylight", SimulationPalette.LightColour(1.0), LegendGlyph.Gradient),
+        ]),
         _ => new LegendSection("Fill", []),
     };
 }

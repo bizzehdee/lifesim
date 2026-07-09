@@ -105,9 +105,10 @@ public class PresentationTests
     public void Fill_selectsPerColourMode()
     {
         OrganismSnapshot org = Organism(energy: 100, lastAction: OrganismAction.MoveNorth);
-        Assert.Equal(SimulationPalette.Move, OrganismColours.Fill(ColourMode.Action, org, 1, 100, 20));
-        Assert.Equal(SimulationPalette.EnergyColour(100, 100), OrganismColours.Fill(ColourMode.Energy, org, 1, 100, 20));
-        Assert.Equal(LineageColour.ForLineage(42), OrganismColours.Fill(ColourMode.Lineage, org, 42, 100, 20));
+        Assert.Equal(SimulationPalette.Move, OrganismColours.Fill(ColourMode.Action, org, 1, 100, 20, 0.0));
+        Assert.Equal(SimulationPalette.EnergyColour(100, 100), OrganismColours.Fill(ColourMode.Energy, org, 1, 100, 20, 0.0));
+        Assert.Equal(LineageColour.ForLineage(42), OrganismColours.Fill(ColourMode.Lineage, org, 42, 100, 20, 0.0));
+        Assert.Equal(SimulationPalette.LightColour(0.75), OrganismColours.Fill(ColourMode.Light, org, 1, 100, 20, 0.75));
     }
 
     [Fact]
@@ -115,12 +116,12 @@ public class PresentationTests
     {
         // A share that landed (had a neighbour, passed the roll) reads as cooperating…
         OrganismSnapshot shared = Organism(lastAction: OrganismAction.ShareNorth, result: ActionResult.Success);
-        Assert.Equal(SimulationPalette.Share, OrganismColours.Fill(ColourMode.Cooperation, shared, 1, 100, 20));
+        Assert.Equal(SimulationPalette.Share, OrganismColours.Fill(ColourMode.Cooperation, shared, 1, 100, 20, 0.0));
 
         // …but a share *attempted* with no neighbour (no-op) must not — otherwise isolated organisms
         // look like they cooperated.
         OrganismSnapshot attempted = Organism(lastAction: OrganismAction.ShareNorth, result: ActionResult.NoOp);
-        Assert.Equal(SimulationPalette.Neutral, OrganismColours.Fill(ColourMode.Cooperation, attempted, 1, 100, 20));
+        Assert.Equal(SimulationPalette.Neutral, OrganismColours.Fill(ColourMode.Cooperation, attempted, 1, 100, 20, 0.0));
     }
 
     [Fact]

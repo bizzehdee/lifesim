@@ -34,6 +34,7 @@ public static class GlobalStatistics
         return
         [
             new StatRow("Tick", Int(snapshot.Tick)),
+            new StatRow("Time", EnvironmentClockLabel.Describe(snapshot.Tick, snapshot.Configuration.Cycle)),
             new StatRow("Population", Int(snapshot.Organisms.Count)),
             new StatRow("Status", m?.Extinct == true ? "Extinct" : "Alive"),
             new StatRow("Generation (deepest)", Int(MaxGeneration(snapshot))),
@@ -56,6 +57,7 @@ public static class GlobalStatistics
             new("Overview",
             [
                 new StatRow("Tick", Int(snapshot.Tick)),
+                new StatRow("Time", EnvironmentClockLabel.Describe(snapshot.Tick, snapshot.Configuration.Cycle)),
                 new StatRow("Population", Int(snapshot.Organisms.Count)),
                 new StatRow("Status", snapshot.Metrics?.Extinct == true ? "Extinct" : "Alive"),
                 new StatRow("Distinct lineages", Int(DistinctLineages(snapshot))),

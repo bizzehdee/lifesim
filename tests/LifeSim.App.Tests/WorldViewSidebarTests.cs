@@ -26,6 +26,7 @@ public class WorldViewSidebarTests
         Assert.Contains(vm.Glance, r => r.Label == "Generation (deepest)");
         Assert.Contains(vm.Glance, r => r.Label == "Population" && r.Value == "20");
         Assert.Contains(vm.Glance, r => r.Label == "World"); // start info (seed + dimensions)
+        Assert.Contains(vm.Glance, r => r.Label == "Time" && r.Value.Contains("Day ")); // diurnal/seasonal clock
     }
 
     [Fact]

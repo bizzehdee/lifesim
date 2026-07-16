@@ -267,6 +267,7 @@ public sealed class SimulationWorld
         // id in each phase.
         long[] tickIds = _organisms.Keys.ToArray();
         int organismCount = tickIds.Length;
+        OrganismSpatialIndex spatialIndex = OrganismSpatialIndex.Attach(_occupancy, _organisms);
 
         // The day/night + seasonal clock for this tick (pure function of the tick + config). Its cyclic
         // temperature offset adds onto any climatic-event offset to form the effective temperature shift
@@ -282,7 +283,7 @@ public sealed class SimulationWorld
             long id = tickIds[i];
             var noise = new Prng(SplitMix64.Finalize(sensoryNoiseSeed + (ulong)id));
             sensoryInputs[i] = _sensoryInputBuilder.Build(
-                _organisms[id], _organisms, currentTick, noise, globalStress, temperatureOffset, clock);
+                _organisms[id], spatialIndex, currentTick, noise, globalStress, temperatureOffset, clock);
         });
 
         // 3. Decision Phase. Per-organism NEAT evaluation is independent of every other organism

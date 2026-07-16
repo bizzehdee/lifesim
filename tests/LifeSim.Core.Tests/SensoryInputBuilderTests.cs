@@ -210,6 +210,33 @@ public class SensoryInputBuilderTests
         Assert.Equal(Math.Tanh(2.0 / 5.0), values[(int)SensoryField.LocalDensity], precision: 6);
     }
 
+    [Fact]
+    public void SpatialIndex_radiusQuery_matchesBruteForceCircle()
+    {
+        var organisms = new Dictionary<long, Organism>();
+        long id = 1;
+        for (int y = 0; y < World.Height; y += 3)
+        {
+            for (int x = 0; x < World.Width; x += 4)
+            {
+                Organism organism = NewOrganism(id++, x, y);
+                organisms.Add(organism.Id, organism);
+            }
+        }
+
+        OrganismSpatialIndex index = OrganismSpatialIndex.Create(World.Width, World.Height, organisms);
+        const int centerX = 19, centerY = 17, radius = 7;
+        long[] expected = organisms.Values
+            .Where(o => ((long)(o.X - centerX) * (o.X - centerX)) + ((long)(o.Y - centerY) * (o.Y - centerY)) <= radius * radius)
+            .Select(o => o.Id)
+            .Order()
+            .ToArray();
+
+        long[] actual = index.WithinRadius(centerX, centerY, radius).Select(o => o.Id).Order().ToArray();
+
+        Assert.Equal(expected, actual);
+    }
+
     [Theory]
     [InlineData(ActionResult.None, 0.0)]
     [InlineData(ActionResult.Success, 1.0)]

@@ -38,6 +38,18 @@ public sealed class SensoryInputBuilder
         Organism self, IReadOnlyDictionary<long, Organism> allOrganisms, long currentTick,
         Prng sensoryNoiseStream, double globalStress, double temperatureOffset, EnvironmentClock clock = default)
     {
+        ArgumentNullException.ThrowIfNull(allOrganisms);
+        OrganismSpatialIndex spatialIndex = OrganismSpatialIndex.Create(_world.Width, _world.Height, allOrganisms);
+        return Build(self, spatialIndex, currentTick, sensoryNoiseStream, globalStress, temperatureOffset, clock);
+    }
+
+    /// <summary>Builds inputs using a shared tile index, keeping proximity work bounded by sensory radius.</summary>
+    public double[] Build(
+        Organism self, OrganismSpatialIndex spatialIndex, long currentTick,
+        Prng sensoryNoiseStream, double globalStress, double temperatureOffset, EnvironmentClock clock = default)
+    {
+        ArgumentNullException.ThrowIfNull(self);
+        ArgumentNullException.ThrowIfNull(spatialIndex);
         var values = new double[NeatTopology.InputCount];
 
         values[(int)SensoryField.Energy] = self.Energy / Organism.EnergyCeiling;
@@ -52,7 +64,7 @@ public sealed class SensoryInputBuilder
         values[(int)SensoryField.RichestTileDirectionX] = richestTile.dirX;
         values[(int)SensoryField.RichestTileDirectionY] = richestTile.dirY;
 
-        ClosestOrganismInfo closest = FindClosestOrganism(self, allOrganisms);
+        (ClosestOrganismInfo closest, NeighborCounts neighbors) = PerceiveOrganisms(self, spatialIndex);
         values[(int)SensoryField.ClosestOrganismDistance] = closest.NormalizedDistance;
         values[(int)SensoryField.ClosestOrganismDirectionX] = closest.DirectionX;
         values[(int)SensoryField.ClosestOrganismDirectionY] = closest.DirectionY;
@@ -60,7 +72,6 @@ public sealed class SensoryInputBuilder
         values[(int)SensoryField.ClosestOrganismRelatedness] = closest.Relatedness;
         values[(int)SensoryField.ClosestOrganismToxicity] = closest.Toxicity;
 
-        NeighborCounts neighbors = CountNeighbors(self, allOrganisms);
         values[(int)SensoryField.NearbySmallerCount] = Math.Tanh(neighbors.Smaller / NearbyCountSaturation);
         values[(int)SensoryField.NearbyLargerCount] = Math.Tanh(neighbors.Larger / NearbyCountSaturation);
         values[(int)SensoryField.LocalDensity] = Math.Tanh(neighbors.Total / NearbyCountSaturation);
@@ -249,77 +260,23 @@ public sealed class SensoryInputBuilder
     private readonly record struct ClosestOrganismInfo(
         double NormalizedDistance, double DirectionX, double DirectionY, double NormalizedSizeDelta, double Relatedness, double Toxicity);
 
-    private ClosestOrganismInfo FindClosestOrganism(Organism self, IReadOnlyDictionary<long, Organism> allOrganisms)
+    private (ClosestOrganismInfo Closest, NeighborCounts Counts) PerceiveOrganisms(
+        Organism self,
+        OrganismSpatialIndex spatialIndex)
     {
         int radius = (int)Math.Floor(self.Genome.OrgRadius);
         if (radius < 1)
         {
-            return new ClosestOrganismInfo(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+            return (new ClosestOrganismInfo(0.0, 0.0, 0.0, 0.0, 0.0, 0.0), new NeighborCounts(0, 0, 0));
         }
 
         Organism? best = null;
-        double bestDistance = double.PositiveInfinity;
-
-        foreach (Organism other in allOrganisms.Values)
-        {
-            if (other.Id == self.Id)
-            {
-                continue;
-            }
-
-            double dx = other.X - self.X;
-            double dy = other.Y - self.Y;
-            double distance = Math.Sqrt((dx * dx) + (dy * dy));
-            if (distance > radius)
-            {
-                continue;
-            }
-
-            // Deterministic tie-break: closer wins; equal distance resolves by ascending id.
-            if (distance < bestDistance || (distance == bestDistance && best is not null && other.Id < best.Id))
-            {
-                best = other;
-                bestDistance = distance;
-            }
-        }
-
-        if (best is null)
-        {
-            return new ClosestOrganismInfo(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-        }
-
-        double dirLength = bestDistance;
-        double dirX = dirLength > 0.0 ? (best.X - self.X) / dirLength : 0.0;
-        double dirY = dirLength > 0.0 ? (best.Y - self.Y) / dirLength : 0.0;
-
-        double sizeBoundWidth = _config.TraitBounds.Size.Max - _config.TraitBounds.Size.Min;
-        double sizeDelta = sizeBoundWidth > 0.0 ? (best.Genome.Size - self.Genome.Size) / sizeBoundWidth : 0.0;
-        double relatedness = Kinship.Relatedness(self.Genome, best.Genome, _config.TraitBounds);
-
-        return new ClosestOrganismInfo(bestDistance / radius, dirX, dirY, sizeDelta, relatedness, Math.Clamp(best.Genome.Toxicity, 0.0, 1.0));
-    }
-
-    private readonly record struct NeighborCounts(int Smaller, int Larger, int Total);
-
-    private static NeighborCounts CountNeighbors(Organism self, IReadOnlyDictionary<long, Organism> allOrganisms)
-    {
-        int radius = (int)Math.Floor(self.Genome.OrgRadius);
-        if (radius < 1)
-        {
-            return new NeighborCounts(0, 0, 0);
-        }
-
+        long bestDistanceSquared = long.MaxValue;
         int smaller = 0, larger = 0, total = 0;
-        foreach (Organism other in allOrganisms.Values)
+
+        foreach (Organism other in spatialIndex.WithinRadius(self.X, self.Y, radius))
         {
             if (other.Id == self.Id)
-            {
-                continue;
-            }
-
-            double dx = other.X - self.X;
-            double dy = other.Y - self.Y;
-            if (Math.Sqrt((dx * dx) + (dy * dy)) > radius)
             {
                 continue;
             }
@@ -333,8 +290,36 @@ public sealed class SensoryInputBuilder
             {
                 larger++;
             }
+
+            long dx = other.X - self.X;
+            long dy = other.Y - self.Y;
+            long distanceSquared = (dx * dx) + (dy * dy);
+            // Deterministic tie-break: closer wins; equal distance resolves by ascending id.
+            if (distanceSquared < bestDistanceSquared
+                || (distanceSquared == bestDistanceSquared && best is not null && other.Id < best.Id))
+            {
+                best = other;
+                bestDistanceSquared = distanceSquared;
+            }
         }
 
-        return new NeighborCounts(smaller, larger, total);
+        if (best is null)
+        {
+            return (new ClosestOrganismInfo(0.0, 0.0, 0.0, 0.0, 0.0, 0.0), new NeighborCounts(0, 0, 0));
+        }
+
+        double dirLength = Math.Sqrt(bestDistanceSquared);
+        double dirX = dirLength > 0.0 ? (best.X - self.X) / dirLength : 0.0;
+        double dirY = dirLength > 0.0 ? (best.Y - self.Y) / dirLength : 0.0;
+
+        double sizeBoundWidth = _config.TraitBounds.Size.Max - _config.TraitBounds.Size.Min;
+        double sizeDelta = sizeBoundWidth > 0.0 ? (best.Genome.Size - self.Genome.Size) / sizeBoundWidth : 0.0;
+        double relatedness = Kinship.Relatedness(self.Genome, best.Genome, _config.TraitBounds);
+
+        var closest = new ClosestOrganismInfo(
+            dirLength / radius, dirX, dirY, sizeDelta, relatedness, Math.Clamp(best.Genome.Toxicity, 0.0, 1.0));
+        return (closest, new NeighborCounts(smaller, larger, total));
     }
+
+    private readonly record struct NeighborCounts(int Smaller, int Larger, int Total);
 }

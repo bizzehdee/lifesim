@@ -5,6 +5,59 @@ namespace LifeSim.Core.Organisms;
 /// <summary>The energy transaction economy: pure functions over genome + config, so they're testable without a live organism.</summary>
 public static class Metabolism
 {
+    /// <summary>
+    /// Calculates the complete energy cost charged by the metabolism phase. Keeping the authoritative
+    /// equation here lets the engine, inspectors, and diagnostics describe the same economy instead of
+    /// maintaining partial copies of it.
+    /// </summary>
+    public static MetabolicCostBreakdown CalculateCost(
+        Genome genome,
+        long age,
+        double tileTemperature,
+        double distanceTraveled,
+        double biomeFriction,
+        int localDensity,
+        bool senescenceEnabled,
+        bool plagueActive,
+        SimulationConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(genome);
+        ArgumentNullException.ThrowIfNull(config);
+
+        double baseCost = BaseMetabolism(genome, config.Metabolism);
+        double multicellular = Morphology.MulticellularOverhead(genome, baseCost, config.Multicellular);
+        double sensory = SensoryTax(genome, config.Metabolism);
+        double defense = DefenseTax(genome, config.Metabolism);
+        double plasticity = PlasticityTax(genome, config.Metabolism);
+        double locomotion = LocomotionTax(
+            distanceTraveled, genome.SpeedCapacity, biomeFriction, config.MovementCombat)
+            * Morphology.LocomotionFactor(genome, config.Multicellular);
+        double efficiencyMultiplier = EfficiencyCostMultiplier(genome, config.Metabolism);
+        double selfBeforeEfficiency = baseCost + multicellular + sensory + defense + plasticity + locomotion;
+        double selfAfterEfficiency = selfBeforeEfficiency * efficiencyMultiplier;
+        double thermal = ThermalStress(genome, tileTemperature, config.Metabolism)
+            * Morphology.ThermalStressFactor(genome, config.Multicellular);
+        double crowding = CrowdingTax(Math.Max(0, localDensity - 1), config.Metabolism);
+        double senescence = senescenceEnabled ? SenescenceTax(age, config.Metabolism) : 0.0;
+        double plague = plagueActive && localDensity >= config.Events.PlagueDensityThreshold
+            ? config.Events.PlagueEnergyDrainPerTick
+            : 0.0;
+
+        return new MetabolicCostBreakdown(
+            baseCost,
+            multicellular,
+            sensory,
+            defense,
+            plasticity,
+            locomotion,
+            efficiencyMultiplier,
+            selfAfterEfficiency,
+            thermal,
+            crowding,
+            senescence,
+            plague);
+    }
+
     public static double BaseMetabolism(Genome genome, MetabolismConfig config) =>
         genome.Size * config.BaseMetabolismPerSize;
 
@@ -85,4 +138,22 @@ public static class Metabolism
     /// </summary>
     public static double LocomotionTax(double distance, double velocity, double biomeFriction, MovementCombatConfig config) =>
         distance * Math.Pow(velocity, config.LocomotionVelocityExponent) * biomeFriction;
+}
+
+/// <summary>Named components of the authoritative per-tick metabolism charge.</summary>
+public sealed record MetabolicCostBreakdown(
+    double Base,
+    double MulticellularOverhead,
+    double SensoryTax,
+    double DefenseTax,
+    double PlasticityTax,
+    double Movement,
+    double EfficiencyMultiplier,
+    double SelfCostAfterEfficiency,
+    double ThermalStress,
+    double Crowding,
+    double Senescence,
+    double Plague)
+{
+    public double Total => SelfCostAfterEfficiency + ThermalStress + Crowding + Senescence + Plague;
 }

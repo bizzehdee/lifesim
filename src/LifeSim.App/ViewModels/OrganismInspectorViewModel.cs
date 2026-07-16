@@ -15,11 +15,6 @@ public sealed record TraitReading(string Name, double Value, double Min, double 
 }
 
 /// <summary>The metabolism equation broken out for one organism.</summary>
-public sealed record EconomyBreakdown(double Base, double ThermalStress, double SensoryTax, double LastMovementCost)
-{
-    public double Total => Base + ThermalStress + SensoryTax + LastMovementCost;
-}
-
 /// <summary>One action's current softmax probability.</summary>
 public sealed record ActionProbability(OrganismAction Action, double Probability);
 
@@ -109,7 +104,7 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
     public IReadOnlyList<CellTypeReading> CellComposition { get; private init; } = [];
 
     // Per-tick economy.
-    public EconomyBreakdown Economy { get; private init; } = new(0, 0, 0, 0);
+    public MetabolicCostBreakdown Economy { get; private init; } = new(0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0);
 
     // Behaviour.
     public OrganismAction? LastAction => Organism.LastAction;
@@ -151,12 +146,14 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
         TraitBounds bounds = config.TraitBounds;
 
         EnvironmentClock clock = EnvironmentClock.At(snapshot.Tick, config.Cycle);
-        double tileTemperature = terrain.TemperatureCelsiusAt(organism.X, organism.Y) + environment.TemperatureOffset;
+        double tileTemperature = terrain.TemperatureCelsiusAt(organism.X, organism.Y)
+            + environment.TemperatureOffset
+            + clock.CyclicTemperatureOffset;
         double tileLight = clock.GlobalLight * terrain.LightFactorAt(organism.X, organism.Y);
         double friction = config.Biomes.For(terrain.BiomeAt(organism.X, organism.Y)).Friction;
-        double movementCost = IsMove(organism.LastAction)
-            ? Metabolism.LocomotionTax(1.0, genome.SpeedCapacity, friction, config.MovementCombat)
-            : 0.0;
+        double distanceTraveled = IsMove(organism.LastAction) && organism.LastActionResult == ActionResult.Success ? 1.0 : 0.0;
+        int localDensity = snapshot.Organisms.Count(other =>
+            Math.Abs(other.X - organism.X) <= 1 && Math.Abs(other.Y - organism.Y) <= 1);
 
         LineageSnapshot? lineage = snapshot.Lineages.FirstOrDefault(l => l.OrganismId == organismId);
         var livingIds = snapshot.Organisms.Select(o => o.OrganismId).ToHashSet();
@@ -168,11 +165,8 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
             ? snapshot.Organisms.FirstOrDefault(o => o.OrganismId == secondParentId)?.Name
             : null;
 
-        bool reproReady = organism.Energy >= config.Reproduction.ReproductionBaseCost * genome.Size
-            && (organism.LastBirthTick is not { } birth || snapshot.Tick - birth >= config.Reproduction.ReproductionCooldownTicks);
-        long cooldownRemaining = organism.LastBirthTick is { } lastBirth
-            ? Math.Max(0, config.Reproduction.ReproductionCooldownTicks - (snapshot.Tick - lastBirth))
-            : 0;
+        ReproductionReadiness reproduction = ReproductionRules.Assess(
+            genome, organism.Energy, organism.LastBirthTick, snapshot.Tick, config);
 
         double[] probabilities = NeatBrain.ActionProbabilities(organism.Brain);
 
@@ -209,8 +203,8 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
             Biome = terrain.BiomeAt(organism.X, organism.Y),
             Light = tileLight,
             TimeOfDay = EnvironmentClockLabel.TimeOfDayLabel(clock),
-            ReproductiveReady = reproReady,
-            CooldownRemaining = cooldownRemaining,
+            ReproductiveReady = reproduction.IsReady,
+            CooldownRemaining = reproduction.CooldownRemaining,
             Traits =
             [
                 new TraitReading("Size", genome.Size, bounds.Size.Min, bounds.Size.Max),
@@ -229,11 +223,16 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
                 new TraitReading("Sexuality", genome.Sexuality, bounds.Sexuality.Min, bounds.Sexuality.Max),
                 new TraitReading("Generosity", genome.ShareFraction, bounds.ShareFraction.Min, bounds.ShareFraction.Max),
             ],
-            Economy = new EconomyBreakdown(
-                Metabolism.BaseMetabolism(genome, config.Metabolism),
-                Metabolism.ThermalStress(genome, tileTemperature, config.Metabolism),
-                Metabolism.SensoryTax(genome, config.Metabolism),
-                movementCost),
+            Economy = Metabolism.CalculateCost(
+                genome,
+                organism.Age,
+                tileTemperature,
+                distanceTraveled,
+                friction,
+                localDensity,
+                config.Senescence,
+                environment.PlagueActive,
+                config),
             ActionProbabilities = probabilities
                 .Select((p, i) => new ActionProbability((OrganismAction)i, p))
                 .ToList(),

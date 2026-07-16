@@ -71,7 +71,8 @@ public sealed class WorldScene
         GroundEnergyGrid ground = GroundEnergyGrid.FromState(terrain, config, snapshot.GroundEnergy);
         var environment = new EnvironmentState(snapshot.EnvironmentModifiers);
 
-        double temperatureOffset = environment.TemperatureOffset;
+        double temperatureOffset = environment.TemperatureOffset
+            + EnvironmentClock.At(snapshot.Tick, config.Cycle).CyclicTemperatureOffset;
         bool eventActive = environment.Modifiers.Count > 0;
         double ceiling = Organism.EnergyCeiling;
 
@@ -95,9 +96,8 @@ public sealed class WorldScene
             double tileLight = globalLight * terrain.LightFactorAt(organism.X, organism.Y);
             Genome genome = organism.Genome.ToGenome();
 
-            bool reproReady = organism.Energy >= config.Reproduction.ReproductionBaseCost * genome.Size
-                && (organism.LastBirthTick is not { } birth
-                    || snapshot.Tick - birth >= config.Reproduction.ReproductionCooldownTicks);
+            bool reproReady = ReproductionRules.Assess(
+                genome, organism.Energy, organism.LastBirthTick, snapshot.Tick, config).IsReady;
             bool stressed = eventActive
                 || Metabolism.ThermalStress(genome, tileTemperature, config.Metabolism) > 0.0;
 

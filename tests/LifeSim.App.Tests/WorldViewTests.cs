@@ -236,7 +236,11 @@ public class WorldViewTests
         Assert.Equal(1.0, inspector.ActionProbabilities.Sum(p => p.Probability), precision: 6);
         Assert.Equal(organism.Brain.Nodes.Count, inspector.BrainGraph.Nodes.Count);
         Assert.Equal(
-            inspector.Economy.Base + inspector.Economy.ThermalStress + inspector.Economy.SensoryTax + inspector.Economy.LastMovementCost,
+            inspector.Economy.SelfCostAfterEfficiency
+                + inspector.Economy.ThermalStress
+                + inspector.Economy.Crowding
+                + inspector.Economy.Senescence
+                + inspector.Economy.Plague,
             inspector.Economy.Total,
             precision: 9);
     }

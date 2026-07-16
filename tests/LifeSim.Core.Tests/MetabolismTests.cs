@@ -125,4 +125,39 @@ public class MetabolismTests
 
         Assert.Equal(expected, tax, precision: 10);
     }
+
+    [Fact]
+    public void CalculateCost_namesAndSumsTheSameCompleteEconomyChargedByTheEngine()
+    {
+        SimulationConfig config = SimulationConfig.Default;
+        Genome genome = NewGenome() with
+        {
+            MetabolicEfficiency = 0.4,
+            Armour = 0.3,
+            Plasticity = 0.2,
+            CellCount = 2.0,
+        };
+
+        MetabolicCostBreakdown result = Metabolism.CalculateCost(
+            genome,
+            age: config.Metabolism.SenescenceOnsetAge + 2,
+            tileTemperature: 40,
+            distanceTraveled: 1,
+            biomeFriction: 1.5,
+            localDensity: config.Events.PlagueDensityThreshold,
+            senescenceEnabled: true,
+            plagueActive: true,
+            config);
+
+        Assert.True(result.Base > 0);
+        Assert.True(result.DefenseTax > 0);
+        Assert.True(result.PlasticityTax > 0);
+        Assert.True(result.Crowding > 0);
+        Assert.True(result.Senescence > 0);
+        Assert.True(result.Plague > 0);
+        Assert.Equal(
+            result.SelfCostAfterEfficiency + result.ThermalStress + result.Crowding + result.Senescence + result.Plague,
+            result.Total,
+            precision: 10);
+    }
 }

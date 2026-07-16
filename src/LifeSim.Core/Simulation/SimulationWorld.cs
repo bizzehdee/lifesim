@@ -346,41 +346,19 @@ public sealed class SimulationWorld
             double friction = Config.Biomes.For(_terrain.BiomeAt(organism.X, organism.Y)).Friction;
             int localDensity = LocalOrganismDensity(organism); // 3×3 including self
 
-            // Body economy: one cell's base metabolism plus the multicellular overhead
-            // for the rest — extra-cell upkeep (volume, ∝ N) + coordination, discounted by division of
-            // labour so a well-differentiated body is far cheaper than a lopsided one. Defender cells
-            // insulate against thermal stress and Mover cells cut locomotion tax. A generalist 1-cell
-            // body reduces to the plain per-organism cost.
             Genome g = organism.Genome;
-            MulticellularConfig mc = Config.Multicellular;
-            double perCellBase = Metabolism.BaseMetabolism(g, Config.Metabolism);
+            MetabolicCostBreakdown cost = Metabolism.CalculateCost(
+                g,
+                organism.Age,
+                tileTemperature,
+                distanceTraveled[index],
+                friction,
+                localDensity,
+                Config.Senescence,
+                plagueActive,
+                Config);
 
-            // Self-generated running costs — the price of the body existing, sensing, and moving — are
-            // the ones the evolvable metabolic_efficiency trait scales down (toward, never to, zero).
-            double selfCost = perCellBase
-                + Morphology.MulticellularOverhead(g, perCellBase, mc)
-                + Metabolism.SensoryTax(g, Config.Metabolism)
-                + Metabolism.DefenseTax(g, Config.Metabolism)
-                + Metabolism.PlasticityTax(g, Config.Metabolism)
-                + (Metabolism.LocomotionTax(distanceTraveled[index], g.SpeedCapacity, friction, Config.MovementCombat) * Morphology.LocomotionFactor(g, mc));
-
-            // Thermal stress and crowding are externally imposed (climate, neighbours), not self-generated
-            // upkeep, so efficiency doesn't discount them — they have their own adaptation levers.
-            double cost = (selfCost * Metabolism.EfficiencyCostMultiplier(g, Config.Metabolism))
-                + (Metabolism.ThermalStress(g, tileTemperature, Config.Metabolism) * Morphology.ThermalStressFactor(g, mc))
-                + Metabolism.CrowdingTax(localDensity - 1, Config.Metabolism); // density-dependent overpopulation cost
-
-            if (Config.Senescence)
-            {
-                cost += Metabolism.SenescenceTax(organism.Age, Config.Metabolism); // optional aging model
-            }
-
-            if (plagueActive && localDensity >= Config.Events.PlagueDensityThreshold)
-            {
-                cost += Config.Events.PlagueEnergyDrainPerTick;
-            }
-
-            organism.SpendEnergy(cost);
+            organism.SpendEnergy(cost.Total);
             organism.Tick();
 
             // Within-life learning: nudge the live brain's weights toward what was active when this
@@ -755,22 +733,21 @@ public sealed class SimulationWorld
         Organism organism, long currentTick, List<PendingBirth> pendingBirths, HashSet<long> matedThisTick)
     {
         Genome g = organism.Genome;
+        ReproductionReadiness readiness = ReproductionRules.Assess(
+            g, organism.Energy, organism.LastBirthTick, currentTick, Config);
 
-        // A body with too few germ cells is sterile soma — it can support the body but not reproduce.
-        if (!Morphology.CanReproduce(g, Config.Multicellular))
+        if (!readiness.Fertile)
         {
             return ActionResult.Failed;
         }
 
-        // Cost scales with body mass, but division of labour sheds the size penalty,
-        // so a well-differentiated body reproduces almost as cheaply as a single cell.
-        double cost = Config.Reproduction.ReproductionBaseCost * Morphology.ReproductionMass(g, Config.Multicellular);
-        if (organism.Energy < cost)
+        double cost = readiness.EnergyCost;
+        if (!readiness.HasEnergy)
         {
             return ActionResult.Failed;
         }
 
-        if (IsOnReproductionCooldown(organism, currentTick) || matedThisTick.Contains(organism.Id))
+        if (!readiness.OffCooldown || matedThisTick.Contains(organism.Id))
         {
             return ActionResult.Failed;
         }

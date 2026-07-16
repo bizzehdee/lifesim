@@ -100,11 +100,18 @@
 
         <!-- Per-tick economy -->
         <StackPanel Spacing="2">
-            <TextBlock Text="Per-tick economy" FontWeight="SemiBold" />
+            <TextBlock Text="Estimated current upkeep" FontWeight="SemiBold" />
             <TextBlock FontSize="12" Text="{Binding Economy.Base, StringFormat='base {0:F3}'}" />
+            <TextBlock FontSize="12" Text="{Binding Economy.MulticellularOverhead, StringFormat='body overhead {0:F3}'}" />
             <TextBlock FontSize="12" Text="{Binding Economy.ThermalStress, StringFormat='thermal stress {0:F3}'}" />
             <TextBlock FontSize="12" Text="{Binding Economy.SensoryTax, StringFormat='sensory tax {0:F3}'}" />
-            <TextBlock FontSize="12" Text="{Binding Economy.LastMovementCost, StringFormat='movement (last) {0:F3}'}" />
+            <TextBlock FontSize="12" Text="{Binding Economy.DefenseTax, StringFormat='defence upkeep {0:F3}'}" />
+            <TextBlock FontSize="12" Text="{Binding Economy.PlasticityTax, StringFormat='plasticity upkeep {0:F3}'}" />
+            <TextBlock FontSize="12" Text="{Binding Economy.Movement, StringFormat='movement (last) {0:F3}'}" />
+            <TextBlock FontSize="12" Text="{Binding Economy.EfficiencyMultiplier, StringFormat='efficiency multiplier ×{0:F2}'}" />
+            <TextBlock FontSize="12" Text="{Binding Economy.Crowding, StringFormat='crowding {0:F3}'}" />
+            <TextBlock FontSize="12" Text="{Binding Economy.Senescence, StringFormat='senescence {0:F3}'}" />
+            <TextBlock FontSize="12" Text="{Binding Economy.Plague, StringFormat='plague {0:F3}'}" />
             <TextBlock FontSize="12" FontWeight="SemiBold" Text="{Binding Economy.Total, StringFormat='total {0:F3}'}" />
         </StackPanel>
 

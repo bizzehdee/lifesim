@@ -73,12 +73,9 @@ public sealed class SensoryInputBuilder
             _ => 0.0, // ActionResult.None
         };
 
-        // Reproduction cost (division-of-labour-discounted mass) and germ gate, matching ResolveReproduce.
-        double reproductionCost = _config.Reproduction.ReproductionBaseCost * Morphology.ReproductionMass(self.Genome, _config.Multicellular);
-        bool offCooldown = self.LastBirthTick is null
-            || currentTick - self.LastBirthTick.Value >= _config.Reproduction.ReproductionCooldownTicks;
-        bool fertile = Morphology.CanReproduce(self.Genome, _config.Multicellular);
-        values[(int)SensoryField.ReproductiveReadiness] = fertile && self.Energy >= reproductionCost && offCooldown ? 1.0 : 0.0;
+        ReproductionReadiness reproduction = ReproductionRules.Assess(
+            self.Genome, self.Energy, self.LastBirthTick, currentTick, _config);
+        values[(int)SensoryField.ReproductiveReadiness] = reproduction.IsReady ? 1.0 : 0.0;
 
         // Global stress level reflects active environmental events, already
         // normalized to [0, 1] by the environment state.

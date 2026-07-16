@@ -121,6 +121,23 @@ public class WorldViewTests
     }
 
     [Fact]
+    public void Inspector_exposesTheRecordedDecisionTrace()
+    {
+        WorldSnapshot snapshot = BuildSnapshot(ticks: 2);
+        OrganismSnapshot organism = snapshot.Organisms.First(o => o.DecisionTrace is not null);
+
+        OrganismInspectorViewModel inspector = OrganismInspectorViewModel.Create(snapshot, organism.OrganismId)!;
+
+        Assert.True(inspector.HasDecisionTrace);
+        Assert.Equal(snapshot.Tick, inspector.DecisionTick);
+        Assert.Equal(
+            organism.DecisionTrace!.ActionProbabilities[(int)organism.DecisionTrace.ChosenAction],
+            inspector.ChosenProbability);
+        Assert.NotEmpty(inspector.StrongestInputs);
+        Assert.NotEmpty(inspector.StrongestContributions);
+    }
+
+    [Fact]
     public void OrganismsTab_populatesLive_andClickingARowJumpsToItsStats()
     {
         var vm = new WorldViewModel();

@@ -129,6 +129,25 @@ public class NeatBrainTests
     }
 
     [Fact]
+    public void Explain_capturesExactDistributionInputsAndChosenOutputDrivers()
+    {
+        NeatGenome brain = NeatGenomeFactory.CreateMinimalFullyConnected(new Prng(7));
+        NeatPropagation primed = NeatBrain.Propagate(brain, Inputs);
+        NeatPropagation decision = NeatBrain.Propagate(primed.Genome, Inputs);
+
+        DecisionTrace trace = NeatBrain.Explain(
+            decision, Inputs, OrganismAction.MoveNorth, tick: 2, maxSignals: 5);
+
+        Assert.Equal(2, trace.Tick);
+        Assert.Equal(OrganismAction.MoveNorth, trace.ChosenAction);
+        Assert.Equal(decision.Probabilities, trace.ActionProbabilities);
+        Assert.Equal(5, trace.StrongestInputs.Count);
+        Assert.Equal(5, trace.StrongestContributions.Count);
+        Assert.All(trace.StrongestContributions, contribution =>
+            Assert.Equal(contribution.SourceActivation * contribution.Weight, contribution.WeightedSignal));
+    }
+
+    [Fact]
     public void Evaluate_biasedLogits_selectFavoredActionAtRoughlyTheSoftmaxRate()
     {
         // Hand-built genome: one input feeds only the Reproduce output, so after priming with one

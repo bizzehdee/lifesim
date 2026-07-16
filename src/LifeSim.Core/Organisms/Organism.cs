@@ -65,13 +65,16 @@ public sealed class Organism
     /// </summary>
     public double HelpGiven { get; private set; }
 
+    /// <summary>Explanation of the most recent chosen action; null before the first decision.</summary>
+    public DecisionTrace? LastDecisionTrace { get; private set; }
+
     public bool IsAlive => Energy > 0.0;
 
     public Organism(
         long id, Genome genome, string name, double energy, int x, int y, NeatGenome brain,
         long age = 0, OrganismAction? lastAction = null, ActionResult lastActionResult = ActionResult.None,
         long? lastBirthTick = null, double? energyCapacity = null, long predationWins = 0, long predationLosses = 0,
-        double helpGiven = 0.0, NeatGenome? germline = null)
+        double helpGiven = 0.0, NeatGenome? germline = null, DecisionTrace? lastDecisionTrace = null)
     {
         ArgumentNullException.ThrowIfNull(genome);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -93,6 +96,7 @@ public sealed class Organism
         PredationWins = predationWins;
         PredationLosses = predationLosses;
         HelpGiven = helpGiven;
+        LastDecisionTrace = lastDecisionTrace;
     }
 
     public void AddEnergy(double amount)
@@ -121,6 +125,20 @@ public sealed class Organism
     public void RecordAction(OrganismAction action) => LastAction = action;
 
     public void RecordActionResult(ActionResult result) => LastActionResult = result;
+
+    public void RecordDecisionTrace(DecisionTrace trace)
+    {
+        ArgumentNullException.ThrowIfNull(trace);
+        LastDecisionTrace = trace;
+    }
+
+    public void RecordLearningReward(double reward)
+    {
+        if (LastDecisionTrace is not null)
+        {
+            LastDecisionTrace = LastDecisionTrace with { LearningReward = reward };
+        }
+    }
 
     public void RecordBirth(long tick) => LastBirthTick = tick;
 

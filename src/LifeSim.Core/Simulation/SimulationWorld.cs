@@ -307,6 +307,8 @@ public sealed class SimulationWorld
             OrganismAction action = NeatBrain.SelectAction(propagations[i].Probabilities, behavior);
             organism.UpdateBrain(propagations[i].Genome);
             organism.RecordAction(action);
+            organism.RecordDecisionTrace(NeatBrain.Explain(
+                propagations[i], sensoryInputs[i], action, currentTick));
             actions[i] = action;
         }
 
@@ -386,12 +388,17 @@ public sealed class SimulationWorld
             // Within-life learning uses bounded action credit: direct action energy minus locomotion,
             // outcome feedback, and direct reproductive fitness credit. Basal/thermal/crowding costs
             // are excluded, so simply surviving a tick does not punish every active connection.
-            if (g.Plasticity > 0.0 && organism.IsAlive)
+            if (organism.IsAlive)
             {
                 double reward = LearningReward.Calculate(
                     actions[index], organism.LastActionResult, actionEnergyDelta[index],
                     cost.Movement * cost.EfficiencyMultiplier, Config.Learning);
-                organism.UpdateBrain(HebbianLearning.Apply(organism.Brain, organism.Germline, reward, g.Plasticity, g.LearningDecay, Config.Learning));
+                organism.RecordLearningReward(reward);
+                if (g.Plasticity > 0.0)
+                {
+                    organism.UpdateBrain(HebbianLearning.Apply(
+                        organism.Brain, organism.Germline, reward, g.Plasticity, g.LearningDecay, Config.Learning));
+                }
             }
         });
 

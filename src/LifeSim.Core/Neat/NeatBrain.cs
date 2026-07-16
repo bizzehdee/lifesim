@@ -12,7 +12,12 @@ public sealed record NeatEvaluationResult(NeatGenome Genome, OrganismAction Acti
 /// expensive forward pass run in parallel across organisms while the single PRNG action roll stays
 /// sequential in id order.
 /// </summary>
-public sealed record NeatPropagation(NeatGenome Genome, double[] Probabilities);
+public sealed record NeatPropagation(NeatGenome Genome, double[] Probabilities)
+{
+    internal NeatDecisionContext? DecisionContext { get; init; }
+}
+
+internal sealed record NeatDecisionContext(NeatExecutionPlan Plan, double[] StateBeforeFinalStep);
 
 /// <summary>
 /// Recurrent NEAT evaluation via a single synchronous update per tick: every
@@ -120,7 +125,63 @@ public static class NeatBrain
         }
 
         var updatedGenome = genome with { Nodes = updatedNodes, RuntimePlan = plan };
-        return new NeatPropagation(updatedGenome, probabilities);
+        return new NeatPropagation(updatedGenome, probabilities)
+        {
+            // After the final swap, nextState is the untouched state array that fed the final step.
+            DecisionContext = new NeatDecisionContext(plan, nextState),
+        };
+    }
+
+    /// <summary>Explains a selected action using the exact probabilities and final-step activations that produced it.</summary>
+    public static DecisionTrace Explain(
+        NeatPropagation propagation,
+        IReadOnlyList<double> inputs,
+        OrganismAction selectedAction,
+        long tick,
+        int maxSignals = 5)
+    {
+        ArgumentNullException.ThrowIfNull(propagation);
+        ArgumentNullException.ThrowIfNull(inputs);
+        ArgumentOutOfRangeException.ThrowIfNegative(maxSignals);
+        NeatDecisionContext context = propagation.DecisionContext
+            ?? throw new ArgumentException("Propagation does not carry decision context.", nameof(propagation));
+        int outputIndex = context.Plan.OutputNodeIndices[(int)selectedAction];
+
+        List<DecisionContribution> contributions = context.Plan.Incoming[outputIndex]
+            .Where(edge => edge.SourceNodeIndex >= 0)
+            .Select(edge =>
+            {
+                double activation = context.StateBeforeFinalStep[edge.SourceNodeIndex];
+                double weight = propagation.Genome.Connections[edge.ConnectionIndex].Weight;
+                return new DecisionContribution
+                {
+                    SourceNodeId = context.Plan.NodeIds[edge.SourceNodeIndex],
+                    SourceNodeType = context.Plan.NodeTypes[edge.SourceNodeIndex],
+                    SourceActivation = activation,
+                    Weight = weight,
+                    WeightedSignal = activation * weight,
+                };
+            })
+            .OrderByDescending(contribution => Math.Abs(contribution.WeightedSignal))
+            .ThenBy(contribution => contribution.SourceNodeId)
+            .Take(maxSignals)
+            .ToList();
+
+        List<DecisionInputSignal> strongestInputs = inputs
+            .Select((value, index) => new DecisionInputSignal(index, value))
+            .OrderByDescending(signal => Math.Abs(signal.Value))
+            .ThenBy(signal => signal.InputIndex)
+            .Take(maxSignals)
+            .ToList();
+
+        return new DecisionTrace
+        {
+            Tick = tick,
+            ChosenAction = selectedAction,
+            ActionProbabilities = propagation.Probabilities.ToList(),
+            StrongestInputs = strongestInputs,
+            StrongestContributions = contributions,
+        };
     }
 
     /// <summary>

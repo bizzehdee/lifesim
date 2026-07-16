@@ -9,17 +9,20 @@ internal sealed class NeatExecutionPlan
 {
     private NeatExecutionPlan(
         NodeType[] nodeTypes,
+        long[] nodeIds,
         int[] inputOrdinals,
         NeatIncomingEdge[][] incoming,
         int[] outputNodeIndices)
     {
         NodeTypes = nodeTypes;
+        NodeIds = nodeIds;
         InputOrdinals = inputOrdinals;
         Incoming = incoming;
         OutputNodeIndices = outputNodeIndices;
     }
 
     public NodeType[] NodeTypes { get; }
+    public long[] NodeIds { get; }
     public int[] InputOrdinals { get; }
     public NeatIncomingEdge[][] Incoming { get; }
     public int[] OutputNodeIndices { get; }
@@ -28,6 +31,7 @@ internal sealed class NeatExecutionPlan
     {
         var nodeIndex = new Dictionary<long, int>(genome.Nodes.Count);
         var nodeTypes = new NodeType[genome.Nodes.Count];
+        var nodeIds = new long[genome.Nodes.Count];
         var inputOrdinals = new int[genome.Nodes.Count];
         var incomingLists = new List<NeatIncomingEdge>[genome.Nodes.Count];
 
@@ -36,6 +40,7 @@ internal sealed class NeatExecutionPlan
             NodeGene node = genome.Nodes[i];
             nodeIndex[node.Id] = i;
             nodeTypes[i] = node.Type;
+            nodeIds[i] = node.Id;
             inputOrdinals[i] = node.Type == NodeType.Input ? checked((int)node.Id) : -1;
             incomingLists[i] = [];
         }
@@ -61,6 +66,7 @@ internal sealed class NeatExecutionPlan
 
         return new NeatExecutionPlan(
             nodeTypes,
+            nodeIds,
             inputOrdinals,
             incomingLists.Select(edges => edges.ToArray()).ToArray(),
             outputNodeIndices);

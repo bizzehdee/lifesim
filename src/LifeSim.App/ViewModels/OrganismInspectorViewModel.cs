@@ -4,6 +4,7 @@ using LifeSim.Core.Events;
 using LifeSim.Core.Neat;
 using LifeSim.Core.Organisms;
 using LifeSim.Core.Snapshot;
+using LifeSim.Core.Sensing;
 using LifeSim.Core.World;
 
 namespace LifeSim.App.ViewModels;
@@ -17,6 +18,11 @@ public sealed record TraitReading(string Name, double Value, double Min, double 
 /// <summary>The metabolism equation broken out for one organism.</summary>
 /// <summary>One action's current softmax probability.</summary>
 public sealed record ActionProbability(OrganismAction Action, double Probability);
+
+public sealed record DecisionInputReading(string Name, double Value);
+
+public sealed record DecisionContributionReading(
+    string Source, double Activation, double Weight, double WeightedSignal);
 
 /// <summary>One cell type's share of a multicellular body: its cell count and fraction of the body.</summary>
 public sealed record CellTypeReading(string Type, double Cells, double Fraction);
@@ -110,6 +116,12 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
     public OrganismAction? LastAction => Organism.LastAction;
     public ActionResult LastActionResult => Organism.LastActionResult;
     public IReadOnlyList<ActionProbability> ActionProbabilities { get; private init; } = [];
+    public bool HasDecisionTrace => Organism.DecisionTrace is not null;
+    public long DecisionTick => Organism.DecisionTrace?.Tick ?? 0;
+    public double ChosenProbability { get; private init; }
+    public double? LearningReward => Organism.DecisionTrace?.LearningReward;
+    public IReadOnlyList<DecisionInputReading> StrongestInputs { get; private init; } = [];
+    public IReadOnlyList<DecisionContributionReading> StrongestContributions { get; private init; } = [];
 
     // Brain.
     public string NetworkType => Organism.Brain.NetworkType;
@@ -168,7 +180,12 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
         ReproductionReadiness reproduction = ReproductionRules.Assess(
             genome, organism.Energy, organism.LastBirthTick, snapshot.Tick, config);
 
-        double[] probabilities = NeatBrain.ActionProbabilities(organism.Brain);
+        double[] probabilities = organism.DecisionTrace?.ActionProbabilities.Count == NeatTopology.OutputCount
+            ? organism.DecisionTrace.ActionProbabilities.ToArray()
+            : NeatBrain.ActionProbabilities(organism.Brain);
+        OrganismAction chosenAction = organism.DecisionTrace?.ChosenAction
+            ?? organism.LastAction
+            ?? OrganismAction.Idle;
 
         MulticellularConfig mc = config.Multicellular;
         double cells = Morphology.CellCount(genome, mc);
@@ -236,6 +253,18 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
             ActionProbabilities = probabilities
                 .Select((p, i) => new ActionProbability((OrganismAction)i, p))
                 .ToList(),
+            ChosenProbability = probabilities[(int)chosenAction],
+            StrongestInputs = organism.DecisionTrace?.StrongestInputs
+                .Select(signal => new DecisionInputReading(
+                    SensoryFieldLabels.Describe((SensoryField)signal.InputIndex), signal.Value))
+                .ToList() ?? [],
+            StrongestContributions = organism.DecisionTrace?.StrongestContributions
+                .Select(contribution => new DecisionContributionReading(
+                    DescribeSource(contribution),
+                    contribution.SourceActivation,
+                    contribution.Weight,
+                    contribution.WeightedSignal))
+                .ToList() ?? [],
             BrainGraph = NeatGraphLayout.Build(organism.Brain),
         };
     }
@@ -250,4 +279,21 @@ public sealed class OrganismInspectorViewModel : ViewModelBase
         (_, >= 1.0) => "Sexual (seeks a mate; clones if none)",
         _ => $"Mixed (~{sexuality:P0} sexual)",
     };
+
+    private static string DescribeSource(DecisionContribution contribution)
+    {
+        if (contribution.SourceNodeType == NodeType.Input
+            && SensoryFieldLabels.TryForInputNode(contribution.SourceNodeId, out SensoryField field))
+        {
+            return SensoryFieldLabels.Describe(field);
+        }
+
+        if (contribution.SourceNodeType == NodeType.Output
+            && ActionLabels.TryForOutputNode(contribution.SourceNodeId, out OrganismAction action))
+        {
+            return $"Recurrent {ActionLabels.Describe(action)}";
+        }
+
+        return $"Hidden node {contribution.SourceNodeId}";
+    }
 }

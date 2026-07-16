@@ -116,7 +116,7 @@ public sealed record BrainTypeSpec
 /// <summary>Within-life (Hebbian) learning coefficients, applied when an organism has non-zero <c>plasticity</c>.</summary>
 public sealed record LearningConfig
 {
-    /// <summary>Scales the reward-modulated Hebbian weight change (with the organism's plasticity and its per-tick energy reward).</summary>
+    /// <summary>Scales the reward-modulated Hebbian weight change (with the organism's plasticity and bounded action reward).</summary>
     public double LearnRate { get; init; } = 0.02;
 
     /// <summary>Hard bound (±) on a learned connection weight, so learning can't blow weights up.</summary>
@@ -124,6 +124,21 @@ public sealed record LearningConfig
 
     /// <summary>Fraction of the gap back to the germline weight that maximal <c>learning_decay</c> (=1) closes per tick.</summary>
     public double DecayScale { get; init; } = 0.1;
+
+    /// <summary>Action-energy units corresponding to one raw reward unit.</summary>
+    public double EnergyRewardScale { get; init; } = 10.0;
+
+    /// <summary>Small feedback for a non-idle action that resolved successfully.</summary>
+    public double SuccessfulActionReward { get; init; } = 0.05;
+
+    /// <summary>Penalty for blocked, failed, or no-op non-idle choices.</summary>
+    public double FailedActionPenalty { get; init; } = 0.1;
+
+    /// <summary>Direct fitness credit for successfully producing offspring, independent of its energy investment.</summary>
+    public double ReproductionReward { get; init; } = 1.0;
+
+    /// <summary>Symmetric bound on the final per-action signal.</summary>
+    public double RewardClamp { get; init; } = 1.0;
 }
 
 /// <summary>Metabolism &amp; sensory-tax coefficients.</summary>

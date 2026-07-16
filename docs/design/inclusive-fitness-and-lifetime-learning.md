@@ -83,8 +83,10 @@ effect**: learning is **not** inherited, but the *capacity* to learn is, and lea
 - New evolvable trait **`Plasticity`** ∈ [0,1] (a learning rate), founders start at 0 (learning is
   evolved in, like the defensive traits) — so a no-learning baseline is always available and the
   Baldwin effect has to *earn* plasticity.
-- **Reward signal**: the organism's recent energy delta (gained energy → positive; starving → negative).
-  Purely from state, deterministic.
+- **Reward signal**: a bounded action-credit signal. It includes energy caused by the organism's own
+  action and locomotion cost, small success/failure feedback, and direct credit for producing offspring.
+  Basal, thermal, aging, and crowding metabolism are excluded so unavoidable upkeep does not teach the
+  brain that every action was bad. Purely from state, deterministic.
 - **Update rule**, applied once per tick in the *serial* post-decision step (where `UpdateBrain`
   already runs — so the parallel Propagate stays a pure read):
   `Δw_ij = Plasticity · learnRateScale · reward · preActivation_i · postActivation_j`, weights clamped

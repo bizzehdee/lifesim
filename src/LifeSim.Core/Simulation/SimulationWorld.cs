@@ -324,13 +324,9 @@ public sealed class SimulationWorld
         // co-opted partner) it can't be booked again. Serial intent phase, so a plain set suffices.
         var matedThisTick = new HashSet<long>();
 
-        // Energy at the start of the tick (before intent), used as the reward signal for within-life
-        // learning: net energy change over the tick tells a plastic brain whether its behaviour paid off.
-        var tickStartEnergy = new double[organismCount];
-        for (int i = 0; i < organismCount; i++)
-        {
-            tickStartEnergy[i] = _organisms[tickIds[i]].Energy;
-        }
+        // Energy attributable strictly to each chosen action. External transfers received before an
+        // organism's turn and unavoidable metabolism must not be credited to (or blamed on) its brain.
+        var actionEnergyDelta = new double[organismCount];
 
         for (int i = 0; i < organismCount; i++)
         {
@@ -343,8 +339,10 @@ public sealed class SimulationWorld
                 continue;
             }
 
+            double energyBeforeAction = organism.Energy;
             (double distance, ActionResult result) = ResolveIntent(organism, actions[i], currentTick, behavior, pendingBirths, matedThisTick, counters);
             distanceTraveled[i] = distance;
+            actionEnergyDelta[i] = organism.Energy - energyBeforeAction;
             organism.RecordActionResult(result);
         }
 
@@ -385,12 +383,14 @@ public sealed class SimulationWorld
             organism.SpendEnergy(cost.Total);
             organism.Tick();
 
-            // Within-life learning: nudge the live brain's weights toward what was active when this
-            // tick's net energy reward arrived. Deterministic and per-organism (writes only its own
-            // brain), so it stays thread-count-safe. Only plastic, still-living organisms learn.
+            // Within-life learning uses bounded action credit: direct action energy minus locomotion,
+            // outcome feedback, and direct reproductive fitness credit. Basal/thermal/crowding costs
+            // are excluded, so simply surviving a tick does not punish every active connection.
             if (g.Plasticity > 0.0 && organism.IsAlive)
             {
-                double reward = organism.Energy - tickStartEnergy[index];
+                double reward = LearningReward.Calculate(
+                    actions[index], organism.LastActionResult, actionEnergyDelta[index],
+                    cost.Movement * cost.EfficiencyMultiplier, Config.Learning);
                 organism.UpdateBrain(HebbianLearning.Apply(organism.Brain, organism.Germline, reward, g.Plasticity, g.LearningDecay, Config.Learning));
             }
         });
@@ -645,7 +645,7 @@ public sealed class SimulationWorld
             counters.FailedGrazing++;
         }
 
-        return ActionResult.Success;
+        return gathered > 0.0 ? ActionResult.Success : ActionResult.NoOp;
     }
 
     /// <summary>

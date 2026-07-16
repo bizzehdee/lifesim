@@ -72,4 +72,28 @@ public class HeadlessRenderTests
         Assert.NotEmpty(window.GetVisualDescendants().OfType<OrganismInspectorView>());
         vm.Dispose();
     });
+
+    [Fact]
+    public Task SimulationCanvas_rendersASceneAcrossTicks_withASelectionAndNoExceptions() => InSession(() =>
+    {
+        // Regression cover for the visual-polish pass (gradient/glow fills, dapple tiles, night tint,
+        // vignette, move-animation timer): actually drives Render, twice, with a selected organism, so
+        // a bad brush/property setup throws here instead of only surfacing on a live run.
+        var vm = new MainViewModel(liveEngine: true, autoStart: false, post: a => a());
+        Assert.True(vm.TryCreateWorld(42, 48, 48, SimulationConfig.Default with { InitialPopulation = 20 }, out _));
+        var window = new Window { Content = new MainView { DataContext = vm }, Width = 1000, Height = 700 };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        vm.World.SelectedOrganismId = vm.World.Snapshot!.Organisms[0].OrganismId;
+        Dispatcher.UIThread.RunJobs();
+
+        // A second "tick" with organisms at new positions — exercises the move-animation start path.
+        vm.Step();
+        Dispatcher.UIThread.RunJobs();
+
+        SimulationCanvas canvas = Assert.Single(window.GetVisualDescendants().OfType<SimulationCanvas>());
+        Assert.True(canvas.IsEffectivelyVisible);
+        vm.Dispose();
+    });
 }

@@ -4,8 +4,9 @@ namespace LifeSim.App.Presentation;
 
 /// <summary>
 /// The shared "success" score for the leaderboard and the live-organisms list, so both rank identically.
-/// It builds on the weighted descendant count — <c>children + ½·grandchildren + ¼·great-grandchildren</c>
-/// — but also rewards <em>reproductive rate</em> and <em>longevity</em>:
+/// It builds on the weighted descendant count — <c>children + ½·grandchildren + ¼·great-grandchildren</c>,
+/// each halved again if that descendant was itself a dead end (never had offspring of its own) — but also
+/// rewards <em>reproductive rate</em> and <em>longevity</em>:
 /// <code>
 /// score = W_descendants·D
 ///       + W_rate·(directChildren · Window / max(lifespan, 1))
@@ -36,10 +37,14 @@ public static class LineageScore
     /// <summary>Reference time window (ticks) that normalises the rate and longevity terms.</summary>
     public const double LifespanWindow = 100.0;
 
+    /// <summary>A descendant that never had offspring of its own is a dead end — it counts for half.</summary>
+    public const double DeadEndMultiplier = 0.5;
+
     /// <summary>
     /// Per-organism weighted descendants (D) and direct-child counts, from the all-time lineage records
     /// (O(n): each organism credits 1.0 to its parent, 0.5 to its grandparent, 0.25 to its
-    /// great-grandparent).
+    /// great-grandparent — halved again at every level if it was itself childless, per
+    /// <see cref="DeadEndMultiplier"/>).
     /// </summary>
     public static (Dictionary<long, double> WeightedDescendants, Dictionary<long, long> DirectChildren) Lineage(WorldSnapshot snapshot)
     {
@@ -64,13 +69,14 @@ public static class LineageScore
                 continue;
             }
 
-            descendants[p1] = descendants.GetValueOrDefault(p1) + 1.0;
+            double weight = directChildren.ContainsKey(l.OrganismId) ? 1.0 : DeadEndMultiplier;
+            descendants[p1] = descendants.GetValueOrDefault(p1) + weight;
             if (parentOf.TryGetValue(p1, out long p2))
             {
-                descendants[p2] = descendants.GetValueOrDefault(p2) + 0.5;
+                descendants[p2] = descendants.GetValueOrDefault(p2) + (0.5 * weight);
                 if (parentOf.TryGetValue(p2, out long p3))
                 {
-                    descendants[p3] = descendants.GetValueOrDefault(p3) + 0.25;
+                    descendants[p3] = descendants.GetValueOrDefault(p3) + (0.25 * weight);
                 }
             }
         }

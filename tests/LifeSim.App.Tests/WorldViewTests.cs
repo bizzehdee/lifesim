@@ -305,8 +305,10 @@ public class WorldViewTests
     [Fact]
     public void Ranking_scoreWeightsDescendantsByGeneration()
     {
-        // Hand-built lineage: root → child → grandchild → great-grandchild (single chain), plus a
-        // second direct child of root. Root score = 2 children*1 + 1 grandchild*0.5 + 1 gg*0.25 = 2.75.
+        // Hand-built lineage: root → child(2) → grandchild(4) → great-grandchild(5) (single chain), plus
+        // a second direct child(3) of root. 3 and 5 are dead ends (no offspring of their own), so each
+        // counts for half: root score = 1 child(2, full) + 0.5 child(3, dead end)
+        //                              + 0.5 grandchild(4, full) + 0.125 gg(5, dead end) = 2.125.
         var lineages = new List<LifeSim.Core.Snapshot.LineageSnapshot>
         {
             new() { OrganismId = 1, ParentId = null, LineageId = 1 },
@@ -317,14 +319,34 @@ public class WorldViewTests
         };
         var snapshot = new WorldSnapshot { Lineages = lineages };
 
-        // The weighted-descendant component: 2 children*1 + 1 grandchild*0.5 + 1 gg*0.25 = 2.75.
         (Dictionary<long, double> descendants, Dictionary<long, long> children) = LineageScore.Lineage(snapshot);
-        Assert.Equal(2.75, descendants[1], precision: 6);
-        Assert.Equal(2, children[1]);
+        Assert.Equal(2.125, descendants[1], precision: 6);
+        Assert.Equal(2, children[1]); // the raw child count is unaffected by the dead-end weighting
 
         IReadOnlyList<RankingEntry> ranking = RankingBuilder.Build(snapshot);
         Assert.Equal(2, ranking.Single(r => r.OrganismId == 1).Children);
         Assert.Equal(1, ranking[0].OrganismId); // root (most descendants + highest rate) ranks first
+    }
+
+    [Fact]
+    public void Ranking_dead_endDescendants_countForHalf()
+    {
+        // Root has two children: 2 goes on to reproduce (child 4), 3 never does, and 4 is itself a dead
+        // end. Per the rebalance, a childless descendant counts for half of a reproducing one, at every
+        // generation it's counted at: root gets 2 (full child) + 3 (half child) + 4 (half grandchild).
+        var lineages = new List<LifeSim.Core.Snapshot.LineageSnapshot>
+        {
+            new() { OrganismId = 1, ParentId = null, LineageId = 1 },
+            new() { OrganismId = 2, ParentId = 1, LineageId = 1 }, // reproduces
+            new() { OrganismId = 3, ParentId = 1, LineageId = 1 }, // dead end
+            new() { OrganismId = 4, ParentId = 2, LineageId = 1 }, // dead end
+        };
+        var snapshot = new WorldSnapshot { Lineages = lineages };
+
+        (Dictionary<long, double> descendants, _) = LineageScore.Lineage(snapshot);
+        double expectedRoot = 1.0 + LineageScore.DeadEndMultiplier + (0.5 * LineageScore.DeadEndMultiplier);
+        Assert.Equal(expectedRoot, descendants[1], precision: 6);
+        Assert.Equal(LineageScore.DeadEndMultiplier, descendants[2], precision: 6); // 4 is childless, so it counts for half toward its parent (2) too
     }
 
     [Fact]

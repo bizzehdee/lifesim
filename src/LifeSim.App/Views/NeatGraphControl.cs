@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Avalonia.Media.Immutable;
 using LifeSim.App.Presentation;
 using LifeSim.Core.Neat;
+using LifeSim.Core.Organisms;
 using LifeSim.Core.Sensing;
 
 namespace LifeSim.App.Views;
@@ -99,7 +100,8 @@ public sealed class NeatGraphControl : Control
         ClearHover();
     }
 
-    // Show a tooltip naming the input and its live value when the cursor is over an input node.
+    // Show a tooltip naming the node under the cursor: an input's sensory field and live value, an
+    // output's action, or (for a hidden node) the input/output nodes it is functionally connected to.
     private void UpdateHover(Point pointer)
     {
         NeatGraph? graph = Graph;
@@ -115,13 +117,14 @@ public sealed class NeatGraphControl : Control
 
         foreach (NeatNodeLayout node in graph.Nodes)
         {
-            if (node.Type != NodeType.Input || !SensoryFieldLabels.TryForInputNode(node.Id, out SensoryField field))
+            var centre = new Point(Pad + (node.X * w), Pad + (node.Y * h));
+            if (Distance(centre, pointer) > hitRadius)
             {
                 continue;
             }
 
-            var centre = new Point(Pad + (node.X * w), Pad + (node.Y * h));
-            if (Distance(centre, pointer) > hitRadius)
+            string? tip = DescribeNode(graph, node);
+            if (tip is null)
             {
                 continue;
             }
@@ -129,8 +132,7 @@ public sealed class NeatGraphControl : Control
             if (_hoveredNodeId != node.Id)
             {
                 _hoveredNodeId = node.Id;
-                string value = node.Activation.ToString("F2", CultureInfo.InvariantCulture);
-                ToolTip.SetTip(this, $"{SensoryFieldLabels.Describe(field)}: {value}");
+                ToolTip.SetTip(this, tip);
                 // Reopen so the tooltip repositions to the newly hovered node.
                 ToolTip.SetIsOpen(this, false);
                 ToolTip.SetIsOpen(this, true);
@@ -140,6 +142,83 @@ public sealed class NeatGraphControl : Control
         }
 
         ClearHover();
+    }
+
+    private static string? DescribeNode(NeatGraph graph, NeatNodeLayout node)
+    {
+        if (node.Type == NodeType.Input && SensoryFieldLabels.TryForInputNode(node.Id, out SensoryField field))
+        {
+            string value = node.Activation.ToString("F2", CultureInfo.InvariantCulture);
+            return $"{SensoryFieldLabels.Describe(field)}: {value}";
+        }
+
+        if (node.Type == NodeType.Hidden)
+        {
+            string inputs = string.Join(", ", ReachableInputs(graph, node.Id));
+            string outputs = string.Join(", ", ReachableOutputs(graph, node.Id));
+            return $"Inputs: {(inputs.Length == 0 ? "none" : inputs)}\nOutputs: {(outputs.Length == 0 ? "none" : outputs)}";
+        }
+
+        return null;
+    }
+
+    /// <summary>Sensory fields feeding <paramref name="nodeId"/>, directly or via other hidden nodes, over enabled edges.</summary>
+    private static IEnumerable<string> ReachableInputs(NeatGraph graph, long nodeId) =>
+        Reachable(graph, nodeId, upstream: true)
+            .Where(id => SensoryFieldLabels.TryForInputNode(id, out _))
+            .OrderBy(id => id)
+            .Select(id => { SensoryFieldLabels.TryForInputNode(id, out SensoryField field); return SensoryFieldLabels.Describe(field); });
+
+    /// <summary>Actions fed by <paramref name="nodeId"/>, directly or via other hidden nodes, over enabled edges.</summary>
+    private static IEnumerable<string> ReachableOutputs(NeatGraph graph, long nodeId) =>
+        Reachable(graph, nodeId, upstream: false)
+            .Where(id => ActionLabels.TryForOutputNode(id, out _))
+            .OrderBy(id => id)
+            .Select(id => { ActionLabels.TryForOutputNode(id, out OrganismAction action); return ActionLabels.Describe(action); });
+
+    /// <summary>
+    /// Breadth-first walk of enabled edges from <paramref name="startId"/>, following edges backward
+    /// (toward inputs) or forward (toward outputs), returning every node reached (excluding the start).
+    /// </summary>
+    private static HashSet<long> Reachable(NeatGraph graph, long startId, bool upstream)
+    {
+        var visited = new HashSet<long> { startId };
+        var frontier = new Queue<long>();
+        frontier.Enqueue(startId);
+
+        while (frontier.Count > 0)
+        {
+            long current = frontier.Dequeue();
+            foreach (NeatEdgeLayout edge in graph.Edges)
+            {
+                if (!edge.Enabled)
+                {
+                    continue;
+                }
+
+                long neighbour;
+                if (upstream && edge.ToId == current)
+                {
+                    neighbour = edge.FromId;
+                }
+                else if (!upstream && edge.FromId == current)
+                {
+                    neighbour = edge.ToId;
+                }
+                else
+                {
+                    continue;
+                }
+
+                if (visited.Add(neighbour))
+                {
+                    frontier.Enqueue(neighbour);
+                }
+            }
+        }
+
+        visited.Remove(startId);
+        return visited;
     }
 
     private void ClearHover()

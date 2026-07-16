@@ -27,7 +27,7 @@ public sealed class WorldScene
     private WorldScene(
         int width, int height, ColourMode mode, TerrainSampler terrain, GroundEnergyGrid ground,
         SimulationConfig config, bool blightActive, double temperatureOffset, bool plagueHatch,
-        IReadOnlyList<OrganismView> organisms, OrganismFootprint? selectedFootprint)
+        double globalLight, IReadOnlyList<OrganismView> organisms, OrganismFootprint? selectedFootprint)
     {
         Width = width;
         Height = height;
@@ -38,6 +38,7 @@ public sealed class WorldScene
         _blightActive = blightActive;
         _temperatureOffset = temperatureOffset;
         PlagueHatch = plagueHatch;
+        GlobalLight = globalLight;
         Organisms = organisms;
         SelectedFootprint = selectedFootprint;
     }
@@ -49,6 +50,9 @@ public sealed class WorldScene
     public ColourMode Mode { get; }
 
     public bool PlagueHatch { get; }
+
+    /// <summary>The frame's diurnal/seasonal light level (0 → 1), constant across the map this tick — for ambient screen tinting.</summary>
+    public double GlobalLight { get; }
 
     public IReadOnlyList<OrganismView> Organisms { get; }
 
@@ -71,14 +75,14 @@ public sealed class WorldScene
         GroundEnergyGrid ground = GroundEnergyGrid.FromState(terrain, config, snapshot.GroundEnergy);
         var environment = new EnvironmentState(snapshot.EnvironmentModifiers);
 
-        double temperatureOffset = environment.TemperatureOffset
-            + EnvironmentClock.At(snapshot.Tick, config.Cycle).CyclicTemperatureOffset;
+        EnvironmentClock clock = EnvironmentClock.At(snapshot.Tick, config.Cycle);
+        double temperatureOffset = environment.TemperatureOffset + clock.CyclicTemperatureOffset;
         bool eventActive = environment.Modifiers.Count > 0;
         double ceiling = Organism.EnergyCeiling;
 
         // The frame's diurnal/seasonal light, constant across the map this tick (spatial variation comes
         // from each tile's biome light factor). Used by the Light colour mode.
-        double globalLight = EnvironmentClock.At(snapshot.Tick, config.Cycle).GlobalLight;
+        double globalLight = clock.GlobalLight;
 
         var lineageByOrganism = new Dictionary<long, long>(snapshot.Lineages.Count);
         foreach (LineageSnapshot lineage in snapshot.Lineages)
@@ -123,6 +127,6 @@ public sealed class WorldScene
 
         return new WorldScene(
             snapshot.World.Width, snapshot.World.Height, mode, terrain, ground, config,
-            environment.BlightActive, temperatureOffset, environment.PlagueActive, organisms, footprint);
+            environment.BlightActive, temperatureOffset, environment.PlagueActive, globalLight, organisms, footprint);
     }
 }

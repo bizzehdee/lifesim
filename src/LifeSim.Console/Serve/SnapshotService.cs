@@ -52,6 +52,15 @@ public sealed class SnapshotService
         }
     }
 
+    /// <summary>Returns compact presentation state, optionally including one organism's full brain.</summary>
+    public string CurrentFrameJson(long? detailOrganismId = null)
+    {
+        lock (_gate)
+        {
+            return WorldFrameSerializer.Save(_world.ToFrame(detailOrganismId));
+        }
+    }
+
     /// <summary>The current tick's metrics as a single NDJSON line.</summary>
     public string CurrentMetricsLine()
     {

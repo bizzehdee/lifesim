@@ -6,7 +6,7 @@ using LifeSim.Core.Snapshot;
 namespace LifeSim.App.Engine;
 
 /// <summary>
-/// Drives a live <see cref="SimulationWorld"/> and pushes a fresh snapshot to the <c>onFrame</c> sink
+/// Drives a live <see cref="SimulationWorld"/> and pushes a lightweight frame to the <c>onFrame</c> sink
 /// after every advance. Supports play / pause / frame-step / speed.
 /// <para>
 /// On desktop the loop runs on a dedicated background thread so the UI thread never blocks on ticks.
@@ -16,15 +16,15 @@ namespace LifeSim.App.Engine;
 /// </para>
 /// The sink marshals onto the UI thread (the desktop head wraps it in the Avalonia dispatcher); the Core
 /// stays authoritative — this only calls <see cref="SimulationWorld.Advance"/> and
-/// <see cref="SimulationWorld.ToSnapshot"/>.
+/// <see cref="SimulationWorld.ToFrame(long?)"/>. Full replayable checkpoints are captured only on demand.
 /// </summary>
 public sealed class EngineRunner : IDisposable
 {
-    private readonly Action<WorldSnapshot> _onFrame;
+    private readonly Action<WorldFrame> _onFrame;
     private readonly Lock _gate = new();
     private readonly SimulationWorld _world;
 
-    /// <summary>Cap on snapshot/render emission while playing (~30 fps), decoupled from the sim rate so a fast sim isn't throttled by rebuilding the whole world every tick.</summary>
+    /// <summary>Cap on frame/render emission while playing (~30 fps), decoupled from the simulation rate.</summary>
     private const long FrameIntervalMs = 33;
 
     // Loop pacing/frame state — only ever touched by the single driving loop (thread or async task).
@@ -39,14 +39,15 @@ public sealed class EngineRunner : IDisposable
     private volatile bool _stopping;
     private volatile int _pendingSteps;
     private volatile int _delayMs = 100; // target ms between ticks; 0.1 s/tick default
+    private long _detailOrganismId = -1;
 
-    public EngineRunner(SimulationWorld world, Action<WorldSnapshot> onFrame)
+    public EngineRunner(SimulationWorld world, Action<WorldFrame> onFrame)
     {
         ArgumentNullException.ThrowIfNull(world);
         ArgumentNullException.ThrowIfNull(onFrame);
         _world = world;
         _onFrame = onFrame;
-        _onFrame(CaptureSnapshot()); // show the initial frame immediately
+        _onFrame(CaptureFrame()); // show the initial frame immediately
     }
 
     public bool IsPlaying => _playing;
@@ -99,6 +100,19 @@ public sealed class EngineRunner : IDisposable
             _world.MaxDegreeOfParallelism = threads;
         }
     }
+
+    /// <summary>Selects the one organism whose full live brain is carried in lightweight frames.</summary>
+    public void SetDetailOrganismId(long? organismId)
+    {
+        long value = organismId ?? -1;
+        if (Interlocked.Exchange(ref _detailOrganismId, value) != value)
+        {
+            _onFrame(CaptureFrame());
+        }
+    }
+
+    /// <summary>Captures a full replayable checkpoint on demand for save/edit operations.</summary>
+    public WorldSnapshot CaptureCheckpoint() => CaptureSnapshot();
 
     public void Dispose()
     {
@@ -174,7 +188,7 @@ public sealed class EngineRunner : IDisposable
 
             if (stepped)
             {
-                _onFrame(CaptureSnapshot());
+                _onFrame(CaptureFrame());
                 _nextFrameAt = _clock.ElapsedMilliseconds + FrameIntervalMs;
             }
 
@@ -192,12 +206,11 @@ public sealed class EngineRunner : IDisposable
 
             _wasPlaying = true;
 
-            // Emit at most ~30 fps regardless of how fast the sim ticks (a full snapshot + render of the
-            // whole world every tick would itself throttle a large, fast sim).
+            // Emit at most ~30 fps regardless of how fast the sim ticks; rendering should not throttle it.
             long now = _clock.ElapsedMilliseconds;
             if (now >= _nextFrameAt)
             {
-                _onFrame(CaptureSnapshot());
+                _onFrame(CaptureFrame());
                 _nextFrameAt = now + FrameIntervalMs;
             }
 
@@ -211,7 +224,7 @@ public sealed class EngineRunner : IDisposable
         // where the sim stopped, not the last ~30 fps frame.
         if (_wasPlaying)
         {
-            _onFrame(CaptureSnapshot());
+            _onFrame(CaptureFrame());
             _wasPlaying = false;
         }
 
@@ -237,6 +250,15 @@ public sealed class EngineRunner : IDisposable
         lock (_gate)
         {
             return _world.ToSnapshot();
+        }
+    }
+
+    private WorldFrame CaptureFrame()
+    {
+        lock (_gate)
+        {
+            long id = Interlocked.Read(ref _detailOrganismId);
+            return _world.ToFrame(id >= 0 ? id : null);
         }
     }
 }

@@ -35,6 +35,19 @@ public class SnapshotServiceTests
     }
 
     [Fact]
+    public void CurrentFrameJson_includesOnlyRequestedBrainDetail()
+    {
+        SnapshotService service = NewService();
+        long id = SnapshotSerializer.Load(service.CurrentSnapshotJson()).Organisms[0].OrganismId;
+
+        WorldFrame frame = WorldFrameSerializer.Load(service.CurrentFrameJson(id));
+
+        Assert.Equal(id, frame.DetailOrganism?.OrganismId);
+        Assert.Equal(10, frame.Organisms.Count);
+        Assert.NotEmpty(frame.DetailOrganism!.Brain.Connections);
+    }
+
+    [Fact]
     public void CurrentMetricsLine_isASingleParsableJsonLine()
     {
         SnapshotService service = NewService();

@@ -16,6 +16,9 @@ namespace LifeSim.App.ViewModels;
 /// </summary>
 public partial class WorldViewModel : ViewModelBase
 {
+    /// <summary>Requests full detail for the selected organism from the active frame source.</summary>
+    public event Action<long?>? DetailOrganismRequested;
+
     [ObservableProperty]
     private WorldSnapshot? _snapshot;
 
@@ -485,6 +488,7 @@ public partial class WorldViewModel : ViewModelBase
         RebuildScene();      // refresh the selected-organism footprint highlight
         RebuildInspector();
         NotifyCurrentOrganismChanged();
+        DetailOrganismRequested?.Invoke(value);
     }
 
     private void NotifyCurrentOrganismChanged()

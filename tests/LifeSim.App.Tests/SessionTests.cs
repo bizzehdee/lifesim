@@ -193,6 +193,43 @@ public class SessionTests
     }
 
     [Fact]
+    public async Task StreamClient_receivesCompactFrames_andCanRequestSelectedBrainDetail()
+    {
+        var service = new SnapshotService(NewWorld(seed: 5));
+        int port = FreePort();
+        using var server = new SimHttpServer(service, port, TextWriter.Null);
+        using var serverCts = new CancellationTokenSource();
+        Task run = server.RunAsync(serverCts.Token);
+
+        try
+        {
+            using var client = new SnapshotStreamClient(server.Prefix);
+            long selectedId = (await client.FetchAsync()).Organisms[2].OrganismId;
+            client.SetDetailOrganismId(selectedId);
+            var selectedFrame = new TaskCompletionSource<WorldFrame>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var streamCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            Task stream = client.StreamAsync(frame =>
+            {
+                if (frame.DetailOrganism?.OrganismId == selectedId)
+                {
+                    selectedFrame.TrySetResult(frame);
+                }
+            }, streamCts.Token);
+
+            WorldFrame received = await selectedFrame.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(selectedId, received.DetailOrganism?.OrganismId);
+            Assert.NotEmpty(received.DetailOrganism!.Brain.Connections);
+            await streamCts.CancelAsync();
+            await stream;
+        }
+        finally
+        {
+            await serverCts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Fact]
     public void Session_liveMode_rendersInitialFrameAndStepsForward()
     {
         var session = CreatedSession();

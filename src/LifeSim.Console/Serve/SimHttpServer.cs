@@ -13,7 +13,7 @@ namespace LifeSim.Console.Serve;
 /// <item><c>POST /snapshot</c> — import an edited snapshot as the new world state.</item>
 /// <item><c>GET /metrics</c> — the current tick's metrics (one NDJSON line).</item>
 /// <item><c>GET /health</c> — liveness check.</item>
-/// <item><c>GET /stream</c> — a WebSocket that pushes a snapshot frame whenever the tick advances.</item>
+/// <item><c>GET /stream</c> — a WebSocket that pushes compact frames; clients send a selected organism id for brain detail.</item>
 /// </list>
 /// </summary>
 public sealed class SimHttpServer : IDisposable
@@ -119,21 +119,27 @@ public sealed class SimHttpServer : IDisposable
     {
         HttpListenerWebSocketContext wsContext = await context.AcceptWebSocketAsync(subProtocol: null).ConfigureAwait(false);
         using WebSocket socket = wsContext.WebSocket;
+        using var connectionCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var selection = new StreamSelection();
+        Task receiveTask = ReceiveSelectionAsync(socket, selection, connectionCts.Token);
         long lastTick = -1;
+        long lastDetailId = long.MinValue;
 
         try
         {
             while (socket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
             {
                 long tick = _service.Tick;
-                if (tick != lastTick)
+                long detailId = selection.Value;
+                if (tick != lastTick || detailId != lastDetailId)
                 {
                     lastTick = tick;
-                    byte[] frame = Encoding.UTF8.GetBytes(_service.CurrentSnapshotJson());
+                    lastDetailId = detailId;
+                    byte[] frame = Encoding.UTF8.GetBytes(_service.CurrentFrameJson(detailId >= 0 ? detailId : null));
                     await socket.SendAsync(frame, WebSocketMessageType.Text, endOfMessage: true, cancellationToken).ConfigureAwait(false);
                 }
 
-                await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+                await Task.Delay(50, cancellationToken).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
@@ -143,6 +149,64 @@ public sealed class SimHttpServer : IDisposable
         catch (WebSocketException)
         {
             // Client vanished — nothing more to do.
+        }
+        finally
+        {
+            connectionCts.Cancel();
+            try
+            {
+                await receiveTask.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when the send loop or server shuts down first.
+            }
+            catch (WebSocketException)
+            {
+                // Client vanished while receiving its selection.
+            }
+        }
+    }
+
+    private static async Task ReceiveSelectionAsync(
+        WebSocket socket,
+        StreamSelection selection,
+        CancellationToken cancellationToken)
+    {
+        byte[] buffer = new byte[64];
+        while (socket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
+        {
+            WebSocketReceiveResult result = await socket.ReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
+            if (result.MessageType == WebSocketMessageType.Close)
+            {
+                return;
+            }
+
+            if (result.MessageType != WebSocketMessageType.Text || !result.EndOfMessage)
+            {
+                continue;
+            }
+
+            string value = Encoding.UTF8.GetString(buffer, 0, result.Count);
+            if (value == "none")
+            {
+                selection.Value = -1;
+            }
+            else if (long.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out long id) && id >= 0)
+            {
+                selection.Value = id;
+            }
+        }
+    }
+
+    private sealed class StreamSelection
+    {
+        private long _value = -1;
+
+        public long Value
+        {
+            get => Interlocked.Read(ref _value);
+            set => Interlocked.Exchange(ref _value, value);
         }
     }
 

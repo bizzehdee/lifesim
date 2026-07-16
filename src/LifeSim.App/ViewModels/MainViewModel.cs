@@ -52,7 +52,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     // on a large world. Without this, every produced frame is posted to the UI thread and they pile up
     // faster than they drain — the app falls progressively further behind ("huge lag"). Instead we keep
     // only the latest frame and post a single drain; intermediate frames are dropped, never queued.
-    private WorldSnapshot? _pendingFrame;
+    private WorldFrame? _pendingFrame;
     private int _frameQueued;
 
     [ObservableProperty]
@@ -253,6 +253,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         ThreadCount = Math.Max(1, MaxThreads / 2);
 
         ResetFoundingTypes();
+        World.DetailOrganismRequested += OnDetailOrganismRequested;
     }
 
     /// <summary>Populate the type list with Generic + the shipped example scripts, all at count 0.</summary>
@@ -513,7 +514,11 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     public void ApplyEdit() => EditSelectedEnergy(EditEnergy);
 
     /// <summary>The current frame as snapshot JSON, or null if none yet (world exchange with the console app).</summary>
-    public string? CurrentJson() => _current is null ? null : SnapshotSerializer.Save(_current);
+    public string? CurrentJson()
+    {
+        WorldSnapshot? checkpoint = _runner?.CaptureCheckpoint() ?? (Mode == SessionMode.Streaming ? null : _current);
+        return checkpoint is null ? null : SnapshotSerializer.Save(checkpoint);
+    }
 
     /// <summary>Adopts a snapshot from JSON as a new (resumable, if live-capable) deterministic starting point.</summary>
     public void LoadFromJson(string json)
@@ -545,31 +550,36 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         _streamCts = new CancellationTokenSource();
         HasWorld = true;
         Status = $"Streaming from {baseUrl}.";
-        _ = _stream.StreamAsync(PublishFrame, intervalMs: 200, _streamCts.Token);
+        _stream.SetDetailOrganismId(World.SelectedOrganismId);
+        _ = _stream.StreamAsync(PublishFrame, _streamCts.Token);
     }
 
     /// <summary>Applies a §16 intervention to the selected organism and adopts the edited state.</summary>
     public void EditSelectedEnergy(double newEnergy, string? reason = null)
     {
-        if (_current is null || World.SelectedOrganismId is not { } id)
+        if (World.SelectedOrganismId is not { } id)
+        {
+            return;
+        }
+
+        if (Mode == SessionMode.Streaming && _stream is not null)
+        {
+            _ = EditStreamedEnergyAsync(_stream, id, newEnergy, reason);
+            return;
+        }
+
+        WorldSnapshot? checkpoint = _runner?.CaptureCheckpoint() ?? _current;
+        if (checkpoint is null)
         {
             return;
         }
 
         // An intervention forks a new comparable timeline rather than overwriting the original run
         //: edit the field, record it, then branch off the current snapshot.
-        WorldSnapshot edited = SnapshotEditor.SetOrganismEnergy(_current, id, newEnergy, reason ?? "manual edit");
+        WorldSnapshot edited = SnapshotEditor.SetOrganismEnergy(checkpoint, id, newEnergy, reason ?? "manual edit");
         edited = SnapshotProvenance.Branch(edited, NewId("branch"), NewId("snap"));
 
-        if (Mode == SessionMode.Streaming && _stream is not null)
-        {
-            _ = _stream.PostAsync(edited);
-            PublishFrame(edited);
-        }
-        else
-        {
-            Adopt(edited); // an edit is a new deterministic starting point
-        }
+        Adopt(edited); // an edit is a new deterministic starting point
 
         Status = $"Edited organism {id} energy → {newEnergy:F1}.";
     }
@@ -594,14 +604,15 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         world.MaxDegreeOfParallelism = ResolveThreads(ThreadCount);
         _runner = new EngineRunner(world, PublishFrame);
         _runner.SetTargetInterval(SpeedSteps[Math.Clamp(SpeedIndex, 0, MaxSpeedIndex)].Seconds);
+        _runner.SetDetailOrganismId(World.SelectedOrganismId);
         HasWorld = true;
     }
 
-    private void PublishFrame(WorldSnapshot snapshot)
+    private void PublishFrame(WorldFrame frame)
     {
         // Keep only the newest frame; post a drain only if one isn't already pending. See the field
         // comment on _pendingFrame — this bounds the UI-thread backlog to a single frame.
-        Volatile.Write(ref _pendingFrame, snapshot);
+        Volatile.Write(ref _pendingFrame, frame);
         if (Interlocked.Exchange(ref _frameQueued, 1) == 0)
         {
             _post(DrainFrame);
@@ -613,14 +624,38 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         // Re-arm before reading so a frame produced during this render still schedules the next drain
         // (worst case an extra no-op drain, never a dropped final frame).
         Interlocked.Exchange(ref _frameQueued, 0);
-        WorldSnapshot? snapshot = Interlocked.Exchange(ref _pendingFrame, null);
-        if (snapshot is null)
+        WorldFrame? frame = Interlocked.Exchange(ref _pendingFrame, null);
+        if (frame is null)
         {
             return;
         }
 
-        _current = snapshot;
-        World.LoadSnapshot(snapshot);
+        _current = frame.ToPresentationSnapshot();
+        World.LoadSnapshot(_current);
+    }
+
+    private void OnDetailOrganismRequested(long? organismId)
+    {
+        _runner?.SetDetailOrganismId(organismId);
+        _stream?.SetDetailOrganismId(organismId);
+    }
+
+    private async Task EditStreamedEnergyAsync(
+        SnapshotStreamClient stream, long organismId, double newEnergy, string? reason)
+    {
+        try
+        {
+            WorldSnapshot checkpoint = await stream.FetchAsync(_streamCts?.Token ?? default);
+            WorldSnapshot edited = SnapshotEditor.SetOrganismEnergy(
+                checkpoint, organismId, newEnergy, reason ?? "manual edit");
+            edited = SnapshotProvenance.Branch(edited, NewId("branch"), NewId("snap"));
+            await stream.PostAsync(edited, _streamCts?.Token ?? default);
+            _post(() => Status = $"Edited organism {organismId} energy → {newEnergy:F1}.");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or SnapshotValidationException or OperationCanceledException)
+        {
+            _post(() => Status = $"Edit failed: {ex.Message}");
+        }
     }
 
     private void DisposeSources()

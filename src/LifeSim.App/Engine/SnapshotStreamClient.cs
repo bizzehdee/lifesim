@@ -1,4 +1,6 @@
 using System.Net.Http;
+using System.Net.WebSockets;
+using System.Globalization;
 using System.Text;
 using LifeSim.Core.Snapshot;
 
@@ -13,11 +15,19 @@ namespace LifeSim.App.Engine;
 public sealed class SnapshotStreamClient : IDisposable
 {
     private readonly HttpClient _http;
+    private readonly Uri _streamUri;
+    private ClientWebSocket? _socket;
+    private long _detailOrganismId = -1;
 
     public SnapshotStreamClient(string baseUrl)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(baseUrl);
         _http = new HttpClient { BaseAddress = new Uri(baseUrl) };
+        var builder = new UriBuilder(new Uri(_http.BaseAddress, "stream"))
+        {
+            Scheme = _http.BaseAddress.Scheme == Uri.UriSchemeHttps ? "wss" : "ws",
+        };
+        _streamUri = builder.Uri;
     }
 
     /// <summary>Fetches and validates the server's current snapshot.</summary>
@@ -36,24 +46,36 @@ public sealed class SnapshotStreamClient : IDisposable
         response.EnsureSuccessStatusCode();
     }
 
-    /// <summary>Polls the server at <paramref name="intervalMs"/> and pushes each frame to <paramref name="onFrame"/> until cancelled.</summary>
-    public async Task StreamAsync(Action<WorldSnapshot> onFrame, int intervalMs, CancellationToken cancellationToken)
+    /// <summary>Chooses the organism whose full brain should be included in subsequent frames.</summary>
+    public void SetDetailOrganismId(long? organismId) =>
+        Interlocked.Exchange(ref _detailOrganismId, organismId ?? -1);
+
+    /// <summary>Receives compact frames over WebSocket until cancelled, reconnecting after transient failures.</summary>
+    public async Task StreamAsync(Action<WorldFrame> onFrame, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(onFrame);
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                onFrame(await FetchAsync(cancellationToken).ConfigureAwait(false));
+                await StreamConnectionAsync(onFrame, cancellationToken).ConfigureAwait(false);
             }
-            catch (HttpRequestException)
+            catch (WebSocketException) when (!cancellationToken.IsCancellationRequested)
             {
-                // Server not reachable this poll — try again next interval.
+                // Server unavailable or connection lost — reconnect below.
+            }
+            catch (HttpRequestException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // Handshake failed — reconnect below.
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                break;
             }
 
             try
             {
-                await Task.Delay(intervalMs, cancellationToken).ConfigureAwait(false);
+                await Task.Delay(500, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -62,5 +84,73 @@ public sealed class SnapshotStreamClient : IDisposable
         }
     }
 
-    public void Dispose() => _http.Dispose();
+    private async Task StreamConnectionAsync(Action<WorldFrame> onFrame, CancellationToken cancellationToken)
+    {
+        using var socket = new ClientWebSocket();
+        _socket = socket;
+        await socket.ConnectAsync(_streamUri, cancellationToken).ConfigureAwait(false);
+        Task selectionTask = SendSelectionChangesAsync(socket, cancellationToken);
+        byte[] buffer = new byte[16 * 1024];
+
+        try
+        {
+            while (socket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
+            {
+                using var message = new MemoryStream();
+                WebSocketReceiveResult result;
+                do
+                {
+                    result = await socket.ReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        return;
+                    }
+
+                    message.Write(buffer, 0, result.Count);
+                }
+                while (!result.EndOfMessage);
+
+                if (result.MessageType == WebSocketMessageType.Text)
+                {
+                    onFrame(WorldFrameSerializer.Load(Encoding.UTF8.GetString(message.GetBuffer(), 0, checked((int)message.Length))));
+                }
+            }
+        }
+        finally
+        {
+            _socket = null;
+            try
+            {
+                await selectionTask.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // Normal shutdown.
+            }
+        }
+    }
+
+    private async Task SendSelectionChangesAsync(ClientWebSocket socket, CancellationToken cancellationToken)
+    {
+        long lastSent = long.MinValue;
+        while (socket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
+        {
+            long detailId = Interlocked.Read(ref _detailOrganismId);
+            if (detailId != lastSent)
+            {
+                lastSent = detailId;
+                string value = detailId >= 0 ? detailId.ToString(CultureInfo.InvariantCulture) : "none";
+                await socket.SendAsync(Encoding.UTF8.GetBytes(value), WebSocketMessageType.Text, true, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            await Task.Delay(25, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    public void Dispose()
+    {
+        _socket?.Abort();
+        _http.Dispose();
+    }
 }

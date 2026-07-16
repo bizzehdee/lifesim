@@ -209,6 +209,29 @@ public sealed class SimulationWorld
         EditLog = _editLog.ToList(),
     };
 
+    /// <summary>
+    /// Captures an ephemeral UI/transport frame. Neural state is included only for the requested detail
+    /// organism; use <see cref="ToSnapshot"/> for persistence, editing, or deterministic replay.
+    /// </summary>
+    public WorldFrame ToFrame(long? detailOrganismId = null) => new()
+    {
+        Tick = Tick,
+        SnapshotId = _snapshotId,
+        ParentSnapshotId = _parentSnapshotId,
+        BranchId = _branchId,
+        World = World,
+        Configuration = Config,
+        GroundEnergy = _groundEnergy.CaptureState(),
+        Organisms = _organisms.Values.Select(OrganismFrame.From).ToList(),
+        DetailOrganism = detailOrganismId is { } id && _organisms.TryGetValue(id, out Organism? detail)
+            ? OrganismSnapshot.From(detail)
+            : null,
+        Lineages = _lineageRecords.Values.Select(LineageSnapshot.From).ToList(),
+        Metrics = _metrics,
+        EnvironmentModifiers = _environment.Modifiers.ToList(),
+        EditLog = _editLog.ToList(),
+    };
+
     /// <summary>Advances exactly one tick through the authoritative phase order.</summary>
     public void Advance()
     {

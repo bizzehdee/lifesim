@@ -1,4 +1,5 @@
 using LifeSim.Core.Determinism;
+using LifeSim.Core.Configuration;
 using LifeSim.Core.Neat;
 using LifeSim.Core.Organisms;
 
@@ -79,6 +80,55 @@ public class NeatBrainTests
     }
 
     [Fact]
+    public void CompiledPropagation_matchesReferenceForRecurrentNetworkAndScrambledEdgeStorage()
+    {
+        NeatGenome baseline = NeatGenomeFactory.CreateMinimalFullyConnected(new Prng(77));
+        long hiddenId = NeatTopology.ReservedInnovationIdCount + 100;
+        long outputId = NeatTopology.OutputNodeIds[3];
+        NeatGenome recurrent = baseline with
+        {
+            Nodes = baseline.Nodes.Append(new NodeGene { Id = hiddenId, Type = NodeType.Hidden, State = 0.25 }).ToList(),
+            Connections = baseline.Connections
+                .Append(new ConnectionGene { InnovationId = hiddenId + 1, From = 0, To = hiddenId, Weight = 0.7 })
+                .Append(new ConnectionGene { InnovationId = hiddenId + 2, From = hiddenId, To = hiddenId, Weight = -0.4 })
+                .Append(new ConnectionGene { InnovationId = hiddenId + 3, From = hiddenId, To = outputId, Weight = 1.2 })
+                .OrderByDescending(c => c.InnovationId)
+                .ToList(),
+        };
+        double[] inputs = Enumerable.Range(0, NeatTopology.InputCount).Select(i => Math.Sin(i)).ToArray();
+
+        NeatGenome expected = ReferencePropagate(recurrent, inputs, steps: 4);
+        NeatPropagation actual = NeatBrain.Propagate(recurrent, inputs, steps: 4);
+
+        Assert.Equal(expected.Nodes, actual.Genome.Nodes);
+        Assert.Equal(ReferenceProbabilities(expected), actual.Probabilities);
+    }
+
+    [Fact]
+    public void StructuralMutation_recompilesAnAlreadyUsedRuntimePlan()
+    {
+        NeatGenome used = NeatBrain.Propagate(
+            NeatGenomeFactory.CreateMinimalFullyConnected(new Prng(91)), Inputs).Genome;
+        var mutation = new MutationConfig
+        {
+            WeightMutationRate = 0.0,
+            ConnectionMutationRate = 1.0,
+            NodeMutationRate = 0.0,
+        };
+        NeatGenome structurallyChanged = NeatMutator.Mutate(
+            used,
+            mutation,
+            new Prng(123),
+            new InnovationIdAllocator(NeatTopology.ReservedInnovationIdCount + 500));
+
+        NeatGenome expected = ReferencePropagate(structurallyChanged, Inputs, 2);
+        NeatPropagation actual = NeatBrain.Propagate(structurallyChanged, Inputs, 2);
+
+        Assert.True(structurallyChanged.Connections.Count > used.Connections.Count);
+        Assert.Equal(expected.Nodes, actual.Genome.Nodes);
+    }
+
+    [Fact]
     public void Evaluate_biasedLogits_selectFavoredActionAtRoughlyTheSoftmaxRate()
     {
         // Hand-built genome: one input feeds only the Reproduce output, so after priming with one
@@ -124,5 +174,39 @@ public class NeatBrainTests
         Assert.True(
             counts.GetValueOrDefault(OrganismAction.Reproduce) > counts.GetValueOrDefault(OrganismAction.Idle),
             "Expected the favored action to be picked more often than an unfavored one.");
+    }
+
+    private static NeatGenome ReferencePropagate(NeatGenome genome, double[] inputs, int steps)
+    {
+        for (int step = 0; step < steps; step++)
+        {
+            Dictionary<long, double> previous = genome.Nodes.ToDictionary(n => n.Id, n => n.State);
+            Dictionary<long, List<ConnectionGene>> incoming = genome.Connections
+                .Where(c => c.Enabled)
+                .GroupBy(c => c.To)
+                .ToDictionary(group => group.Key, group => group.OrderBy(c => c.InnovationId).ToList());
+            var nodes = new List<NodeGene>(genome.Nodes.Count);
+            foreach (NodeGene node in genome.Nodes)
+            {
+                double value = node.Type == NodeType.Input
+                    ? inputs[(int)node.Id]
+                    : Math.Tanh(incoming.GetValueOrDefault(node.Id, []).Sum(c => c.Weight * previous.GetValueOrDefault(c.From)));
+                nodes.Add(node with { State = value });
+            }
+
+            genome = genome with { Nodes = nodes };
+        }
+
+        return genome;
+    }
+
+    private static double[] ReferenceProbabilities(NeatGenome genome)
+    {
+        Dictionary<long, double> state = genome.Nodes.ToDictionary(n => n.Id, n => n.State);
+        double[] logits = NeatTopology.OutputNodeIds.Select(id => state[id]).ToArray();
+        double max = logits.Max();
+        double[] probabilities = logits.Select(value => Math.Exp(value - max)).ToArray();
+        double sum = probabilities.Sum();
+        return probabilities.Select(value => value / sum).ToArray();
     }
 }

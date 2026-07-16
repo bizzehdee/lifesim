@@ -12,6 +12,11 @@ public sealed record NeatGenome
     public IReadOnlyList<ConnectionGene> Connections { get; init; } = [];
     public string NetworkType { get; init; } = "recurrent";
 
+    // Ephemeral compiled topology: propagated through state/weight-only `with` copies, but excluded
+    // from equality and serialization. Structural mutation explicitly clears it.
+    [System.Text.Json.Serialization.JsonIgnore]
+    internal NeatExecutionPlan? RuntimePlan { get; init; }
+
     /// <summary>A copy with every node's dynamic <see cref="NodeGene.State"/> zeroed — topology and weights unchanged (a fresh, un-activated brain).</summary>
     public NeatGenome ResetState() => this with { Nodes = Nodes.Select(n => n with { State = 0.0 }).ToList() };
 

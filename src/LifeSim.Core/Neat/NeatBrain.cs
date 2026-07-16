@@ -44,13 +44,7 @@ public static class NeatBrain
     /// </summary>
     public static NeatPropagation Propagate(NeatGenome genome, IReadOnlyList<double> inputs, int steps)
     {
-        NeatPropagation propagation = Propagate(genome, inputs);
-        for (int step = 1; step < steps; step++)
-        {
-            propagation = Propagate(propagation.Genome, inputs);
-        }
-
-        return propagation;
+        return PropagateCompiled(genome, inputs, Math.Max(1, steps));
     }
 
     /// <summary>
@@ -60,60 +54,72 @@ public static class NeatBrain
     /// </summary>
     public static NeatPropagation Propagate(NeatGenome genome, IReadOnlyList<double> inputs)
     {
+        return PropagateCompiled(genome, inputs, 1);
+    }
+
+    private static NeatPropagation PropagateCompiled(
+        NeatGenome genome,
+        IReadOnlyList<double> inputs,
+        int steps)
+    {
         ArgumentNullException.ThrowIfNull(genome);
         ArgumentNullException.ThrowIfNull(inputs);
 
-        var previousState = new Dictionary<long, double>(genome.Nodes.Count);
-        foreach (NodeGene node in genome.Nodes)
+        NeatExecutionPlan plan = genome.RuntimePlan ?? NeatExecutionPlan.Compile(genome);
+        var previousState = new double[genome.Nodes.Count];
+        var nextState = new double[genome.Nodes.Count];
+        for (int i = 0; i < genome.Nodes.Count; i++)
         {
-            previousState[node.Id] = node.State;
+            previousState[i] = genome.Nodes[i].State;
         }
 
-        // Fixed order per incoming edge set: sum by ascending innovation id so
-        // the weighted-sum reduction is not sensitive to the connection list's storage order.
-        Dictionary<long, List<ConnectionGene>> incomingByTarget = genome.Connections
-            .Where(c => c.Enabled)
-            .GroupBy(c => c.To)
-            .ToDictionary(g => g.Key, g => g.OrderBy(c => c.InnovationId).ToList());
-
-        var updatedNodes = new List<NodeGene>(genome.Nodes.Count);
-        var newState = new Dictionary<long, double>(genome.Nodes.Count);
-
-        foreach (NodeGene node in genome.Nodes)
+        for (int step = 0; step < steps; step++)
         {
-            double value;
-            if (node.Type == NodeType.Input)
+            for (int nodeIndex = 0; nodeIndex < plan.NodeTypes.Length; nodeIndex++)
             {
-                // Input nodes have no incoming edges — they simply carry this tick's fresh
-                // sensory reading, which downstream nodes will read starting *next* tick.
-                value = inputs[(int)node.Id];
-            }
-            else
-            {
-                double sum = 0.0;
-                if (incomingByTarget.TryGetValue(node.Id, out List<ConnectionGene>? incoming))
+                if (plan.NodeTypes[nodeIndex] == NodeType.Input)
                 {
-                    foreach (ConnectionGene connection in incoming)
+                    // Fresh inputs become committed state; synchronous downstream reads use the
+                    // previous recurrent step, preserving the one-step latency.
+                    nextState[nodeIndex] = inputs[plan.InputOrdinals[nodeIndex]];
+                    continue;
+                }
+
+                double sum = 0.0;
+                foreach (NeatIncomingEdge edge in plan.Incoming[nodeIndex])
+                {
+                    if (edge.SourceNodeIndex >= 0)
                     {
-                        sum += connection.Weight * previousState.GetValueOrDefault(connection.From, 0.0);
+                        sum += genome.Connections[edge.ConnectionIndex].Weight * previousState[edge.SourceNodeIndex];
                     }
                 }
 
-                value = Math.Tanh(sum);
+                nextState[nodeIndex] = Math.Tanh(sum);
             }
 
-            newState[node.Id] = value;
-            updatedNodes.Add(node with { State = value });
+            (previousState, nextState) = (nextState, previousState);
         }
 
         var outputLogits = new double[NeatTopology.OutputCount];
         for (int i = 0; i < NeatTopology.OutputCount; i++)
         {
-            outputLogits[i] = newState[NeatTopology.OutputNodeIds[i]];
+            int nodeIndex = plan.OutputNodeIndices[i];
+            if (nodeIndex < 0)
+            {
+                throw new KeyNotFoundException($"Output node {NeatTopology.OutputNodeIds[i]} is missing.");
+            }
+
+            outputLogits[i] = previousState[nodeIndex];
         }
 
         double[] probabilities = Softmax(outputLogits);
-        var updatedGenome = genome with { Nodes = updatedNodes };
+        var updatedNodes = new List<NodeGene>(genome.Nodes.Count);
+        for (int i = 0; i < genome.Nodes.Count; i++)
+        {
+            updatedNodes.Add(genome.Nodes[i] with { State = previousState[i] });
+        }
+
+        var updatedGenome = genome with { Nodes = updatedNodes, RuntimePlan = plan };
         return new NeatPropagation(updatedGenome, probabilities);
     }
 
@@ -127,16 +133,13 @@ public static class NeatBrain
     {
         ArgumentNullException.ThrowIfNull(genome);
 
-        var stateById = new Dictionary<long, double>(genome.Nodes.Count);
-        foreach (NodeGene node in genome.Nodes)
-        {
-            stateById[node.Id] = node.State;
-        }
+        NeatExecutionPlan plan = genome.RuntimePlan ?? NeatExecutionPlan.Compile(genome);
 
         var logits = new double[NeatTopology.OutputCount];
         for (int i = 0; i < NeatTopology.OutputCount; i++)
         {
-            logits[i] = stateById.GetValueOrDefault(NeatTopology.OutputNodeIds[i], 0.0);
+            int nodeIndex = plan.OutputNodeIndices[i];
+            logits[i] = nodeIndex >= 0 ? genome.Nodes[nodeIndex].State : 0.0;
         }
 
         return Softmax(logits);

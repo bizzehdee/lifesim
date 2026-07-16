@@ -105,7 +105,7 @@ public static class NeatMutator
         };
 
         List<ConnectionGene> connections = genome.Connections.Append(connection).ToList();
-        return genome with { Connections = connections };
+        return genome with { Connections = connections, RuntimePlan = null };
     }
 
     /// <summary>
@@ -157,6 +157,6 @@ public static class NeatMutator
             .Append(outbound)
             .ToList();
 
-        return genome with { Nodes = nodes, Connections = connections };
+        return genome with { Nodes = nodes, Connections = connections, RuntimePlan = null };
     }
 }

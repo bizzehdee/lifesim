@@ -34,7 +34,8 @@ public static class OrganismColours
             ColourMode.Cooperation => IsShare(organism.LastAction) && organism.LastActionResult == ActionResult.Success
                 ? SimulationPalette.Share
                 : SimulationPalette.Neutral,
-            ColourMode.Intelligence => SimulationPalette.IntelligenceColour(BrainIntelligence.Score(organism.Brain)),
+            ColourMode.Intelligence => SimulationPalette.IntelligenceColour(
+                organism.Intelligence ?? BrainIntelligence.Score(organism.Brain)),
             ColourMode.Light => SimulationPalette.LightColour(tileLight),
             _ => SimulationPalette.Neutral,
         };

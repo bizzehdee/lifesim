@@ -39,8 +39,8 @@ public static class OrganismListBuilder
             Morphology.CellCount(o.Genome.ToGenome(), multicellular),
             children.GetValueOrDefault(o.OrganismId),
             LineageScore.Score(descendants.GetValueOrDefault(o.OrganismId), children.GetValueOrDefault(o.OrganismId), o.Age),
-            o.Brain.Nodes.Count,
-            BrainIntelligence.Score(o.Brain),
+            o.BrainNodeCount ?? o.Brain.Nodes.Count,
+            o.Intelligence ?? BrainIntelligence.Score(o.Brain),
             o.PredationWins));
 
         Func<OrganismRow, double> selector = key switch

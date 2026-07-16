@@ -65,6 +65,8 @@ public sealed record OrganismFrame
     public long PredationWins { get; init; }
     public long PredationLosses { get; init; }
     public double HelpGiven { get; init; }
+    public int BrainNodeCount { get; init; }
+    public double Intelligence { get; init; }
 
     public static OrganismFrame From(Organism organism) => new()
     {
@@ -81,6 +83,8 @@ public sealed record OrganismFrame
         PredationWins = organism.PredationWins,
         PredationLosses = organism.PredationLosses,
         HelpGiven = organism.HelpGiven,
+        BrainNodeCount = organism.Brain.Nodes.Count,
+        Intelligence = BrainComplexity.Score(organism.Brain),
     };
 
     public OrganismSnapshot ToSnapshot() => new()
@@ -99,5 +103,7 @@ public sealed record OrganismFrame
         PredationWins = PredationWins,
         PredationLosses = PredationLosses,
         HelpGiven = HelpGiven,
+        BrainNodeCount = BrainNodeCount,
+        Intelligence = Intelligence,
     };
 }

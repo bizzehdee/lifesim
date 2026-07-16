@@ -102,6 +102,25 @@ public class WorldViewTests
     }
 
     [Fact]
+    public void CompactFrame_keepsBrainNodeAndIntelligenceColumnsForEveryOrganism()
+    {
+        var config = SimulationConfig.Default with { InitialPopulation = 12 };
+        SimulationWorld world = SimulationWorld.CreateGenesis(
+            new WorldState { Seed = 17, Width = 40, Height = 40 }, config);
+        WorldSnapshot frame = world.ToFrame().ToPresentationSnapshot();
+
+        IReadOnlyList<OrganismRow> rows = OrganismListBuilder.Build(
+            frame, OrganismSortKey.Intelligence, ascending: false);
+
+        Assert.Equal(12, rows.Count);
+        Assert.All(rows, row =>
+        {
+            Assert.True(row.BrainNodes > 0);
+            Assert.True(row.Intelligence > 0.0);
+        });
+    }
+
+    [Fact]
     public void OrganismsTab_populatesLive_andClickingARowJumpsToItsStats()
     {
         var vm = new WorldViewModel();

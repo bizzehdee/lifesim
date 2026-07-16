@@ -23,6 +23,11 @@ public class WorldFrameTests
 
         Assert.Equal(selectedId, frame.DetailOrganism?.OrganismId);
         Assert.NotEmpty(presentation.Organisms.Single(o => o.OrganismId == selectedId).Brain.Connections);
+        Assert.All(presentation.Organisms, organism =>
+        {
+            Assert.True(organism.BrainNodeCount > 0);
+            Assert.True(organism.Intelligence > 0.0);
+        });
         Assert.All(
             presentation.Organisms.Where(o => o.OrganismId != selectedId),
             organism => Assert.Empty(organism.Brain.Connections));

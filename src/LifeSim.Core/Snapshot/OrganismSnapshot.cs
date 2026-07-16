@@ -17,6 +17,10 @@ public sealed record OrganismSnapshot
     /// <summary>The live NEAT brain; node <c>state</c> must round-trip for the save/reload test.</summary>
     public NeatGenome Brain { get; init; } = new();
 
+    /// <summary>Compact presentation summaries; null in older snapshots, where callers derive them from <see cref="Brain"/>.</summary>
+    public int? BrainNodeCount { get; init; }
+    public double? Intelligence { get; init; }
+
     /// <summary>
     /// The inherited germline brain. Must be stored separately once within-life learning can make the
     /// live <see cref="Brain"/>'s weights diverge from the germline, so reproduction after reload still
@@ -53,6 +57,8 @@ public sealed record OrganismSnapshot
         Age = organism.Age,
         Genome = GenomeSnapshot.From(organism.Genome),
         Brain = organism.Brain,
+        BrainNodeCount = organism.Brain.Nodes.Count,
+        Intelligence = BrainComplexity.Score(organism.Brain),
         Germline = organism.Germline,
         LastAction = organism.LastAction,
         LastActionResult = organism.LastActionResult,

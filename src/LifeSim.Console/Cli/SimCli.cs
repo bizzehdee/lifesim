@@ -33,6 +33,7 @@ public static class SimCli
             {
                 "new" => NewCommand.Execute(cli, output),
                 "run" => RunCommand.Execute(cli, output),
+                "experiment" => ExperimentCommand.Execute(cli, output),
                 "serve" => ServeCommand.Execute(cli, output),
                 "help" or "--help" or "-h" => PrintUsage(output),
                 "" => PrintUsage(error, exitCode: 1),
@@ -80,6 +81,9 @@ public static class SimCli
         writer.WriteLine("  run    --in FILE --out FILE --ticks N [--out-dir DIR --stream K]");
         writer.WriteLine("         [--metrics FILE --metrics-format csv|ndjson] [--threads N]");
         writer.WriteLine("         Advance the world N ticks; optionally stream frames and metrics.");
+        writer.WriteLine("  experiment --candidate CONFIG --out REPORT [--baseline CONFIG]");
+        writer.WriteLine("         [--seeds 1,2,3,4,5] [--ticks N] [--width W --height H --population P]");
+        writer.WriteLine("         Run a paired multi-seed comparison with 95% intervals (minimum 5 seeds).");
         writer.WriteLine("  serve  --in FILE [--port P] [--tps R] [--max-ticks N] [--threads N]");
         writer.WriteLine("         Run the engine and expose snapshots over HTTP/WebSocket.");
         writer.WriteLine();

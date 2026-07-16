@@ -1,5 +1,6 @@
 using System.Text.Json;
 using LifeSim.Console.Cli;
+using LifeSim.Core.Configuration;
 using LifeSim.Core.Snapshot;
 
 namespace LifeSim.Console.Tests;
@@ -157,6 +158,45 @@ public class SimCliTests
         Assert.Equal(10, lines.Length);
         using var doc = JsonDocument.Parse(lines[0]);
         Assert.Equal(1, doc.RootElement.GetProperty("tick").GetInt64());
+    }
+
+    [Fact]
+    public void Experiment_runsPairedSeedPanel_andWritesUncertaintyReport()
+    {
+        using var temp = new TempDir();
+        string candidate = temp.File("candidate.json");
+        string report = temp.File("report.json");
+        File.WriteAllText(candidate, SnapshotSerializer.SaveConfig(SimulationConfig.Default));
+
+        int code = RunCli(out string output, out string error,
+            "experiment", "--candidate", candidate, "--out", report,
+            "--seeds", "1,2,3,4,5", "--ticks", "2", "--width", "64", "--height", "64",
+            "--population", "8", "--threads", "1");
+
+        Assert.Equal(0, code);
+        Assert.Empty(error);
+        Assert.Contains("5 seeds", output, StringComparison.Ordinal);
+        using JsonDocument json = JsonDocument.Parse(File.ReadAllText(report));
+        JsonElement root = json.RootElement;
+        Assert.Equal(5, root.GetProperty("seeds").GetArrayLength());
+        Assert.Equal(5, root.GetProperty("baseline").GetProperty("runs").GetArrayLength());
+        Assert.Equal(0.0, root.GetProperty("comparison").GetProperty("final_population_difference").GetProperty("mean").GetDouble());
+        Assert.Equal("inconclusive_final_population", root.GetProperty("comparison").GetProperty("conclusion").GetString());
+    }
+
+    [Fact]
+    public void Experiment_rejectsSingleSeedConclusions()
+    {
+        using var temp = new TempDir();
+        string candidate = temp.File("candidate.json");
+        File.WriteAllText(candidate, SnapshotSerializer.SaveConfig(SimulationConfig.Default));
+
+        int code = RunCli(out _, out string error,
+            "experiment", "--candidate", candidate, "--out", temp.File("report.json"),
+            "--seeds", "42", "--ticks", "1");
+
+        Assert.Equal(2, code);
+        Assert.Contains("at least 5 distinct seeds", error, StringComparison.Ordinal);
     }
 
     [Fact]
